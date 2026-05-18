@@ -1,0 +1,21 @@
+node_modules/
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Сборка и компиляция
+dist/
+build/
+
+.env
+.env.local
+.env.*.local
+
+.DS_Store
+Thumbs.db
+
+.biome/
+.turbo/
+.cache/
