@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: foxsphere-postgres
+    environment:
+      POSTGRES_USER: fox_user
+      POSTGRES_PASSWORD: fox_password
+      POSTGRES_DB: foxsphere_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

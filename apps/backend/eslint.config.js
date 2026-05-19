@@ -8,7 +8,7 @@ const __dirname = dirname(__filename);
 
 export default tseslint.config(
   {
-    ignores: ["eslint.config.js", "dist/**/*"],
+    ignores: ["eslint.config.js", "dist/**/*", "prisma.config.ts"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
