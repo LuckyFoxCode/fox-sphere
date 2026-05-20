@@ -12,7 +12,9 @@
     "dev:b": "pnpm --filter backend dev",
     "build:b": "pnpm --filter backend build",
     "start:b": "pnpm --filter backend start",
-    "lint:b": "pnpm --filter backend lint"
+    "lint:b": "pnpm --filter backend lint",
+    "prisma:g": "pnpm --filter backend prisma:generate",
+    "prisma:m": "pnpm --filter backend prisma:migrate"
   },
   "keywords": [],
   "author": "",
