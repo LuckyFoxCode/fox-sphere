@@ -4,9 +4,7 @@ import {
   getUsersController,
 } from "../controllers/user.controller.js";
 
-const router = Router();
+export const userRouter = Router();
 
-router.post("/", createUserController);
-router.get("/", getUsersController);
-
-export default router;
+userRouter.post("/", createUserController);
+userRouter.get("/", getUsersController);
