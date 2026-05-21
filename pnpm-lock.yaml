@@ -326,6 +326,8 @@ importers:
         specifier: ^3.2.6
         version: 3.2.9(typescript@6.0.3)
 
+  packages/shared-schemas: {}
+
 packages:
 
   '@babel/code-frame@7.29.0':

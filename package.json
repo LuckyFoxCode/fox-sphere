@@ -14,7 +14,8 @@
     "start:b": "pnpm --filter backend start",
     "lint:b": "pnpm --filter backend lint",
     "prisma:g": "pnpm --filter backend prisma:generate",
-    "prisma:m": "pnpm --filter backend prisma:migrate"
+    "prisma:m": "pnpm --filter backend prisma:migrate",
+    "prisma:s": "pnpm --filter backend prisma:studio"
   },
   "keywords": [],
   "author": "",
