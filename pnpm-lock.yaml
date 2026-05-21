@@ -209,6 +209,9 @@ importers:
 
   apps/backend:
     dependencies:
+      '@fox-sphere/shared-schemas':
+        specifier: workspace:*
+        version: link:../../packages/shared-schemas
       '@prisma/adapter-pg':
         specifier: ^7.8.0
         version: 7.8.0
@@ -261,6 +264,9 @@ importers:
 
   apps/frontend:
     dependencies:
+      '@fox-sphere/shared-schemas':
+        specifier: workspace:*
+        version: link:../../packages/shared-schemas
       '@tailwindcss/vite':
         specifier: ^4.3.0
         version: 4.3.0(vite@8.0.13(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.22.1))
@@ -326,7 +332,11 @@ importers:
         specifier: ^3.2.6
         version: 3.2.9(typescript@6.0.3)
 
-  packages/shared-schemas: {}
+  packages/shared-schemas:
+    dependencies:
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
 
 packages:
 
@@ -2808,6 +2818,9 @@ packages:
   zeptomatch@2.1.0:
     resolution: {integrity: sha512-KiGErG2J0G82LSpniV0CtIzjlJ10E04j02VOudJsPyPwNZgGnRKQy7I1R7GMyg/QswnE4l7ohSGrQbQbjXPPDA==}
 
+  zod@4.4.3:
+    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
+
 snapshots:
 
   '@babel/code-frame@7.29.0':
@@ -5120,3 +5133,5 @@ snapshots:
     dependencies:
       grammex: 3.1.12
       graphmatch: 1.1.1
+
+  zod@4.4.3: {}

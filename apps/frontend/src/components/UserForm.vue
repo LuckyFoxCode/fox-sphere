@@ -1,13 +1,37 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+interface BackendErrorResponse {
+  message: string;
+  error?: string;
+  details?: {
+    name: string;
+    message: string;
+  };
+}
+
+interface CustomFetchError {
+  status: number;
+  data: BackendErrorResponse;
+}
+
 interface User {
   twitchId: string;
   username: string;
 }
 
+interface FormErrors {
+  twitchId?: string;
+  username?: string;
+  global?: string;
+}
+
+function isCustomFetchError(error: unknown): error is CustomFetchError {
+  return error !== null && typeof error === 'object' && 'status' in error && 'data' in error;
+}
+
 const user = ref<User>({ twitchId: '', username: '' });
-const errorMess = ref('');
+const errors = ref<FormErrors>({});
 
 const createUser = async (userData: User) => {
   const baseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -18,31 +42,56 @@ const createUser = async (userData: User) => {
     body: JSON.stringify(userData),
   });
 
+  const responseData = await response.json().catch(() => ({}));
+
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-
-    const errorMessage = errorData.message || `Ошибка сервера: ${response.status}`;
-    throw new Error(errorMessage);
+    throw {
+      status: response.status,
+      data: responseData,
+    };
   }
-
-  return await response.json();
+  return responseData;
 };
 
 const onSubmit = async () => {
+  errors.value = {};
+
   const newUser: User = {
     twitchId: user.value.twitchId,
     username: user.value.username,
   };
 
   try {
-    errorMess.value = '';
     await createUser(newUser);
 
     user.value.twitchId = '';
     user.value.username = '';
-  } catch (error) {
-    if (error instanceof Error) {
-      errorMess.value = error.message || 'Что-то пошло не так';
+  } catch (error: unknown) {
+    if (isCustomFetchError(error)) {
+      const errorData = error.data;
+
+      if (errorData.details && typeof errorData.details.message === 'string') {
+        try {
+          const zodIssue = JSON.parse(errorData.details.message);
+
+          if (Array.isArray(zodIssue)) {
+            zodIssue.forEach((issue) => {
+              const fieldName = issue.path?.[0] as keyof FormErrors;
+              if (fieldName) {
+                errors.value[fieldName] = issue.message;
+              }
+            });
+          }
+        } catch {
+          errors.value.global = errorData.message;
+        }
+      } else if (errorData.message) {
+        errors.value.global = errorData.message;
+      }
+    } else if (error instanceof Error) {
+      errors.value.global = error.message;
+    } else {
+      errors.value.global = 'Something went wrong...';
     }
   }
 
@@ -69,6 +118,6 @@ const onSubmit = async () => {
       />
       <button type="submit">Create user</button>
     </form>
-    <span>{{ errorMess }}</span>
+    <span>{{ errors }}</span>
   </div>
 </template>

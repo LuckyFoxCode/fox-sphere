@@ -1,11 +1,7 @@
+import { CreateUserDto } from "@fox-sphere/shared-schemas";
 import { prisma } from "../lib/prisma.js";
 
-interface CreateUserData {
-  twitchId: string;
-  username: string;
-}
-
-export const createUser = async (data: CreateUserData) => {
+export const createUser = async (data: CreateUserDto) => {
   return await prisma.user.create({ data });
 };
 
