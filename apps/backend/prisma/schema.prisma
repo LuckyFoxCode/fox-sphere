@@ -8,9 +8,30 @@ datasource db {
 }
 
 model User {
-  id Int @id @default(autoincrement())
-  twitchId String @unique
-  username String
+  id            Int           @id @default(autoincrement())
+  twitchId      String        @unique
+  username      String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  coins         Int           @default(0)
+  lvl           Int           @default(1)
+  xp            Int           @default(0)
+  isMod         Boolean       @default(false)
+  isFounder     Boolean       @default(false)
+  isSubscriber  Boolean       @default(false)
+  spinsCount    Int           @default(0)
+  totalWin      Int           @default(0)
+  totalLoss     Int           @default(0)
+  coinHistories CoinHistory[]
+}
+
+model CoinHistory {
+  id        Int      @id @default(autoincrement())
+  amount    Int
+  reason    String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

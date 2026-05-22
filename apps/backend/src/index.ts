@@ -1,17 +1,15 @@
 import cors from "cors";
-import "dotenv/config";
 import express from "express";
-import userRoutes from "./routes/user.routes.js";
+import { config } from "./config/index.js";
+import { rootRouter } from "./routes/index.js";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-app.use("/users", userRoutes);
+app.use("/api", rootRouter);
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`🦊 Backend ranges on http://localhost:${PORT}`);
+app.listen(config.port, () => {
+  console.log(`🦊 Backend ranges on http://localhost:${config.port}`);
 });
