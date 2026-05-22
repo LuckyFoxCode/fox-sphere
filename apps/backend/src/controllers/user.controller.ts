@@ -1,5 +1,4 @@
 import { CreateUserSchema } from "@fox-sphere/shared-schemas";
-
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 import { Request, Response } from "express";
 import * as userService from "../services/user.service.js";
