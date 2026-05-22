@@ -1,6 +1,7 @@
 version: "3.8"
 
 services:
+  # Твоя настроенная база данных
   postgres:
     image: postgres:16-alpine
     container_name: foxsphere-postgres
@@ -13,6 +14,30 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+    networks:
+      - foxsphere-network
+
+  # Твой новый сервис бэкенда
+  backend:
+    build:
+      context: . # Docker ищет файлы от корня монорепозитория
+      dockerfile: Dockerfile # Имя файла в корне
+    container_name: foxsphere-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # ВАЖНО: вместо localhost пишем имя сервиса базы данных — "postgres"
+      DATABASE_URL: "postgresql://fox_user:fox_password@postgres:5432/foxsphere_db?schema=public"
+      PORT: 3000
+    depends_on:
+      - postgres # Ждем, пока контейнер с базой просто запустится
+    networks:
+      - foxsphere-network
 
 volumes:
   postgres_data:
+
+networks:
+  foxsphere-network:
+    driver: bridge

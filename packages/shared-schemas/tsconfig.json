@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "declaration": true, // Обязательно: генерирует .d.ts файлы типов
+    "rootDir": "./",
+    "outDir": "./dist", // Обязательно: указывает складывать билд в папку dist
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["index.ts", "src/**/*"] // Компилируем всё из папки src
+}
