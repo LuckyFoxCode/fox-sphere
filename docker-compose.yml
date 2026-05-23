@@ -1,4 +1,6 @@
 # Dev stack: backend (hot reload) + postgres. Frontend runs in the terminal.
+# NOTE: no top-level `version:` key — it was `version: "3.8"`, now deprecated and
+# ignored by Compose v2. The Compose Spec dropped it; keeping it only prints a warning.
 services:
   postgres:
     image: postgres:18-alpine
@@ -10,7 +12,11 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql
+      # Bind mount (not a named volume): persistent service data lives in ./data/,
+      # gitignored. One subdir per service — postgres now, room for redis/<cache> later.
+      # PG18 mounts the cluster root here; data lands in ./data/postgres_data/18/.
+      # Note: `docker compose down -v` does NOT clear a bind mount — rm ./data/* to wipe.
+      - ./data/postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U fox_user -d foxsphere_db"]
       interval: 5s
@@ -52,7 +58,6 @@ services:
       - foxsphere-network
 
 volumes:
-  postgres_data:
   backend_node_modules:
   shared_schemas_node_modules:
 
