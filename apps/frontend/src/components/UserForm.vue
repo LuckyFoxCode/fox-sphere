@@ -1,39 +1,23 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-interface BackendErrorResponse {
-  message: string;
-  error?: string;
-  details?: {
-    name: string;
-    message: string;
-  };
-}
-
-interface CustomFetchError {
-  status: number;
-  data: BackendErrorResponse;
-}
-
 interface User {
   twitchId: string;
   username: string;
 }
 
-interface FormErrors {
-  twitchId?: string;
-  username?: string;
-  global?: string;
+interface BackendValidationError {
+  status: string;
+  message: string;
+  errors?: Record<string, string[]>;
 }
 
-function isCustomFetchError(error: unknown): error is CustomFetchError {
-  return error !== null && typeof error === 'object' && 'status' in error && 'data' in error;
-}
+type FormErrors = Partial<Record<keyof User | 'global', string>>;
 
 const user = ref<User>({ twitchId: '', username: '' });
 const errors = ref<FormErrors>({});
 
-const createUser = async (userData: User) => {
+const createUserRequest = async (userData: User) => {
   const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
   const response = await fetch(`${baseUrl}/users`, {
@@ -42,13 +26,10 @@ const createUser = async (userData: User) => {
     body: JSON.stringify(userData),
   });
 
-  const responseData = await response.json().catch(() => ({}));
+  const responseData = (await response.json().catch(() => ({}))) as unknown;
 
   if (!response.ok) {
-    throw {
-      status: response.status,
-      data: responseData,
-    };
+    throw { status: response.status, data: responseData };
   }
   return responseData;
 };
@@ -62,36 +43,25 @@ const onSubmit = async () => {
   };
 
   try {
-    await createUser(newUser);
+    await createUserRequest(newUser);
 
-    user.value.twitchId = '';
-    user.value.username = '';
-  } catch (error: unknown) {
-    if (isCustomFetchError(error)) {
-      const errorData = error.data;
+    user.value = { twitchId: '', username: '' };
+    console.log('User created successfully!');
+  } catch (err: unknown) {
+    if (err && typeof err === 'object' && 'data' in err) {
+      const errorData = err.data as BackendValidationError;
 
-      if (errorData.details && typeof errorData.details.message === 'string') {
-        try {
-          const zodIssue = JSON.parse(errorData.details.message);
-
-          if (Array.isArray(zodIssue)) {
-            zodIssue.forEach((issue) => {
-              const fieldName = issue.path?.[0] as keyof FormErrors;
-              if (fieldName) {
-                errors.value[fieldName] = issue.message;
-              }
-            });
+      if (errorData.errors) {
+        Object.entries(errorData.errors).forEach(([field, messages]) => {
+          if (messages?.[0]) {
+            errors.value[field as keyof FormErrors] = messages[0];
           }
-        } catch {
-          errors.value.global = errorData.message;
-        }
-      } else if (errorData.message) {
-        errors.value.global = errorData.message;
+        });
+      } else {
+        errors.value.global = errorData.message || 'Server error';
       }
-    } else if (error instanceof Error) {
-      errors.value.global = error.message;
     } else {
-      errors.value.global = 'Something went wrong...';
+      errors.value.global = err instanceof Error ? err.message : 'Network error';
     }
   }
 

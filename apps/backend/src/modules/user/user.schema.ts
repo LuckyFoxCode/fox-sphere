@@ -1,5 +1,6 @@
 import { CreateUserSchema } from "@fox-sphere/shared-schemas";
 import { NextFunction, Request, Response } from "express";
+import { ValidationError } from "../../shared/errors/app-error.js";
 
 export const validateCreateUser = (
   req: Request,
@@ -9,11 +10,17 @@ export const validateCreateUser = (
   const result = CreateUserSchema.safeParse(req.body);
 
   if (!result.success) {
-    return res.status(400).json({
-      message: "Failed to create user",
-      error: "Validation Error",
-      details: result.error,
-    });
+    const formattedErrors: Record<string, string[]> = {};
+    for (const issue of result.error.issues) {
+      const path = issue.path[0]?.toString();
+      if (path) {
+        if (!formattedErrors[path]) {
+          formattedErrors[path] = [];
+        }
+        formattedErrors[path].push(issue.message);
+      }
+    }
+    return next(new ValidationError("Failed to create user", formattedErrors));
   }
 
   req.body = result.data;

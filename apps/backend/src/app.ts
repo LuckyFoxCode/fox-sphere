@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import { userRouter } from "./modules/user/user.routes.js";
+import { errorHandler } from "./shared/middleware/error-handler.js";
 
 const app = express();
 
@@ -11,4 +12,5 @@ app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
 app.use("/api/users", userRouter);
 
+app.use(errorHandler);
 export { app };
