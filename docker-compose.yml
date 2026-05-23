@@ -1,9 +1,9 @@
-version: "3.8"
-
+# Dev stack: backend (hot reload) + postgres. Frontend runs in the terminal.
+# NOTE: no top-level `version:` key — it was `version: "3.8"`, now deprecated and
+# ignored by Compose v2. The Compose Spec dropped it; keeping it only prints a warning.
 services:
-  # Твоя настроенная база данных
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     container_name: foxsphere-postgres
     environment:
       POSTGRES_USER: fox_user
@@ -12,31 +12,54 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # Bind mount (not a named volume): persistent service data lives in ./data/,
+      # gitignored. One subdir per service — postgres now, room for redis/<cache> later.
+      # PG18 mounts the cluster root here; data lands in ./data/postgres_data/18/.
+      # Note: `docker compose down -v` does NOT clear a bind mount — rm ./data/* to wipe.
+      - ./data/postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fox_user -d foxsphere_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
     networks:
       - foxsphere-network
 
-  # Твой новый сервис бэкенда
   backend:
     build:
-      context: . # Docker ищет файлы от корня монорепозитория
-      dockerfile: Dockerfile # Имя файла в корне
+      context: .
+      dockerfile: Dockerfile
+      target: dev
     container_name: foxsphere-backend
     restart: unless-stopped
     ports:
       - "3000:3000"
+    # Twitch creds / PORT come from the gitignored .env...
+    env_file:
+      - apps/backend/.env
+    # ...but DATABASE_URL must point at the compose service, so override it here.
     environment:
-      # ВАЖНО: вместо localhost пишем имя сервиса базы данных — "postgres"
       DATABASE_URL: "postgresql://fox_user:fox_password@postgres:5432/foxsphere_db?schema=public"
-      PORT: 3000
+      NODE_ENV: development
+    # Build shared-schemas once, then run backend in watch mode (tsx).
+    command: sh -c "pnpm --filter shared-schemas build && pnpm --filter backend dev"
+    volumes:
+      # Live source for hot reload...
+      - ./apps/backend:/app/apps/backend
+      - ./packages:/app/packages
+      # ...but keep the image's per-package node_modules (don't let the host shadow them).
+      - backend_node_modules:/app/apps/backend/node_modules
+      - shared_schemas_node_modules:/app/packages/shared-schemas/node_modules
     depends_on:
-      - postgres # Ждем, пока контейнер с базой просто запустится
+      postgres:
+        condition: service_healthy
     networks:
       - foxsphere-network
 
 volumes:
-  postgres_data:
+  backend_node_modules:
+  shared_schemas_node_modules:
 
 networks:
   foxsphere-network:
