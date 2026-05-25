@@ -14,6 +14,7 @@ export const config = {
   databaseUrl: getEnv("DATABASE_URL"),
 
   twitch: {
+    userId: getEnv("TWITCH_USER_ID"),
     clientId: getEnv("TWITCH_CLIENT_ID"),
     channelName: getEnv("TWITCH_CHANNEL_NAME"),
     clientSecret: getEnv("TWITCH_CLIENT_SECRET"),
