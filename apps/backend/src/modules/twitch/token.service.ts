@@ -2,8 +2,10 @@ import { AccessToken } from "@twurple/auth";
 import { prisma } from "../../shared/lib/prisma.js";
 
 export class TokenService {
-  public async getToken() {
-    return prisma.twitchToken.findFirst();
+  public async getToken(userId: string) {
+    return prisma.twitchToken.findUnique({
+      where: { twitchUserId: userId },
+    });
   }
 
   public async updateToken(

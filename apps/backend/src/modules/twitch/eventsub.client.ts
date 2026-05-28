@@ -24,11 +24,12 @@ export class TwitchEventSubClient {
     }
   }
 
-  public subscribeToFollows(
+  public async subscribeToFollows(
     userId: string,
+    botId: string,
     callback: (e: EventSubChannelFollowEvent) => void,
   ) {
-    return this.listener.onChannelFollow(userId, userId, (e) => {
+    return this.listener.onChannelFollow(userId, botId, (e) => {
       console.log(`🎉 [EventSub] Новый фолловер: ${e.userDisplayName}`);
       callback(e);
     });

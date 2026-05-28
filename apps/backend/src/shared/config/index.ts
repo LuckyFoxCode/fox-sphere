@@ -15,9 +15,11 @@ export const config = {
 
   twitch: {
     userId: getEnv("TWITCH_USER_ID"),
+    botId: getEnv("TWITCH_BOT_ID"),
     clientId: getEnv("TWITCH_CLIENT_ID"),
     channelName: getEnv("TWITCH_CHANNEL_NAME"),
     clientSecret: getEnv("TWITCH_CLIENT_SECRET"),
+    botChannelName: getEnv("TWITCH_BOT_CHANNEL_NAME"),
     botAccessToken: getEnv("TWITCH_BOT_ACCESS_TOKEN"),
     botRefreshToken: getEnv("TWITCH_BOT_REFRESH_TOKEN"),
   },
