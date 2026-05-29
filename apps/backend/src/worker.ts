@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { ChatbotService } from "./modules/twitch/chatbot.service.js";
 import { TwitchEventSubClient } from "./modules/twitch/eventsub.client.js";
 import { TokenService } from "./modules/twitch/token.service.js";
+import { UserService } from "./modules/twitch/user.service.js";
 import { config } from "./shared/config/index.js";
 import { prisma } from "./shared/lib/prisma.js";
 
@@ -31,6 +32,7 @@ async function bootstrap() {
   }
 
   const tokenService = new TokenService();
+  const userService = new UserService();
 
   const tokenRecord = await tokenService.getToken(botId);
 
@@ -75,7 +77,7 @@ async function bootstrap() {
     ["chat"],
   );
 
-  const chatbotService = new ChatbotService(authProvider);
+  const chatbotService = new ChatbotService(authProvider, userService);
   await chatbotService.start();
 
   const eventSubClient = new TwitchEventSubClient(authProvider);
