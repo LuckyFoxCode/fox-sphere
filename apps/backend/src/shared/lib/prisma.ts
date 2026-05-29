@@ -9,7 +9,13 @@ const pool = new pg.Pool({ connectionString });
 
 const adapter = new PrismaPg(pool);
 
+const logLevels: ("query" | "error" | "warn" | "info")[] = ["error", "warn"];
+
+if (process.env.DEBUG === "true") {
+  logLevels.push("query", "info");
+}
+
 export const prisma = new PrismaClient({
   adapter,
-  log: ["query", "error", "warn", "info"],
+  log: logLevels,
 });

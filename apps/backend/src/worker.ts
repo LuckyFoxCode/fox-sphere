@@ -5,10 +5,12 @@ import { TwitchEventSubClient } from "./modules/twitch/eventsub.client.js";
 import { TokenService } from "./modules/twitch/token.service.js";
 import { UserService } from "./modules/twitch/user.service.js";
 import { config } from "./shared/config/index.js";
+import { AppError } from "./shared/errors/app-error.js";
 import { prisma } from "./shared/lib/prisma.js";
+import { Logger } from "./shared/services/logger.service.js";
 
 async function bootstrap() {
-  console.log("Инициализация воркера...");
+  Logger.info("Bootstrap", "Initializing Twitch worker application...⚙️");
 
   const botId = config.twitch.botId;
   const streamerId = config.twitch.userId;
@@ -28,7 +30,10 @@ async function bootstrap() {
         obtainmentTimestamp: Date.now(),
       },
     });
-    console.log("[Prisma] Создана новая запись для токенов бота. 🎉");
+    Logger.info(
+      "Bootstrap",
+      "Initial bot tokens successfully seeded into the database.🎉",
+    );
   }
 
   const tokenService = new TokenService();
@@ -37,13 +42,11 @@ async function bootstrap() {
   const tokenRecord = await tokenService.getToken(botId);
 
   if (!tokenRecord) {
-    throw new Error("Не удалось инициализировать токены в БД.");
+    throw new AppError(
+      "Failed to initialize Twitch tokens from database.",
+      500,
+    );
   }
-
-  console.log({
-    botId,
-    tokenUserId: tokenRecord?.twitchUserId,
-  });
 
   const authProvider = new RefreshingAuthProvider({
     clientId: config.twitch.clientId,
@@ -52,8 +55,9 @@ async function bootstrap() {
 
   authProvider.onRefresh(async (userId, tokenData) => {
     await tokenService.updateToken(userId, tokenData);
-    console.log(
-      `[Twitch Auth] Токены для ${userId} обновлены через TokenService. ✅`,
+    Logger.debug(
+      "Bootstrap",
+      `Tokens for user ${userId} automatically refreshed by Twurple.✅`,
     );
   });
 
@@ -91,21 +95,25 @@ async function bootstrap() {
         config.twitch.channelName,
         welcomeMessage,
       );
-      console.log(
-        `[Worker] Приветствие для ${event.userDisplayName} успешно отправлено в чат.`,
-      );
     } catch (error) {
-      console.error(
-        "❌ [Worker] Не удалось отправить сообщение о фоллове в чат:",
+      Logger.error(
+        "Bootstrap",
+        `Failed to send follow alert message for user: ${event.userDisplayName}`,
         error,
       );
     }
   });
-
-  console.log("✅ Follow subscription active");
+  Logger.info(
+    "Bootstrap",
+    "Application bootstrap completed. Live follow subscription is active! 🚀",
+  );
 }
 
 bootstrap().catch((err) => {
-  console.error("Критическая ошибка при запуске воркера:", err);
+  Logger.error(
+    "Bootstrap",
+    "Critical uncaught error during worker startup process",
+    err,
+  );
   process.exit(1);
 });

@@ -1,4 +1,6 @@
+import { AppError } from "../../shared/errors/app-error.js";
 import { prisma } from "../../shared/lib/prisma.js";
+import { Logger } from "../../shared/services/logger.service.js";
 
 export class UserService {
   private verifiedUsersCache = new Set<string>();
@@ -21,19 +23,16 @@ export class UserService {
         });
       }
 
-      console.log(
-        `🆕 [UserService] Создан новый пользователь: ${username} (ID: ${twitchId})`,
-      );
-
       this.verifiedUsersCache.add(twitchId);
 
       return user;
     } catch (error) {
-      console.error(
-        "❌ [UserService] Ошибка при поиске/создании пользователя:",
+      Logger.error(
+        "UserService",
+        `Failed to find or create user: ${username} (${twitchId})`,
         error,
       );
-      throw error;
+      throw new AppError("Internal user management error", 500);
     }
   }
 
@@ -57,14 +56,17 @@ export class UserService {
       });
 
       this.xpCooldownCache.set(twitchId, now);
-      console.log(`✨ [XP] Пользователю ${twitchId} начислено +${xpAmount} XP`);
     } catch (error) {
-      console.error("❌ Ошибка при начислении XP:", error);
+      Logger.error(
+        "UserService",
+        `Failed to add XP for user: ${twitchId}`,
+        error,
+      );
     }
   }
 
   public clearCache(): void {
     this.verifiedUsersCache.clear();
-    console.log("🧹 [UserService] Кэш пользователей очищен.");
+    Logger.info("UserService", "User cache cleared successfully🧹");
   }
 }

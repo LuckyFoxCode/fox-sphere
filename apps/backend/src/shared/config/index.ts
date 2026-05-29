@@ -1,10 +1,14 @@
 import "dotenv/config";
+import { AppError } from "../errors/app-error.js";
 
 const getEnv = (key: string, defaultValue?: string): string => {
   const value = process.env[key] || defaultValue;
 
   if (!value) {
-    throw new Error(`❌ Ошибка окружения: Переменная ${key} не задана в .env`);
+    throw new AppError(
+      `Environment configuration error: Variable [${key}] is missing or empty in .env`,
+      500,
+    );
   }
   return value;
 };

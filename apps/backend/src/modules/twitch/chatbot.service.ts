@@ -1,6 +1,7 @@
 import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
 import { config } from "../../shared/config/index.js";
+import { Logger } from "../../shared/services/logger.service.js";
 import { UserService } from "./user.service.js";
 
 export class ChatbotService {
@@ -21,7 +22,10 @@ export class ChatbotService {
       this.registerCommands();
 
       this.chatClient.connect();
-      console.log("🚀 Чат-бот успешно подключился к Twitch!");
+      Logger.info(
+        "ChatbotService",
+        "Chatbot successfully connected to Twitch!🚀",
+      );
 
       const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 
@@ -29,14 +33,18 @@ export class ChatbotService {
         this.userService.clearCache();
       }, TWENTY_FOUR_HOURS);
     } catch (error) {
-      console.error("❌ Ошибка подключения бота:", error);
+      Logger.error(
+        "ChatbotService",
+        "Failed to start Twitch chatbot connection",
+        error,
+      );
       throw error;
     }
   }
 
   private registerCommands(): void {
     this.chatClient.onMessage(async (channel, user, text, msg) => {
-      console.log(`[${channel}] ${user}: ${text}`);
+      Logger.debug("ChatbotService", `[${channel}] ${user}: ${text}`);
 
       try {
         const twitchId = msg.userInfo.userId;
@@ -44,7 +52,11 @@ export class ChatbotService {
         await this.userService.findOrCreateUser(twitchId, user);
         await this.userService.addXpForMessage(twitchId, 5);
       } catch (error) {
-        console.error(" Ошибка авторегистрации пользователя из чата:", error);
+        Logger.error(
+          "ChatbotService",
+          `Chat auto-registration failed for user: ${user}`,
+          error,
+        );
       }
 
       if (text.startsWith("!ping")) {

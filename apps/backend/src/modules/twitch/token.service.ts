@@ -1,5 +1,7 @@
 import { AccessToken } from "@twurple/auth";
+import { AppError } from "../../shared/errors/app-error.js";
 import { prisma } from "../../shared/lib/prisma.js";
+import { Logger } from "../../shared/services/logger.service.js";
 
 export class TokenService {
   public async getToken(userId: string) {
@@ -22,15 +24,17 @@ export class TokenService {
           obtainmentTimestamp: tokenData.obtainmentTimestamp,
         },
       });
-      console.log(
-        `[Twitch Auth] Токены для пользователя ${userId} успешно обновлены в базе данных. ✅`,
+      Logger.debug(
+        "TokenService",
+        `Tokens for user ${userId} successfully updated in database.`,
       );
     } catch (error) {
-      console.error(
-        "❌ [TokenService] Ошибка при сохранении обновленного токена в БД:",
+      Logger.error(
+        "TokenService",
+        `Failed to update tokens for user: ${userId}`,
         error,
       );
-      throw error;
+      throw new AppError("Database token update failed", 500);
     }
   }
 }

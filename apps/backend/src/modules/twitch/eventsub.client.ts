@@ -2,6 +2,7 @@ import { ApiClient } from "@twurple/api";
 import { RefreshingAuthProvider } from "@twurple/auth";
 import { EventSubChannelFollowEvent } from "@twurple/eventsub-base";
 import { EventSubWsListener } from "@twurple/eventsub-ws";
+import { Logger } from "../../shared/services/logger.service.js";
 
 export class TwitchEventSubClient {
   private listener!: EventSubWsListener;
@@ -18,9 +19,16 @@ export class TwitchEventSubClient {
       });
 
       await this.listener.start();
-      console.log("📡 [EventSub] Вебсокет слушатель успешно запущен.");
+      Logger.info(
+        "TwitchEventSubClient",
+        "WebSocket listener successfully started.📡",
+      );
     } catch (error) {
-      console.error("❌ [EventSub] Ошибка запуска:", error);
+      Logger.error(
+        "TwitchEventSubClient",
+        "Failed to start EventSub WebSocket listener",
+        error,
+      );
     }
   }
 
@@ -30,7 +38,10 @@ export class TwitchEventSubClient {
     callback: (e: EventSubChannelFollowEvent) => void,
   ) {
     return this.listener.onChannelFollow(userId, botId, (e) => {
-      console.log(`🎉 [EventSub] Новый фолловер: ${e.userDisplayName}`);
+      Logger.debug(
+        "TwitchEventSubClient",
+        `New follower detected: ${e.userDisplayName} (ID: ${e.userId}) 🎉`,
+      );
       callback(e);
     });
   }
