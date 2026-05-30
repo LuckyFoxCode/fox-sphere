@@ -37,6 +37,21 @@ export class ChatbotService {
         }
       });
 
+      globalEventBus.on("twitch:follow", async (data) => {
+        try {
+          await this.sendMessage(
+            config.twitch.channelName,
+            `/announcegreen 🎉 Спасибо за фоллов, @${data.username}! Добро пожаловать в семью!`,
+          );
+        } catch (error) {
+          Logger.error(
+            "ChatbotService",
+            `Failed to send follow alert message for user: ${data.username}`,
+            error,
+          );
+        }
+      });
+
       this.chatClient.connect();
       Logger.info(
         "ChatbotService",

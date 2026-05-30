@@ -7,6 +7,7 @@ import { UserService } from "./modules/twitch/user.service.js";
 import { config } from "./shared/config/index.js";
 import { AppError } from "./shared/errors/app-error.js";
 import { prisma } from "./shared/lib/prisma.js";
+import { globalEventBus } from "./shared/services/event-bus.service.js";
 import { Logger } from "./shared/services/logger.service.js";
 
 async function bootstrap() {
@@ -88,20 +89,10 @@ async function bootstrap() {
   await eventSubClient.start();
 
   await eventSubClient.subscribeToFollows(streamerId, botId, async (event) => {
-    try {
-      const welcomeMessage = `🎉 Спасибо за фоллов, @${event.userDisplayName}! Добро пожаловать в семью!`;
-
-      await chatbotService.sendMessage(
-        config.twitch.channelName,
-        welcomeMessage,
-      );
-    } catch (error) {
-      Logger.error(
-        "Bootstrap",
-        `Failed to send follow alert message for user: ${event.userDisplayName}`,
-        error,
-      );
-    }
+    globalEventBus.emit("twitch:follow", {
+      userId: event.userId,
+      username: event.userDisplayName,
+    });
   });
   Logger.info(
     "Bootstrap",
