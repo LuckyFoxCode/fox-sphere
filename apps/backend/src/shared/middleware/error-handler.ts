@@ -1,8 +1,14 @@
 import { ErrorRequestHandler } from "express";
 import { AppError, ValidationError } from "../errors/app-error.js";
+import { Logger } from "../services/logger.service.js";
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   if (err instanceof AppError) {
+    Logger.debug(
+      "ExpressErrorHandler",
+      `AppError [${err.statusCode}]: ${err.message}`,
+    );
+
     return res.status(err.statusCode).json({
       status: "error",
       message: err.message,
@@ -10,7 +16,11 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     });
   }
 
-  console.error("💥 System error:", err);
+  Logger.error(
+    "ExpressErrorHandler",
+    "Unhandled system error encountered 💥",
+    err,
+  );
 
   const isProd = process.env.NODE_ENV === "production";
   return res.status(500).json({

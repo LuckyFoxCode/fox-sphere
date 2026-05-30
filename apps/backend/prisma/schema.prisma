@@ -35,3 +35,16 @@ model CoinHistory {
 
   @@index([userId])
 }
+
+model TwitchToken {
+  id                  String
+  twitchUserId        String   @unique
+  accessToken         String
+  refreshToken        String
+  expiresIn           Int      @default(0)
+  obtainmentTimestamp BigInt
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("twitch_tokens")
+}

@@ -1,10 +1,14 @@
 import "dotenv/config";
+import { AppError } from "../errors/app-error.js";
 
 const getEnv = (key: string, defaultValue?: string): string => {
   const value = process.env[key] || defaultValue;
 
   if (!value) {
-    throw new Error(`❌ Ошибка окружения: Переменная ${key} не задана в .env`);
+    throw new AppError(
+      `Environment configuration error: Variable [${key}] is missing or empty in .env`,
+      500,
+    );
   }
   return value;
 };
@@ -14,9 +18,12 @@ export const config = {
   databaseUrl: getEnv("DATABASE_URL"),
 
   twitch: {
+    userId: getEnv("TWITCH_USER_ID"),
+    botId: getEnv("TWITCH_BOT_ID"),
     clientId: getEnv("TWITCH_CLIENT_ID"),
     channelName: getEnv("TWITCH_CHANNEL_NAME"),
     clientSecret: getEnv("TWITCH_CLIENT_SECRET"),
+    botChannelName: getEnv("TWITCH_BOT_CHANNEL_NAME"),
     botAccessToken: getEnv("TWITCH_BOT_ACCESS_TOKEN"),
     botRefreshToken: getEnv("TWITCH_BOT_REFRESH_TOKEN"),
   },
