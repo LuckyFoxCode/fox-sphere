@@ -1,3 +1,4 @@
+import { User } from "../../generated/prisma/client.js";
 import { AppError } from "../../shared/errors/app-error.js";
 import { prisma } from "../../shared/lib/prisma.js";
 import { Logger } from "../../shared/services/logger.service.js";
@@ -52,7 +53,7 @@ export class UserService {
     if (now - lastXpTime < COOLDOWN_MS) return;
 
     try {
-      await prisma.user.update({
+      const updatedUser = await prisma.user.update({
         where: { twitchId },
         data: {
           xp: {
@@ -63,11 +64,35 @@ export class UserService {
       });
 
       this.xpCooldownCache.set(twitchId, now);
+      await this.checkAndUpgradeLevel(updatedUser);
     } catch (error) {
       Logger.error(
         "UserService",
         `Failed to add XP for user: ${twitchId}`,
         error,
+      );
+    }
+  }
+
+  private async checkAndUpgradeLevel(user: User): Promise<void> {
+    let currentLvl = user.lvl;
+    let hasLeveledUp = false;
+
+    while (user.xp >= currentLvl * 100) {
+      currentLvl++;
+      hasLeveledUp = true;
+    }
+
+    if (hasLeveledUp) {
+      await prisma.user.update({
+        where: { twitchId: user.twitchId },
+        data: {
+          lvl: currentLvl,
+        },
+      });
+      Logger.info(
+        "UserService",
+        `@${user.username} достиг ${currentLvl} уровня! 🎉`,
       );
     }
   }
