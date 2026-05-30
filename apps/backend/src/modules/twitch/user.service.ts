@@ -21,6 +21,11 @@ export class UserService {
             username,
           },
         });
+      } else {
+        const lastXpTime = user.lastXpAt
+          ? new Date(user.lastXpAt).getTime()
+          : 0;
+        this.xpCooldownCache.set(user.twitchId, lastXpTime);
       }
 
       this.verifiedUsersCache.add(twitchId);
@@ -45,6 +50,7 @@ export class UserService {
     const COOLDOWN_MS = 15 * 1000;
 
     if (now - lastXpTime < COOLDOWN_MS) return;
+
     try {
       await prisma.user.update({
         where: { twitchId },
@@ -52,6 +58,7 @@ export class UserService {
           xp: {
             increment: xpAmount,
           },
+          lastXpAt: new Date(now),
         },
       });
 
