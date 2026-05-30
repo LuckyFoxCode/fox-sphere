@@ -1,6 +1,7 @@
 import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
 import { config } from "../../shared/config/index.js";
+import { globalEventBus } from "../../shared/services/event-bus.service.js";
 import { Logger } from "../../shared/services/logger.service.js";
 import { UserService } from "./user.service.js";
 
@@ -20,6 +21,21 @@ export class ChatbotService {
       });
 
       this.registerCommands();
+
+      globalEventBus.on("user:level-up", async (data) => {
+        try {
+          await this.sendMessage(
+            config.twitch.channelName,
+            `/announceorange @${data.username} повысил свой уровень до ${data.newLevel}! 🚀 GG!`,
+          );
+        } catch (error) {
+          Logger.error(
+            "ChatbotService",
+            `Failed to send level-up message for ${data.username}`,
+            error,
+          );
+        }
+      });
 
       this.chatClient.connect();
       Logger.info(

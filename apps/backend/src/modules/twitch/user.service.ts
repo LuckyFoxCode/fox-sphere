@@ -1,6 +1,7 @@
 import { User } from "../../generated/prisma/client.js";
 import { AppError } from "../../shared/errors/app-error.js";
 import { prisma } from "../../shared/lib/prisma.js";
+import { globalEventBus } from "../../shared/services/event-bus.service.js";
 import { Logger } from "../../shared/services/logger.service.js";
 
 export class UserService {
@@ -8,30 +9,39 @@ export class UserService {
   private xpCooldownCache = new Map<string, number>();
 
   public async findOrCreateUser(twitchId: string, username: string) {
-    if (this.verifiedUsersCache.has(twitchId)) return;
-
     try {
-      let user = await prisma.user.findUnique({
-        where: { twitchId },
-      });
-
-      if (!user) {
-        user = await prisma.user.create({
-          data: {
-            twitchId,
-            username,
-          },
+      if (!this.verifiedUsersCache.has(twitchId)) {
+        let user = await prisma.user.findUnique({
+          where: { twitchId },
         });
-      } else {
-        const lastXpTime = user.lastXpAt
-          ? new Date(user.lastXpAt).getTime()
-          : 0;
-        this.xpCooldownCache.set(user.twitchId, lastXpTime);
+
+        if (!user) {
+          user = await prisma.user.create({
+            data: {
+              twitchId,
+              username,
+            },
+          });
+        } else {
+          if (user.username !== username) {
+            user = await prisma.user.update({
+              where: { twitchId },
+              data: {
+                username,
+              },
+            });
+          }
+
+          const lastXpTime = user.lastXpAt
+            ? new Date(user.lastXpAt).getTime()
+            : 0;
+          this.xpCooldownCache.set(user.twitchId, lastXpTime);
+        }
+
+        this.verifiedUsersCache.add(twitchId);
+
+        return user;
       }
-
-      this.verifiedUsersCache.add(twitchId);
-
-      return user;
     } catch (error) {
       Logger.error(
         "UserService",
@@ -78,22 +88,36 @@ export class UserService {
     let currentLvl = user.lvl;
     let hasLeveledUp = false;
 
-    while (user.xp >= currentLvl * 100) {
+    const getXpThresholdForLevel = (lvl: number): number => {
+      let totalXpNeeded = 0;
+
+      for (let i = 1; i <= lvl; i++) {
+        totalXpNeeded += i * 100;
+      }
+
+      return totalXpNeeded;
+    };
+
+    let nextLevelThreshold = getXpThresholdForLevel(currentLvl);
+
+    while (user.xp >= nextLevelThreshold) {
       currentLvl++;
+      nextLevelThreshold = getXpThresholdForLevel(currentLvl);
       hasLeveledUp = true;
     }
 
     if (hasLeveledUp) {
-      await prisma.user.update({
+      const freshUserData = await prisma.user.update({
         where: { twitchId: user.twitchId },
         data: {
           lvl: currentLvl,
         },
       });
-      Logger.info(
-        "UserService",
-        `@${user.username} достиг ${currentLvl} уровня! 🎉`,
-      );
+      globalEventBus.emit("user:level-up", {
+        userId: freshUserData.twitchId,
+        username: freshUserData.username,
+        newLevel: currentLvl,
+      });
     }
   }
 
