@@ -94,6 +94,15 @@ async function bootstrap() {
       username: event.userDisplayName,
     });
   });
+
+  await eventSubClient.subscribeToRewards(streamerId, async (data) => {
+    globalEventBus.emit("twitch:reward-redeem", {
+      userId: data.userId,
+      username: data.userDisplayName,
+      rewartTitle: data.rewartTitle,
+    });
+  });
+
   Logger.info(
     "Bootstrap",
     "Application bootstrap completed. Live follow subscription is active! 🚀",

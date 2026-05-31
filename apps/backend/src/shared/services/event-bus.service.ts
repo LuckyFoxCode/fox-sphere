@@ -2,6 +2,11 @@ import EventEmitter from "events";
 
 interface AppEvents {
   "twitch:follow": { userId: string; username: string };
+  "twitch:reward-redeem": {
+    userId: string;
+    username: string;
+    rewartTitle: string;
+  };
   "user:level-up": { userId: string; username: string; newLevel: number };
 }
 

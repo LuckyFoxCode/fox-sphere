@@ -1,6 +1,9 @@
 import { ApiClient } from "@twurple/api";
 import { RefreshingAuthProvider } from "@twurple/auth";
-import { EventSubChannelFollowEvent } from "@twurple/eventsub-base";
+import {
+  EventSubChannelFollowEvent,
+  EventSubChannelRedemptionAddEvent,
+} from "@twurple/eventsub-base";
 import { EventSubWsListener } from "@twurple/eventsub-ws";
 import { Logger } from "../../shared/services/logger.service.js";
 
@@ -44,5 +47,30 @@ export class TwitchEventSubClient {
       );
       callback(e);
     });
+  }
+
+  public async subscribeToRewards(
+    streamerId: string,
+    callback: (data: {
+      userId: string;
+      userDisplayName: string;
+      rewartTitle: string;
+    }) => void,
+  ) {
+    return this.listener.onChannelRedemptionAdd(
+      streamerId,
+      (event: EventSubChannelRedemptionAddEvent) => {
+        Logger.debug(
+          "TwitchEventSubClient",
+          `Reward redeemed: [${event.rewardTitle}] by ${event.userDisplayName} 🎉`,
+        );
+
+        callback({
+          userId: event.userId,
+          userDisplayName: event.userDisplayName,
+          rewartTitle: event.rewardTitle,
+        });
+      },
+    );
   }
 }

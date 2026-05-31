@@ -26,7 +26,7 @@ export class ChatbotService {
         try {
           await this.sendMessage(
             config.twitch.channelName,
-            `/announceorange @${data.username} повысил свой уровень до ${data.newLevel}! 🚀 GG!`,
+            ` @${data.username} повысил свой уровень до ${data.newLevel}! 🚀 GG!`,
           );
         } catch (error) {
           Logger.error(
@@ -41,7 +41,7 @@ export class ChatbotService {
         try {
           await this.sendMessage(
             config.twitch.channelName,
-            `/announcegreen 🎉 Спасибо за фоллов, @${data.username}! Добро пожаловать в семью!`,
+            ` 🎉 Спасибо за фоллов, @${data.username}! Добро пожаловать в семью!`,
           );
         } catch (error) {
           Logger.error(
