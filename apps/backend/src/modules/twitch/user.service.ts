@@ -121,6 +121,21 @@ export class UserService {
     }
   }
 
+  public async getUsersStats(twitchId: string) {
+    return prisma.user.findUnique({
+      where: { twitchId },
+    });
+  }
+
+  public async getTopUsers(limit = 5) {
+    return prisma.user.findMany({
+      orderBy: {
+        xp: "desc",
+      },
+      take: limit,
+    });
+  }
+
   public clearCache(): void {
     this.verifiedUsersCache.clear();
     Logger.info("UserService", "User cache cleared successfully🧹");
