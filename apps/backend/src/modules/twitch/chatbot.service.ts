@@ -30,7 +30,7 @@ export class ChatbotService {
         try {
           await this.sendMessage(
             config.twitch.channelName,
-            ` @${data.username} повысил свой уровень до ${data.newLevel}! 🚀 GG!`,
+            `⚡ @${data.username} leveled up to Level ${data.newLevel}! 🚀 GG!`,
           );
         } catch (error) {
           Logger.error(
@@ -45,7 +45,7 @@ export class ChatbotService {
         try {
           await this.sendMessage(
             config.twitch.channelName,
-            ` 🎉 Спасибо за фоллов, @${data.username}! Добро пожаловать в семью!`,
+            `🎉 Thanks for the follow, @${data.username}! Welcome to the Foxsphere family! 🚀`,
           );
         } catch (error) {
           Logger.error(
@@ -58,49 +58,46 @@ export class ChatbotService {
 
       globalEventBus.on("twitch:reward-redeem", async (data) => {
         try {
-          if (data.rewardTitle === "Show top-5") {
+          if (data.rewardTitle === "Flex Leaderboard") {
             const topUsers = await this.userService.getTopUsers(5);
 
             if (topUsers.length === 0) {
               await this.sendMessage(
                 config.twitch.channelName,
-                "📋 Список лидеров пока пуст.",
+                "📋 Leaderboard is currently empty.",
               );
               return;
             }
 
+            const markers = ["👑 1st", "⭐ 2nd", "✨ 3rd", "🔹 4th", "🔹 5th"];
             const topList = topUsers
-              .map(
-                (user, index) =>
-                  `${index + 1}. @${user.username} (${user.lvl} lvl, ${user.xp} XP)`,
-              )
-              .join(" | ");
+              .map((user, index) => {
+                const prefix = markers[index] || `${index + 1}th`;
+                return `${prefix} @${user.username} (Lvl ${user.lvl}, ${user.xp} XP)`;
+              })
+              .join("   |   ");
 
             await this.sendAnnouncement(
-              `/announce 🏆 ТОП ЛИДЕРОВ КАНАЛА (Заказ от @${data.username}): ${topList} 🏆`,
+              `🏆 LEADERBOARD (Ordered by @${data.username}) 🏆   ➔   ${topList}`,
               "purple",
             );
           }
 
-          if (data.rewardTitle === "My level") {
+          if (data.rewardTitle === "Check My Stats") {
             const userData = await this.userService.getUsersStats(data.userId);
 
             if (!userData) {
               await this.sendMessage(
                 config.twitch.channelName,
-                `@${data.username}, ты еще не зарегистрирован в системе.`,
+                `@${data.username}, you are not registered in the system yet.`,
               );
               return;
             }
 
-            let totalXpForNextLevel = 0;
-
-            for (let i = 1; i < userData.lvl; i++) {
-              totalXpForNextLevel += i * 100;
-            }
+            const xpForNextLevel = userData.lvl * 100;
 
             await this.sendAnnouncement(
-              `🔹 @${data.username}, твоя статистика: [ Уровень: ${userData.lvl} ] | [ Опыт: ${userData.xp} / ${totalXpForNextLevel} XP ] 🚀`,
+              `✨ @${data.username}'s STATS:   ⭐ Level: ${userData.lvl}   🛡️   XP: ${userData.xp} / ${xpForNextLevel}   🚀`,
               "orange",
             );
           }
