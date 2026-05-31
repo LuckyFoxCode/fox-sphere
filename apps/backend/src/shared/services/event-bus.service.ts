@@ -5,7 +5,7 @@ interface AppEvents {
   "twitch:reward-redeem": {
     userId: string;
     username: string;
-    rewartTitle: string;
+    rewardTitle: string;
   };
   "user:level-up": { userId: string; username: string; newLevel: number };
 }
