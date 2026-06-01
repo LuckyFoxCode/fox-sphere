@@ -104,10 +104,21 @@ export class ChatbotService {
               return;
             }
 
-            const xpForNextLevel = userData.lvl * 100;
+            const getXpThresholdForLevel = (lvl: number): number => {
+              let totalXpNeeded = 0;
+              for (let i = 1; i <= lvl; i++) {
+                totalXpNeeded += i * 100;
+              }
+              return totalXpNeeded;
+            };
+
+            const totalUserXp = userData.xp;
+            const totalXpNeededForNextLevel = getXpThresholdForLevel(
+              userData.lvl,
+            );
 
             await this.sendAnnouncement(
-              `✨ @${data.username}'s STATS:   ⭐ Level: ${userData.lvl}   🛡️   XP: ${userData.xp} / ${xpForNextLevel}   🚀`,
+              `✨ @${data.username}'s STATS:   ⭐ Level: ${userData.lvl}   🛡️   XP: ${totalUserXp} / ${totalXpNeededForNextLevel}   🚀`,
               "orange",
             );
           }
