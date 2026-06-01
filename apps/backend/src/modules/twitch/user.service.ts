@@ -7,6 +7,8 @@ import { Logger } from "../../shared/services/logger.service.js";
 export class UserService {
   private verifiedUsersCache = new Set<string>();
   private xpCooldownCache = new Map<string, number>();
+  private coinsCache = new Map<string, { coins: number; createdAt: number }>();
+  private readonly COINS_CACHE_TTL = 10000;
 
   public async findOrCreateUser(twitchId: string, username: string) {
     try {
@@ -134,6 +136,44 @@ export class UserService {
       },
       take: limit,
     });
+  }
+
+  public async addCoins(twitchId: string, amount: number): Promise<void> {
+    await prisma.user.update({
+      where: { twitchId },
+      data: {
+        coins: {
+          increment: amount,
+        },
+      },
+    });
+
+    this.coinsCache.delete(twitchId);
+
+    Logger.debug(
+      "UserService",
+      `Successfully added ${amount} coins to user: ${twitchId} and cleared cache.`,
+    );
+  }
+
+  public async getUserCoins(twitchId: string): Promise<number> {
+    const now = Date.now();
+    const cacheData = this.coinsCache.get(twitchId);
+
+    if (cacheData && now - cacheData.createdAt < this.COINS_CACHE_TTL) {
+      return cacheData.coins;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { twitchId },
+      select: { coins: true },
+    });
+
+    const currentCoins = user ? user.coins : 0;
+
+    this.coinsCache.set(twitchId, { coins: currentCoins, createdAt: now });
+
+    return currentCoins;
   }
 
   public clearCache(): void {

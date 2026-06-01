@@ -18,6 +18,9 @@ export class ChatbotService {
   }> = [];
   private isProcessingQueue = false;
 
+  private coinsCommandCooldown = new Set<string>();
+  private followersCache = new Set<string>();
+
   constructor(
     private authProvider: RefreshingAuthProvider,
     private userService: UserService,
@@ -51,6 +54,8 @@ export class ChatbotService {
 
       globalEventBus.on("twitch:follow", async (data) => {
         try {
+          this.followersCache.add(data.userId);
+
           await this.sendMessage(
             config.twitch.channelName,
             `🎉 Thanks for the follow, @${data.username}! Welcome to the Foxsphere family! 🚀`,
@@ -102,12 +107,47 @@ export class ChatbotService {
               return;
             }
 
-            const xpForNextLevel = userData.lvl * 100;
+            const getXpThresholdForLevel = (lvl: number): number => {
+              let totalXpNeeded = 0;
+              for (let i = 1; i <= lvl; i++) {
+                totalXpNeeded += i * 100;
+              }
+              return totalXpNeeded;
+            };
+
+            const totalUserXp = userData.xp;
+            const totalXpNeededForNextLevel = getXpThresholdForLevel(
+              userData.lvl,
+            );
 
             await this.sendAnnouncement(
-              `✨ @${data.username}'s STATS:   ⭐ Level: ${userData.lvl}   🛡️   XP: ${userData.xp} / ${xpForNextLevel}   🚀`,
+              `✨ @${data.username}'s STATS:   ⭐ Level: ${userData.lvl}   🛡️   XP: ${totalUserXp} / ${totalXpNeededForNextLevel}   🚀`,
               "orange",
             );
+          }
+
+          if (data.rewardTitle === "Coin Exchange") {
+            try {
+              const coinsAmount = 10;
+
+              await this.userService.addCoins(data.userId, coinsAmount);
+
+              await this.sendAnnouncement(
+                `💰 @${data.username} exchanged Channel Points for ${coinsAmount} Coins! Wallet updated! 🪙`,
+                "green",
+              );
+
+              Logger.info(
+                "ChatbotService",
+                `Successfully processed coin exchange for ${data.username}`,
+              );
+            } catch (error) {
+              Logger.error(
+                "ChatbotService",
+                `Failed to process reward exchange for user: ${data.username}`,
+                error,
+              );
+            }
           }
         } catch (error) {
           Logger.error(
@@ -147,7 +187,18 @@ export class ChatbotService {
         const twitchId = msg.userInfo.userId;
 
         await this.userService.findOrCreateUser(twitchId, user);
-        await this.userService.addXpForMessage(twitchId, 5);
+
+        let xpAmount = 1;
+
+        if (msg.userInfo.isBroadcaster) {
+          xpAmount = 3;
+        } else if (msg.userInfo.isSubscriber) {
+          xpAmount = 3;
+        } else if (this.followersCache.has(twitchId)) {
+          xpAmount = 2;
+        }
+
+        await this.userService.addXpForMessage(twitchId, xpAmount);
       } catch (error) {
         Logger.error(
           "ChatbotService",
@@ -157,7 +208,39 @@ export class ChatbotService {
       }
 
       if (text.startsWith("!ping")) {
-        this.chatClient.say(channel, `@${user}, pong!`);
+        await this.sendMessage(channel, `@${user}, pong!`);
+      }
+
+      if (text.startsWith("!coins")) {
+        const twitchId = msg.userInfo.userId;
+
+        if (this.coinsCommandCooldown.has(twitchId)) {
+          Logger.debug(
+            "ChatbotService",
+            `Ignored !coins spam from user: ${user}`,
+          );
+          return;
+        }
+
+        try {
+          const coins = await this.userService.getUserCoins(twitchId);
+
+          await this.sendMessage(
+            channel,
+            `💰 Wallet • @${user} ➔ ${coins} Coins 🪙`,
+          );
+
+          this.coinsCommandCooldown.add(twitchId);
+          setTimeout(() => {
+            this.coinsCommandCooldown.delete(twitchId);
+          }, 5000);
+        } catch (error) {
+          Logger.error(
+            "ChatbotService",
+            `Failed to execute !coins command for user: ${user}`,
+            error,
+          );
+        }
       }
     });
   }
