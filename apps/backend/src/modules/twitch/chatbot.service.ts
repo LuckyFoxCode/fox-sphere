@@ -18,6 +18,8 @@ export class ChatbotService {
   }> = [];
   private isProcessingQueue = false;
 
+  private coinsCommandCooldown = new Set<string>();
+
   constructor(
     private authProvider: RefreshingAuthProvider,
     private userService: UserService,
@@ -157,7 +159,39 @@ export class ChatbotService {
       }
 
       if (text.startsWith("!ping")) {
-        this.chatClient.say(channel, `@${user}, pong!`);
+        await this.sendMessage(channel, `@${user}, pong!`);
+      }
+
+      if (text.startsWith("!coins")) {
+        const twitchId = msg.userInfo.userId;
+
+        if (this.coinsCommandCooldown.has(twitchId)) {
+          Logger.debug(
+            "ChatbotService",
+            `Ignored !coins spam from user: ${user}`,
+          );
+          return;
+        }
+
+        try {
+          const coins = await this.userService.getUsersCoins(twitchId);
+
+          await this.sendMessage(
+            channel,
+            `💰 Wallet • @${user} ➔ ${coins} Coins 🪙`,
+          );
+
+          this.coinsCommandCooldown.add(twitchId);
+          setTimeout(() => {
+            this.coinsCommandCooldown.delete(twitchId);
+          }, 5000);
+        } catch (error) {
+          Logger.error(
+            "ChatbotService",
+            `Failed to execute !coins command for user: ${user}`,
+            error,
+          );
+        }
       }
     });
   }
