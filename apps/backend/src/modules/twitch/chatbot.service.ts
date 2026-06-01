@@ -19,6 +19,7 @@ export class ChatbotService {
   private isProcessingQueue = false;
 
   private coinsCommandCooldown = new Set<string>();
+  private followersCache = new Set<string>();
 
   constructor(
     private authProvider: RefreshingAuthProvider,
@@ -53,6 +54,8 @@ export class ChatbotService {
 
       globalEventBus.on("twitch:follow", async (data) => {
         try {
+          this.followersCache.add(data.userId);
+
           await this.sendMessage(
             config.twitch.channelName,
             `🎉 Thanks for the follow, @${data.username}! Welcome to the Foxsphere family! 🚀`,
@@ -184,7 +187,18 @@ export class ChatbotService {
         const twitchId = msg.userInfo.userId;
 
         await this.userService.findOrCreateUser(twitchId, user);
-        await this.userService.addXpForMessage(twitchId, 5);
+
+        let xpAmount = 1;
+
+        if (msg.userInfo.isBroadcaster) {
+          xpAmount = 3;
+        } else if (msg.userInfo.isSubscriber) {
+          xpAmount = 3;
+        } else if (this.followersCache.has(twitchId)) {
+          xpAmount = 2;
+        }
+
+        await this.userService.addXpForMessage(twitchId, xpAmount);
       } catch (error) {
         Logger.error(
           "ChatbotService",
