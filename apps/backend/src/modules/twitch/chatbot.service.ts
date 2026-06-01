@@ -111,6 +111,30 @@ export class ChatbotService {
               "orange",
             );
           }
+
+          if (data.rewardTitle === "Coin Exchange") {
+            try {
+              const coinsAmount = 10;
+
+              await this.userService.addCoins(data.userId, coinsAmount);
+
+              await this.sendAnnouncement(
+                `💰 @${data.username} exchanged Channel Points for ${coinsAmount} Coins! Wallet updated! 🪙`,
+                "green",
+              );
+
+              Logger.info(
+                "ChatbotService",
+                `Successfully processed coin exchange for ${data.username}`,
+              );
+            } catch (error) {
+              Logger.error(
+                "ChatbotService",
+                `Failed to process reward exchange for user: ${data.username}`,
+                error,
+              );
+            }
+          }
         } catch (error) {
           Logger.error(
             "ChatbotService",

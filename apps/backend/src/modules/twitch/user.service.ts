@@ -138,6 +138,24 @@ export class UserService {
     });
   }
 
+  public async addCoins(twitchId: string, amount: number): Promise<void> {
+    await prisma.user.update({
+      where: { twitchId },
+      data: {
+        coins: {
+          increment: amount,
+        },
+      },
+    });
+
+    this.coinsCache.delete(twitchId);
+
+    Logger.debug(
+      "UserService",
+      `Successfully added ${amount} coins to user: ${twitchId} and cleared cache.`,
+    );
+  }
+
   public async getUserCoins(twitchId: string): Promise<number> {
     const now = Date.now();
     const cacheData = this.coinsCache.get(twitchId);
