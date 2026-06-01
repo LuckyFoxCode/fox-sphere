@@ -174,7 +174,7 @@ export class ChatbotService {
         }
 
         try {
-          const coins = await this.userService.getUsersCoins(twitchId);
+          const coins = await this.userService.getUserCoins(twitchId);
 
           await this.sendMessage(
             channel,

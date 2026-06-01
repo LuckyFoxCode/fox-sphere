@@ -138,7 +138,7 @@ export class UserService {
     });
   }
 
-  public async getUsersCoins(twitchId: string): Promise<number> {
+  public async getUserCoins(twitchId: string): Promise<number> {
     const now = Date.now();
     const cacheData = this.coinsCache.get(twitchId);
 
