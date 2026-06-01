@@ -6,9 +6,17 @@ import { globalEventBus } from "../../shared/services/event-bus.service.js";
 import { Logger } from "../../shared/services/logger.service.js";
 import { UserService } from "./user.service.js";
 
+type AnnouncementColor = "blue" | "green" | "orange" | "purple" | "primary";
+
 export class ChatbotService {
   private chatClient!: ChatClient;
   private apiClient!: ApiClient;
+
+  private announcementQueue: Array<{
+    message: string;
+    color: AnnouncementColor;
+  }> = [];
+  private isProcessingQueue = false;
 
   constructor(
     private authProvider: RefreshingAuthProvider,
@@ -162,26 +170,52 @@ export class ChatbotService {
 
   public async sendAnnouncement(
     message: string,
-    color: "blue" | "green" | "orange" | "purple" | "primary" = "blue",
+    color: AnnouncementColor = "blue",
   ): Promise<void> {
-    try {
-      await this.apiClient.asUser(config.twitch.botId, async (ctx) => {
-        await ctx.chat.sendAnnouncement(config.twitch.userId, {
-          message,
-          color,
-        });
-      });
-      Logger.debug(
-        "ChatbotService",
-        `Successfully sent ${color} announcement via ctx.chat.`,
-      );
-    } catch (error) {
-      Logger.error(
-        "ChatbotService",
-        `Failed to send Twitch announcement via API`,
-        error,
-      );
-      await this.sendMessage(config.twitch.channelName, message);
+    this.announcementQueue.push({ message, color });
+    Logger.debug(
+      "ChatbotService",
+      `Announcement added to queue. Queue length: ${this.announcementQueue.length}`,
+    );
+
+    this.processAnnouncementQueue();
+  }
+
+  private async processAnnouncementQueue(): Promise<void> {
+    if (this.isProcessingQueue) return;
+
+    this.isProcessingQueue = true;
+
+    while (this.announcementQueue.length > 0) {
+      const current = this.announcementQueue.shift();
+
+      if (current) {
+        try {
+          await this.apiClient.asUser(config.twitch.botId, async (ctx) => {
+            await ctx.chat.sendAnnouncement(config.twitch.userId, {
+              message: current.message,
+              color: current.color,
+            });
+          });
+          Logger.debug(
+            "ChatbotService",
+            `Successfully sent ${current.color} announcement from queue`,
+          );
+        } catch (error) {
+          Logger.error(
+            "ChatbotService",
+            `Failed to send Twitch announcement from queue`,
+            error,
+          );
+          await this.sendMessage(config.twitch.channelName, current.message);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
     }
+    this.isProcessingQueue = false;
+    Logger.debug(
+      "ChatbotService",
+      "Announcement queue is now empty. Conveyor stopped.",
+    );
   }
 }
