@@ -1,36 +1,15 @@
-import { config } from "./shared/config/index.js";
-import { AppError } from "./shared/errors/app-error.js";
 import { prisma } from "./shared/lib/prisma.js";
 import { Logger } from "./shared/services/logger.service.js";
 
 async function main() {
-  Logger.info("TokenReset", "Starting manual token override process...");
-  const NEW_ACCESS_TOKEN = config.twitch.botAccessToken;
-  const NEW_REFRESH_TOKEN = config.twitch.botRefreshToken;
+  Logger.info("TokenReset", "Starting forced database tables cleanup... 🧹");
 
-  const token = await prisma.twitchToken.findFirst();
+  const result = await prisma.twitchToken.deleteMany({});
 
-  if (token) {
-    await prisma.twitchToken.update({
-      where: { twitchUserId: token.twitchUserId },
-      data: {
-        accessToken: NEW_ACCESS_TOKEN,
-        refreshToken: NEW_REFRESH_TOKEN,
-        obtainmentTimestamp: Date.now(),
-        expiresIn: 14400,
-      },
-    });
-    Logger.info(
-      "TokenReset",
-      `Tokens for user ${token.twitchUserId} have been successfully forced updated in the database.`,
-    );
-  } else {
-    Logger.error(
-      "TokenReset",
-      "No token records found in the database to update.",
-    );
-    throw new AppError("Token record not found", 404);
-  }
+  Logger.info(
+    "TokenReset",
+    `Successfully deleted ${result.count} records from twitch_tokens table! 🎉`,
+  );
 }
 
 main()

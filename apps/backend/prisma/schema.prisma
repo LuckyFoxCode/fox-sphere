@@ -16,6 +16,7 @@ model User {
   coins         Int           @default(0)
   lvl           Int           @default(1)
   xp            Int           @default(0)
+  lastXpAt      DateTime      @default(now())
   isMod         Boolean       @default(false)
   isFounder     Boolean       @default(false)
   isSubscriber  Boolean       @default(false)

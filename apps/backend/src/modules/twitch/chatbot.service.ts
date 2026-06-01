@@ -1,16 +1,29 @@
+import { ApiClient } from "@twurple/api";
 import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
 import { config } from "../../shared/config/index.js";
+import { globalEventBus } from "../../shared/services/event-bus.service.js";
 import { Logger } from "../../shared/services/logger.service.js";
 import { UserService } from "./user.service.js";
 
+type AnnouncementColor = "blue" | "green" | "orange" | "purple" | "primary";
+
 export class ChatbotService {
   private chatClient!: ChatClient;
+  private apiClient!: ApiClient;
+
+  private announcementQueue: Array<{
+    message: string;
+    color: AnnouncementColor;
+  }> = [];
+  private isProcessingQueue = false;
 
   constructor(
     private authProvider: RefreshingAuthProvider,
     private userService: UserService,
-  ) {}
+  ) {
+    this.apiClient = new ApiClient({ authProvider: this.authProvider });
+  }
 
   public async start(): Promise<void> {
     try {
@@ -20,6 +33,90 @@ export class ChatbotService {
       });
 
       this.registerCommands();
+
+      globalEventBus.on("user:level-up", async (data) => {
+        try {
+          await this.sendMessage(
+            config.twitch.channelName,
+            `⚡ @${data.username} leveled up to Level ${data.newLevel}! 🚀 GG!`,
+          );
+        } catch (error) {
+          Logger.error(
+            "ChatbotService",
+            `Failed to send level-up message for ${data.username}`,
+            error,
+          );
+        }
+      });
+
+      globalEventBus.on("twitch:follow", async (data) => {
+        try {
+          await this.sendMessage(
+            config.twitch.channelName,
+            `🎉 Thanks for the follow, @${data.username}! Welcome to the Foxsphere family! 🚀`,
+          );
+        } catch (error) {
+          Logger.error(
+            "ChatbotService",
+            `Failed to send follow alert message for user: ${data.username}`,
+            error,
+          );
+        }
+      });
+
+      globalEventBus.on("twitch:reward-redeem", async (data) => {
+        try {
+          if (data.rewardTitle === "Flex Leaderboard") {
+            const topUsers = await this.userService.getTopUsers(5);
+
+            if (topUsers.length === 0) {
+              await this.sendMessage(
+                config.twitch.channelName,
+                "📋 Leaderboard is currently empty.",
+              );
+              return;
+            }
+
+            const markers = ["👑 1st", "⭐ 2nd", "✨ 3rd", "🔹 4th", "🔹 5th"];
+            const topList = topUsers
+              .map((user, index) => {
+                const prefix = markers[index] || `${index + 1}th`;
+                return `${prefix} @${user.username} (Lvl ${user.lvl}, ${user.xp} XP)`;
+              })
+              .join("   |   ");
+
+            await this.sendAnnouncement(
+              `🏆 LEADERBOARD (Ordered by @${data.username}) 🏆   ➔   ${topList}`,
+              "purple",
+            );
+          }
+
+          if (data.rewardTitle === "Check My Stats") {
+            const userData = await this.userService.getUsersStats(data.userId);
+
+            if (!userData) {
+              await this.sendMessage(
+                config.twitch.channelName,
+                `@${data.username}, you are not registered in the system yet.`,
+              );
+              return;
+            }
+
+            const xpForNextLevel = userData.lvl * 100;
+
+            await this.sendAnnouncement(
+              `✨ @${data.username}'s STATS:   ⭐ Level: ${userData.lvl}   🛡️   XP: ${userData.xp} / ${xpForNextLevel}   🚀`,
+              "orange",
+            );
+          }
+        } catch (error) {
+          Logger.error(
+            "ChatbotService",
+            `Failed to process channel point reward: ${data.rewardTitle}`,
+            error,
+          );
+        }
+      });
 
       this.chatClient.connect();
       Logger.info(
@@ -69,5 +166,56 @@ export class ChatbotService {
     if (this.chatClient) {
       await this.chatClient.say(channel, message);
     }
+  }
+
+  public async sendAnnouncement(
+    message: string,
+    color: AnnouncementColor = "blue",
+  ): Promise<void> {
+    this.announcementQueue.push({ message, color });
+    Logger.debug(
+      "ChatbotService",
+      `Announcement added to queue. Queue length: ${this.announcementQueue.length}`,
+    );
+
+    this.processAnnouncementQueue();
+  }
+
+  private async processAnnouncementQueue(): Promise<void> {
+    if (this.isProcessingQueue) return;
+
+    this.isProcessingQueue = true;
+
+    while (this.announcementQueue.length > 0) {
+      const current = this.announcementQueue.shift();
+
+      if (current) {
+        try {
+          await this.apiClient.asUser(config.twitch.botId, async (ctx) => {
+            await ctx.chat.sendAnnouncement(config.twitch.userId, {
+              message: current.message,
+              color: current.color,
+            });
+          });
+          Logger.debug(
+            "ChatbotService",
+            `Successfully sent ${current.color} announcement from queue`,
+          );
+        } catch (error) {
+          Logger.error(
+            "ChatbotService",
+            `Failed to send Twitch announcement from queue`,
+            error,
+          );
+          await this.sendMessage(config.twitch.channelName, current.message);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    }
+    this.isProcessingQueue = false;
+    Logger.debug(
+      "ChatbotService",
+      "Announcement queue is now empty. Conveyor stopped.",
+    );
   }
 }

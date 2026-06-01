@@ -23,6 +23,8 @@ export const config = {
     clientId: getEnv("TWITCH_CLIENT_ID"),
     channelName: getEnv("TWITCH_CHANNEL_NAME"),
     clientSecret: getEnv("TWITCH_CLIENT_SECRET"),
+    clientAccessToken: getEnv("TWITCH_STREAMER_ACCESS_TOKEN"),
+    clientRefreshToken: getEnv("TWITCH_STREAMER_REFRESH_TOKEN"),
     botChannelName: getEnv("TWITCH_BOT_CHANNEL_NAME"),
     botAccessToken: getEnv("TWITCH_BOT_ACCESS_TOKEN"),
     botRefreshToken: getEnv("TWITCH_BOT_REFRESH_TOKEN"),
