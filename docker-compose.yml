@@ -35,7 +35,8 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
-    # Twitch creds / PORT come from the gitignored .env...
+      # Twitch creds / PORT come from the gitignored .env...
+      - "9229:9229"
     env_file:
       - apps/backend/.env
     # ...but DATABASE_URL must point at the compose service, so override it here.
