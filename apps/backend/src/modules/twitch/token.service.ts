@@ -1,7 +1,7 @@
 import { AccessToken } from "@twurple/auth";
-import { AppError } from "../../shared/errors/app-error.js";
-import { prisma } from "../../shared/lib/prisma.js";
-import { Logger } from "../../shared/services/logger.service.js";
+import { AppError } from "../../shared/errors/app-error";
+import { prisma } from "../../shared/lib/prisma";
+import { Logger } from "../../shared/services/logger.service";
 
 export class TokenService {
   public async getToken(userId: string) {

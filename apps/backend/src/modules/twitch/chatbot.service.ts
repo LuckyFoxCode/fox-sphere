@@ -1,10 +1,10 @@
 import { ApiClient } from "@twurple/api";
 import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
-import { config } from "../../shared/config/index.js";
-import { globalEventBus } from "../../shared/services/event-bus.service.js";
-import { Logger } from "../../shared/services/logger.service.js";
-import { UserService } from "./user.service.js";
+import { config } from "../../shared/config/";
+import { globalEventBus } from "../../shared/services/event-bus.service";
+import { Logger } from "../../shared/services/logger.service";
+import { UserService } from "./user.service";
 
 type AnnouncementColor = "blue" | "green" | "orange" | "purple" | "primary";
 

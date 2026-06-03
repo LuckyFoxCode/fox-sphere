@@ -1,14 +1,13 @@
 import { RefreshingAuthProvider } from "@twurple/auth";
-import { randomUUID } from "crypto";
-import { ChatbotService } from "./modules/twitch/chatbot.service.js";
-import { TwitchEventSubClient } from "./modules/twitch/eventsub.client.js";
-import { TokenService } from "./modules/twitch/token.service.js";
-import { UserService } from "./modules/twitch/user.service.js";
-import { config } from "./shared/config/index.js";
-import { AppError } from "./shared/errors/app-error.js";
-import { prisma } from "./shared/lib/prisma.js";
-import { globalEventBus } from "./shared/services/event-bus.service.js";
-import { Logger } from "./shared/services/logger.service.js";
+import { ChatbotService } from "./modules/twitch/chatbot.service";
+import { TwitchEventSubClient } from "./modules/twitch/eventsub.client";
+import { TokenService } from "./modules/twitch/token.service";
+import { UserService } from "./modules/twitch/user.service";
+import { config } from "./shared/config/";
+import { AppError } from "./shared/errors/app-error";
+import { prisma } from "./shared/lib/prisma";
+import { globalEventBus } from "./shared/services/event-bus.service";
+import { Logger } from "./shared/services/logger.service";
 
 async function bootstrap() {
   Logger.info("Bootstrap", "Initializing Twitch worker application...⚙️");
@@ -23,7 +22,7 @@ async function bootstrap() {
   if (!existingBotToken) {
     await prisma.twitchToken.create({
       data: {
-        id: randomUUID(),
+        id: crypto.randomUUID(),
         twitchUserId: botId,
         accessToken: config.twitch.botAccessToken,
         refreshToken: config.twitch.botRefreshToken,
@@ -45,7 +44,7 @@ async function bootstrap() {
   if (!existingStreamerToken) {
     await prisma.twitchToken.create({
       data: {
-        id: randomUUID(),
+        id: crypto.randomUUID(),
         twitchUserId: streamerId,
         accessToken: config.twitch.clientAccessToken,
         refreshToken: config.twitch.clientRefreshToken,

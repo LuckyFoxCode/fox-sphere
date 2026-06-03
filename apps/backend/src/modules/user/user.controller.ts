@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import * as userService from "./user.service.js";
+import * as userService from "./user.service";
 
 export const createUserController = async (req: Request, res: Response) => {
   const newUser = await userService.createUser(req.body);

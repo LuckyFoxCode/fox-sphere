@@ -1,7 +1,7 @@
 import { CreateUserDto } from "@fox-sphere/shared-schemas";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
-import { ConflictError } from "../../shared/errors/app-error.js";
-import { prisma } from "../../shared/lib/prisma.js";
+import { ConflictError } from "../../shared/errors/app-error";
+import { prisma } from "../../shared/lib/prisma";
 
 export const createUser = async (data: CreateUserDto) => {
   try {

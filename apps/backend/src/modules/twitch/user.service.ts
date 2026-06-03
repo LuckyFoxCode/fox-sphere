@@ -1,8 +1,8 @@
-import { User } from "../../generated/prisma/client.js";
-import { AppError } from "../../shared/errors/app-error.js";
-import { prisma } from "../../shared/lib/prisma.js";
-import { globalEventBus } from "../../shared/services/event-bus.service.js";
-import { Logger } from "../../shared/services/logger.service.js";
+import { User } from "../../generated/prisma/client";
+import { AppError } from "../../shared/errors/app-error";
+import { prisma } from "../../shared/lib/prisma";
+import { globalEventBus } from "../../shared/services/event-bus.service";
+import { Logger } from "../../shared/services/logger.service";
 
 export class UserService {
   private verifiedUsersCache = new Set<string>();

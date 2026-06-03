@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { createUserController, getUsersController } from "./user.controller.js";
-import { validateCreateUser } from "./user.schema.js";
+import { createUserController, getUsersController } from "./user.controller";
+import { validateCreateUser } from "./user.schema";
 
 export const userRouter = Router();
 

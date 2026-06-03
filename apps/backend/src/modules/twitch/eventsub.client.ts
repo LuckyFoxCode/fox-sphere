@@ -5,7 +5,7 @@ import {
   EventSubChannelRedemptionAddEvent,
 } from "@twurple/eventsub-base";
 import { EventSubWsListener } from "@twurple/eventsub-ws";
-import { Logger } from "../../shared/services/logger.service.js";
+import { Logger } from "../../shared/services/logger.service";
 
 export class TwitchEventSubClient {
   private listener!: EventSubWsListener;
