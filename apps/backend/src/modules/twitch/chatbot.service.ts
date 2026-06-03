@@ -156,6 +156,31 @@ export class ChatbotService {
 
         await this.userService.findOrCreateUser(twitchId, user);
 
+        if (!this.followersCache.has(twitchId)) {
+          try {
+            const followCheck = await this.apiClient.asUser(
+              this.twitchConfig.botId,
+              async (ctx) => {
+                return await ctx.channels.getChannelFollowers(
+                  this.twitchConfig.userId,
+
+                  twitchId,
+                );
+              },
+            );
+
+            if (followCheck.data.length > 0) {
+              this.followersCache.add(twitchId);
+            }
+          } catch (apiError) {
+            Logger.error(
+              "ChatbotService",
+              `Failed to check Twitch follow status for ${user}`,
+              apiError,
+            );
+          }
+        }
+
         let xpAmount: number = XP_REWARDS.DEFAULT;
 
         if (msg.userInfo.isBroadcaster) {
