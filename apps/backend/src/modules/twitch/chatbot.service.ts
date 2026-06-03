@@ -3,6 +3,9 @@ import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
 import { globalEventBus } from "../../shared/services/event-bus.service";
 import { Logger } from "../../shared/services/logger.service";
+import { TwitchCommand } from "./commands/command.interface";
+import { CoinsCommand } from "./commands/economy";
+import { PingCommand } from "./commands/general";
 import {
   COINS_EXCHANGE_AMOUNT,
   COOLDOWNS,
@@ -31,8 +34,8 @@ export class ChatbotService {
   }> = [];
   private isProcessingQueue = false;
 
-  private coinsCommandCooldown = new Set<string>();
   private followersCache = new Set<string>();
+  private commands = new Map<string, TwitchCommand>();
 
   constructor(
     private authProvider: RefreshingAuthProvider,
@@ -193,6 +196,12 @@ export class ChatbotService {
   }
 
   private registerCommands(): void {
+    const pingCmd = new PingCommand(this);
+    const coinsCmd = new CoinsCommand(this, this.userService);
+
+    this.commands.set(pingCmd.name, pingCmd);
+    this.commands.set(coinsCmd.name, coinsCmd);
+
     this.chatClient.onMessage(async (channel, user, text, msg) => {
       Logger.debug("ChatbotService", `[${channel}] ${user}: ${text}`);
 
@@ -220,37 +229,22 @@ export class ChatbotService {
         );
       }
 
-      if (text.startsWith("!ping")) {
-        await this.sendMessage(channel, `@${user}, pong!`);
-      }
+      if (!text.startsWith("!")) return;
 
-      if (text.startsWith("!coins")) {
-        const twitchId = msg.userInfo.userId;
+      const args = text.slice(1).trim().split(/ + /);
+      const commandName = args.shift()?.toLowerCase();
 
-        if (this.coinsCommandCooldown.has(twitchId)) {
-          Logger.debug(
-            "ChatbotService",
-            `Ignored !coins spam from user: ${user}`,
-          );
-          return;
-        }
+      if (!commandName) return;
 
+      const command = this.commands.get(commandName);
+
+      if (command) {
         try {
-          const coins = await this.userService.getUserCoins(twitchId);
-
-          await this.sendMessage(
-            channel,
-            `💰 Wallet • @${user} ➔ ${coins} Coins 🪙`,
-          );
-
-          this.coinsCommandCooldown.add(twitchId);
-          setTimeout(() => {
-            this.coinsCommandCooldown.delete(twitchId);
-          }, COOLDOWNS.COINS_COMMAND);
+          await command.execute({ channel, user, text, msg });
         } catch (error) {
           Logger.error(
             "ChatbotService",
-            `Failed to execute !coins command for user: ${user}`,
+            `Error executing !${commandName}`,
             error,
           );
         }
