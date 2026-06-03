@@ -7,13 +7,12 @@ import { TwitchCommand } from "./commands/command.interface";
 import { CoinsCommand } from "./commands/economy";
 import { PingCommand } from "./commands/general";
 import {
-  COINS_EXCHANGE_AMOUNT,
-  COOLDOWNS,
-  LEADERBOARD_LIMIT,
-  LEADERBOARD_MARKERS,
-  REWARD_TITLES,
-  XP_REWARDS,
-} from "./twitch.constants";
+  CoinExchangeHandler,
+  LeaderboardHandler,
+  RewardHandler,
+  StatsHandler,
+} from "./handlers";
+import { COOLDOWNS, XP_REWARDS } from "./twitch.constants";
 import { UserService } from "./user.service";
 
 type AnnouncementColor = "blue" | "green" | "orange" | "purple" | "primary";
@@ -36,6 +35,7 @@ export class ChatbotService {
 
   private followersCache = new Set<string>();
   private commands = new Map<string, TwitchCommand>();
+  private rewardHandlers = new Map<string, RewardHandler>();
 
   constructor(
     private authProvider: RefreshingAuthProvider,
@@ -46,6 +46,18 @@ export class ChatbotService {
   }
 
   public async start(): Promise<void> {
+    const coinExchange = new CoinExchangeHandler(this, this.userService);
+    const leaderboard = new LeaderboardHandler(
+      this,
+      this.userService,
+      this.twitchConfig,
+    );
+    const stats = new StatsHandler(this, this.userService, this.twitchConfig);
+
+    this.rewardHandlers.set(coinExchange.rewardTitle, coinExchange);
+    this.rewardHandlers.set(leaderboard.rewardTitle, leaderboard);
+    this.rewardHandlers.set(stats.rewardTitle, stats);
+
     try {
       this.chatClient = new ChatClient({
         authProvider: this.authProvider,
@@ -87,91 +99,25 @@ export class ChatbotService {
       });
 
       globalEventBus.on("twitch:reward-redeem", async (data) => {
-        try {
-          if (data.rewardTitle === REWARD_TITLES.LEADERBOARD) {
-            const topUsers =
-              await this.userService.getTopUsers(LEADERBOARD_LIMIT);
+        const handler = this.rewardHandlers.get(data.rewardTitle);
 
-            if (topUsers.length === 0) {
-              await this.sendMessage(
-                this.twitchConfig.channelName,
-                "📋 Leaderboard is currently empty.",
-              );
-              return;
-            }
-
-            const topList = topUsers
-              .map((user, index) => {
-                const prefix = LEADERBOARD_MARKERS[index] || `${index + 1}th`;
-                return `${prefix} @${user.username} (Lvl ${user.lvl}, ${user.xp} XP)`;
-              })
-              .join("   |   ");
-
-            await this.sendAnnouncement(
-              `🏆 LEADERBOARD (Ordered by @${data.username}) 🏆   ➔   ${topList}`,
-              "purple",
+        if (handler) {
+          try {
+            await handler.execute({
+              userId: data.userId,
+              username: data.username,
+            });
+          } catch (error) {
+            Logger.error(
+              "ChatbotService",
+              `Error executing reward handler for: ${data.rewardTitle}`,
+              error,
             );
           }
-
-          if (data.rewardTitle === REWARD_TITLES.STATS) {
-            const userData = await this.userService.getUsersStats(data.userId);
-
-            if (!userData) {
-              await this.sendMessage(
-                this.twitchConfig.channelName,
-                `@${data.username}, you are not registered in the system yet.`,
-              );
-              return;
-            }
-
-            const getXpThresholdForLevel = (lvl: number): number => {
-              let totalXpNeeded = 0;
-              for (let i = 1; i <= lvl; i++) {
-                totalXpNeeded += i * 100;
-              }
-              return totalXpNeeded;
-            };
-
-            const totalUserXp = userData.xp;
-            const totalXpNeededForNextLevel = getXpThresholdForLevel(
-              userData.lvl,
-            );
-
-            await this.sendAnnouncement(
-              `✨ @${data.username}'s STATS:   ⭐ Level: ${userData.lvl}   🛡️   XP: ${totalUserXp} / ${totalXpNeededForNextLevel}   🚀`,
-              "orange",
-            );
-          }
-
-          if (data.rewardTitle === REWARD_TITLES.COIN_EXCHANGE) {
-            try {
-              await this.userService.addCoins(
-                data.userId,
-                COINS_EXCHANGE_AMOUNT,
-              );
-
-              await this.sendAnnouncement(
-                `💰 @${data.username} exchanged Channel Points for ${COINS_EXCHANGE_AMOUNT} Coins! Wallet updated! 🪙`,
-                "green",
-              );
-
-              Logger.info(
-                "ChatbotService",
-                `Successfully processed coin exchange for ${data.username}`,
-              );
-            } catch (error) {
-              Logger.error(
-                "ChatbotService",
-                `Failed to process reward exchange for user: ${data.username}`,
-                error,
-              );
-            }
-          }
-        } catch (error) {
-          Logger.error(
+        } else {
+          Logger.debug(
             "ChatbotService",
-            `Failed to process channel point reward: ${data.rewardTitle}`,
-            error,
+            `No handler registered for reward: ${data.rewardTitle}`,
           );
         }
       });
@@ -231,7 +177,7 @@ export class ChatbotService {
 
       if (!text.startsWith("!")) return;
 
-      const args = text.slice(1).trim().split(/ + /);
+      const args = text.slice(1).trim().split(/ +/);
       const commandName = args.shift()?.toLowerCase();
 
       if (!commandName) return;
