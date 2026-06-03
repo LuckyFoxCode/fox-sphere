@@ -3,12 +3,12 @@ import { AppError } from "../../shared/errors/app-error";
 import { prisma } from "../../shared/lib/prisma";
 import { globalEventBus } from "../../shared/services/event-bus.service";
 import { Logger } from "../../shared/services/logger.service";
+import { COOLDOWNS } from "./twitch.constants";
 
 export class UserService {
   private verifiedUsersCache = new Set<string>();
   private xpCooldownCache = new Map<string, number>();
   private coinsCache = new Map<string, { coins: number; createdAt: number }>();
-  private readonly COINS_CACHE_TTL = 10000;
 
   public async findOrCreateUser(twitchId: string, username: string) {
     try {
@@ -60,9 +60,8 @@ export class UserService {
   ): Promise<void> {
     const now = Date.now();
     const lastXpTime = this.xpCooldownCache.get(twitchId) || 0;
-    const COOLDOWN_MS = 15 * 1000;
 
-    if (now - lastXpTime < COOLDOWN_MS) return;
+    if (now - lastXpTime < COOLDOWNS.XP_MESSAGE_COOLDOWN) return;
 
     try {
       const updatedUser = await prisma.user.update({
@@ -160,7 +159,7 @@ export class UserService {
     const now = Date.now();
     const cacheData = this.coinsCache.get(twitchId);
 
-    if (cacheData && now - cacheData.createdAt < this.COINS_CACHE_TTL) {
+    if (cacheData && now - cacheData.createdAt < COOLDOWNS.COINS_CACHE_TTL) {
       return cacheData.coins;
     }
 

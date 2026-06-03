@@ -9,12 +9,10 @@ import { prisma } from "./shared/lib/prisma";
 import { globalEventBus } from "./shared/services/event-bus.service";
 import { Logger } from "./shared/services/logger.service";
 
-async function bootstrap() {
-  Logger.info("Bootstrap", "Initializing Twitch worker application...⚙️");
-
-  const botId = config.twitch.botId;
-  const streamerId = config.twitch.userId;
-
+async function seedTokensIfNeeded(
+  botId: string,
+  userId: string,
+): Promise<void> {
   const existingBotToken = await prisma.twitchToken.findUnique({
     where: { twitchUserId: botId },
   });
@@ -38,14 +36,14 @@ async function bootstrap() {
   }
 
   const existingStreamerToken = await prisma.twitchToken.findUnique({
-    where: { twitchUserId: streamerId },
+    where: { twitchUserId: userId },
   });
 
   if (!existingStreamerToken) {
     await prisma.twitchToken.create({
       data: {
         id: crypto.randomUUID(),
-        twitchUserId: streamerId,
+        twitchUserId: userId,
         accessToken: config.twitch.clientAccessToken,
         refreshToken: config.twitch.clientRefreshToken,
         expiresIn: 14400,
@@ -58,12 +56,58 @@ async function bootstrap() {
       "Initial streamer tokens successfully seeded into the database.🎉",
     );
   }
+}
+
+async function initTwitchModule(
+  authProvider: RefreshingAuthProvider,
+  userService: UserService,
+) {
+  const twitchConfig = {
+    botId: config.twitch.botId,
+    userId: config.twitch.userId,
+    channelName: config.twitch.channelName,
+  };
+
+  const chatbotService = new ChatbotService(
+    authProvider,
+    userService,
+    twitchConfig,
+  );
+  const eventSubClient = new TwitchEventSubClient(authProvider, twitchConfig);
+
+  await chatbotService.start();
+  await eventSubClient.start();
+
+  await eventSubClient.subscribeToFollows(async (event) => {
+    globalEventBus.emit("twitch:follow", {
+      userId: event.userId,
+      username: event.userDisplayName,
+    });
+  });
+  await eventSubClient.subscribeToRewards(async (data) => {
+    globalEventBus.emit("twitch:reward-redeem", {
+      userId: data.userId,
+      username: data.userDisplayName,
+      rewardTitle: data.rewardTitle,
+    });
+  });
+}
+
+async function bootstrap() {
+  Logger.info("Bootstrap", "Initializing Twitch worker application...⚙️");
+
+  const botId = config.twitch.botId;
+  const userId = config.twitch.userId;
+
+  // Проверяем/наполняем базу токенами
+  await seedTokensIfNeeded(botId, userId);
 
   const tokenService = new TokenService();
   const userService = new UserService();
 
+  // Достаем актуальные токены из базы
   const botTokenRecord = await tokenService.getToken(botId);
-  const streamerTokenRecord = await tokenService.getToken(streamerId);
+  const streamerTokenRecord = await tokenService.getToken(userId);
 
   if (!botTokenRecord || !streamerTokenRecord) {
     throw new AppError(
@@ -72,11 +116,13 @@ async function bootstrap() {
     );
   }
 
+  // Создаем менеджер авторизации Twurple
   const authProvider = new RefreshingAuthProvider({
     clientId: config.twitch.clientId,
     clientSecret: config.twitch.clientSecret,
   });
 
+  // Навешиваем авто-обновление токенов в БД при их протухании
   authProvider.onRefresh(async (userId, tokenData) => {
     await tokenService.updateToken(userId, tokenData);
     Logger.debug(
@@ -85,6 +131,7 @@ async function bootstrap() {
     );
   });
 
+  // Регистрируем аккаунты Бота и Стримера в Twurple
   await authProvider.addUser(
     botTokenRecord.twitchUserId,
     {
@@ -119,26 +166,8 @@ async function bootstrap() {
     ],
   });
 
-  const chatbotService = new ChatbotService(authProvider, userService);
-  await chatbotService.start();
-
-  const eventSubClient = new TwitchEventSubClient(authProvider);
-  await eventSubClient.start();
-
-  await eventSubClient.subscribeToFollows(streamerId, botId, async (event) => {
-    globalEventBus.emit("twitch:follow", {
-      userId: event.userId,
-      username: event.userDisplayName,
-    });
-  });
-
-  await eventSubClient.subscribeToRewards(streamerId, async (data) => {
-    globalEventBus.emit("twitch:reward-redeem", {
-      userId: data.userId,
-      username: data.userDisplayName,
-      rewardTitle: data.rewardTitle,
-    });
-  });
+  // Передаем готовые зависимости в запуск Твич-модуля
+  await initTwitchModule(authProvider, userService);
 
   Logger.info(
     "Bootstrap",
@@ -146,6 +175,7 @@ async function bootstrap() {
   );
 }
 
+// Запуск всего воркера
 bootstrap().catch((err) => {
   Logger.error(
     "Bootstrap",
