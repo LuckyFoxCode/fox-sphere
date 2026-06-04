@@ -3,16 +3,18 @@ import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
 import { globalEventBus } from "../../shared/services/event-bus.service";
 import { Logger } from "../../shared/services/logger.service";
-import { TwitchCommand } from "./commands/command.interface";
-import { CoinsCommand } from "./commands/economy";
-import { PingCommand } from "./commands/general";
 import {
   CoinExchangeHandler,
   LeaderboardHandler,
   RewardHandler,
   StatsHandler,
 } from "./handlers";
-import { COOLDOWNS, XP_REWARDS } from "./twitch.constants";
+import {
+  AnnouncementService,
+  CommandRegisry,
+  TwitchActivityService,
+} from "./services";
+import { COOLDOWNS } from "./twitch.constants";
 import { UserService } from "./user.service";
 
 type AnnouncementColor = "blue" | "green" | "orange" | "purple" | "primary";
@@ -26,15 +28,10 @@ export interface TwitchConfig {
 export class ChatbotService {
   private chatClient!: ChatClient;
   private apiClient!: ApiClient;
+  private activityService: TwitchActivityService;
+  private commandRegistry: CommandRegisry;
+  private announcementService: AnnouncementService;
 
-  private announcementQueue: Array<{
-    message: string;
-    color: AnnouncementColor;
-  }> = [];
-  private isProcessingQueue = false;
-
-  private followersCache = new Set<string>();
-  private commands = new Map<string, TwitchCommand>();
   private rewardHandlers = new Map<string, RewardHandler>();
 
   constructor(
@@ -43,20 +40,20 @@ export class ChatbotService {
     private twitchConfig: TwitchConfig,
   ) {
     this.apiClient = new ApiClient({ authProvider: this.authProvider });
-  }
-
-  public async start(): Promise<void> {
-    const coinExchange = new CoinExchangeHandler(this, this.userService);
-    const leaderboard = new LeaderboardHandler(
-      this,
+    this.activityService = new TwitchActivityService(
+      this.apiClient,
       this.userService,
       this.twitchConfig,
     );
-    const stats = new StatsHandler(this, this.userService, this.twitchConfig);
+    this.commandRegistry = new CommandRegisry(this, this.userService);
+    this.announcementService = new AnnouncementService(
+      this.apiClient,
+      this.twitchConfig,
+    );
+  }
 
-    this.rewardHandlers.set(coinExchange.rewardTitle, coinExchange);
-    this.rewardHandlers.set(leaderboard.rewardTitle, leaderboard);
-    this.rewardHandlers.set(stats.rewardTitle, stats);
+  public async start(): Promise<void> {
+    this.registerRewardHandler();
 
     try {
       this.chatClient = new ChatClient({
@@ -64,63 +61,8 @@ export class ChatbotService {
         channels: [this.twitchConfig.channelName],
       });
 
-      this.registerCommands();
-
-      globalEventBus.on("user:level-up", async (data) => {
-        try {
-          await this.sendMessage(
-            this.twitchConfig.channelName,
-            `⚡ @${data.username} leveled up to Level ${data.newLevel}! 🚀 GG!`,
-          );
-        } catch (error) {
-          Logger.error(
-            "ChatbotService",
-            `Failed to send level-up message for ${data.username}`,
-            error,
-          );
-        }
-      });
-
-      globalEventBus.on("twitch:follow", async (data) => {
-        try {
-          this.followersCache.add(data.userId);
-
-          await this.sendMessage(
-            this.twitchConfig.channelName,
-            `🎉 Thanks for the follow, @${data.username}! Welcome to the Foxsphere family! 🚀`,
-          );
-        } catch (error) {
-          Logger.error(
-            "ChatbotService",
-            `Failed to send follow alert message for user: ${data.username}`,
-            error,
-          );
-        }
-      });
-
-      globalEventBus.on("twitch:reward-redeem", async (data) => {
-        const handler = this.rewardHandlers.get(data.rewardTitle);
-
-        if (handler) {
-          try {
-            await handler.execute({
-              userId: data.userId,
-              username: data.username,
-            });
-          } catch (error) {
-            Logger.error(
-              "ChatbotService",
-              `Error executing reward handler for: ${data.rewardTitle}`,
-              error,
-            );
-          }
-        } else {
-          Logger.debug(
-            "ChatbotService",
-            `No handler registered for reward: ${data.rewardTitle}`,
-          );
-        }
-      });
+      this.setupGlobalEventListers();
+      this.setupChatClientListeners();
 
       this.chatClient.connect();
       Logger.info(
@@ -141,85 +83,82 @@ export class ChatbotService {
     }
   }
 
-  private registerCommands(): void {
-    const pingCmd = new PingCommand(this);
-    const coinsCmd = new CoinsCommand(this, this.userService);
+  private registerRewardHandler(): void {
+    const coinExchange = new CoinExchangeHandler(this, this.userService);
+    const leaderboard = new LeaderboardHandler(
+      this,
+      this.userService,
+      this.twitchConfig,
+    );
+    const stats = new StatsHandler(this, this.userService, this.twitchConfig);
 
-    this.commands.set(pingCmd.name, pingCmd);
-    this.commands.set(coinsCmd.name, coinsCmd);
+    this.rewardHandlers.set(coinExchange.rewardTitle, coinExchange);
+    this.rewardHandlers.set(leaderboard.rewardTitle, leaderboard);
+    this.rewardHandlers.set(stats.rewardTitle, stats);
+  }
 
-    this.chatClient.onMessage(async (channel, user, text, msg) => {
-      Logger.debug("ChatbotService", `[${channel}] ${user}: ${text}`);
-
+  private setupGlobalEventListers(): void {
+    globalEventBus.on("user:level-up", async (data) => {
       try {
-        const twitchId = msg.userInfo.userId;
-
-        await this.userService.findOrCreateUser(twitchId, user);
-
-        if (!this.followersCache.has(twitchId)) {
-          try {
-            const followCheck = await this.apiClient.asUser(
-              this.twitchConfig.botId,
-              async (ctx) => {
-                return await ctx.channels.getChannelFollowers(
-                  this.twitchConfig.userId,
-
-                  twitchId,
-                );
-              },
-            );
-
-            if (followCheck.data.length > 0) {
-              this.followersCache.add(twitchId);
-            }
-          } catch (apiError) {
-            Logger.error(
-              "ChatbotService",
-              `Failed to check Twitch follow status for ${user}`,
-              apiError,
-            );
-          }
-        }
-
-        let xpAmount: number = XP_REWARDS.DEFAULT;
-
-        if (msg.userInfo.isBroadcaster) {
-          xpAmount = XP_REWARDS.BROADCASTER;
-        } else if (msg.userInfo.isSubscriber) {
-          xpAmount = XP_REWARDS.SUBSCRIBER;
-        } else if (this.followersCache.has(twitchId)) {
-          xpAmount = XP_REWARDS.FOLLOWER;
-        }
-
-        await this.userService.addXpForMessage(twitchId, xpAmount);
+        await this.sendMessage(
+          this.twitchConfig.channelName,
+          `⚡ @${data.username} leveled up to Level ${data.newLevel}! 🚀 GG!`,
+        );
       } catch (error) {
         Logger.error(
           "ChatbotService",
-          `Chat auto-registration failed for user: ${user}`,
+          `Failed to send level-up message for ${data.username}`,
           error,
         );
       }
+    });
 
-      if (!text.startsWith("!")) return;
+    globalEventBus.on("twitch:follow", async (data) => {
+      try {
+        await this.sendMessage(
+          this.twitchConfig.channelName,
+          `🎉 Thanks for the follow, @${data.username}! Welcome to the Foxsphere family! 🚀`,
+        );
+      } catch (error) {
+        Logger.error(
+          "ChatbotService",
+          `Failed to send follow alert message for user: ${data.username}`,
+          error,
+        );
+      }
+    });
 
-      const args = text.slice(1).trim().split(/ +/);
-      const commandName = args.shift()?.toLowerCase();
+    globalEventBus.on("twitch:reward-redeem", async (data) => {
+      const handler = this.rewardHandlers.get(data.rewardTitle);
 
-      if (!commandName) return;
-
-      const command = this.commands.get(commandName);
-
-      if (command) {
+      if (handler) {
         try {
-          await command.execute({ channel, user, text, msg });
+          await handler.execute({
+            userId: data.userId,
+            username: data.username,
+          });
         } catch (error) {
           Logger.error(
             "ChatbotService",
-            `Error executing !${commandName}`,
+            `Error executing reward handler for: ${data.rewardTitle}`,
             error,
           );
         }
+      } else {
+        Logger.debug(
+          "ChatbotService",
+          `No handler registered for reward: ${data.rewardTitle}`,
+        );
       }
+    });
+  }
+
+  private setupChatClientListeners(): void {
+    this.chatClient.onMessage(async (channel, user, text, msg) => {
+      Logger.debug("ChatbotService", `[${channel}] ${user}: ${text}`);
+
+      await this.activityService.trackActivity(user, msg);
+      await this.commandRegistry.execute(channel, user, text, msg);
     });
   }
 
@@ -233,55 +172,16 @@ export class ChatbotService {
     message: string,
     color: AnnouncementColor = "blue",
   ): Promise<void> {
-    this.announcementQueue.push({ message, color });
-    Logger.debug(
-      "ChatbotService",
-      `Announcement added to queue. Queue length: ${this.announcementQueue.length}`,
-    );
+    try {
+      await this.announcementService.enqueue(message, color);
+    } catch (error) {
+      Logger.error(
+        "ChatbotService",
+        `Failed to enqueue announcement: "${message}"`,
+        error,
+      );
 
-    this.processAnnouncementQueue();
-  }
-
-  private async processAnnouncementQueue(): Promise<void> {
-    if (this.isProcessingQueue) return;
-
-    this.isProcessingQueue = true;
-
-    while (this.announcementQueue.length > 0) {
-      const current = this.announcementQueue.shift();
-
-      if (current) {
-        try {
-          await this.apiClient.asUser(this.twitchConfig.botId, async (ctx) => {
-            await ctx.chat.sendAnnouncement(this.twitchConfig.userId, {
-              message: current.message,
-              color: current.color,
-            });
-          });
-          Logger.debug(
-            "ChatbotService",
-            `Successfully sent ${current.color} announcement from queue`,
-          );
-        } catch (error) {
-          Logger.error(
-            "ChatbotService",
-            `Failed to send Twitch announcement from queue`,
-            error,
-          );
-          await this.sendMessage(
-            this.twitchConfig.channelName,
-            current.message,
-          );
-        }
-        await new Promise((resolve) =>
-          setTimeout(resolve, COOLDOWNS.ANNOUNCEMENT_QUEUE),
-        );
-      }
+      await this.sendMessage(this.twitchConfig.channelName, message);
     }
-    this.isProcessingQueue = false;
-    Logger.debug(
-      "ChatbotService",
-      "Announcement queue is now empty. Conveyor stopped.",
-    );
   }
 }
