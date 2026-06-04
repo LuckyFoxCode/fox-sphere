@@ -1,6 +1,6 @@
 import { ErrorRequestHandler } from "express";
-import { AppError, ValidationError } from "../errors/app-error.js";
-import { Logger } from "../services/logger.service.js";
+import { AppError, ValidationError } from "../errors/app-error";
+import { Logger } from "../services/logger.service";
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   if (err instanceof AppError) {

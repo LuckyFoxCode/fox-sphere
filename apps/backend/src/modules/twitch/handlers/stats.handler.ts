@@ -1,0 +1,61 @@
+import { Logger } from "../../../shared/services/logger.service";
+import { ChatbotService, TwitchConfig } from "../chatbot.service";
+import { REWARD_TITLES } from "../twitch.constants";
+import { UserService } from "../user.service";
+import { RewardContext, RewardHandler } from "./reward.interface";
+
+export class StatsHandler implements RewardHandler {
+  readonly rewardTitle = REWARD_TITLES.STATS;
+
+  constructor(
+    private chatbotService: ChatbotService,
+    private userService: UserService,
+    private twitchConfig: TwitchConfig,
+  ) {}
+
+  async execute(ctx: RewardContext): Promise<void> {
+    try {
+      const userData = await this.userService.getUsersStats(ctx.userId);
+
+      if (!userData) {
+        await this.chatbotService.sendMessage(
+          this.twitchConfig.channelName,
+          `@${ctx.username}, you are not registered in the system yet.`,
+        );
+        return;
+      }
+
+      const getXpThresholdForLevel = (lvl: number): number => {
+        let totalXpNeeded = 0;
+        for (let i = 1; i <= lvl; i++) {
+          totalXpNeeded += i * 100;
+        }
+        return totalXpNeeded;
+      };
+
+      const totalUserXp = userData.xp;
+      const totalXpNeededForNextLevel = getXpThresholdForLevel(userData.lvl);
+
+      await this.chatbotService.sendAnnouncement(
+        `✨ @${ctx.username}'s STATS:   ⭐ Level: ${userData.lvl}   🛡️   XP: ${totalUserXp} / ${totalXpNeededForNextLevel}   🚀`,
+        "orange",
+      );
+
+      Logger.debug(
+        "StatsHandler",
+        `Successfully displayed stats for @${ctx.username}`,
+      );
+    } catch (error) {
+      Logger.error(
+        "StatsHandler",
+        `Failed to execute stats reward for user: ${ctx.username} (ID: ${ctx.userId})`,
+        error,
+      );
+
+      await this.chatbotService.sendMessage(
+        this.twitchConfig.channelName,
+        `⚠ @${ctx.username}, произошла ошибка при запросе твоей статистики. Скоро починим!`,
+      );
+    }
+  }
+}

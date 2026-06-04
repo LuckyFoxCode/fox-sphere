@@ -1,5 +1,5 @@
-import { prisma } from "./shared/lib/prisma.js";
-import { Logger } from "./shared/services/logger.service.js";
+import { prisma } from "./shared/lib/prisma";
+import { Logger } from "./shared/services/logger.service";
 
 async function main() {
   Logger.info("TokenReset", "Starting forced database tables cleanup... 🧹");

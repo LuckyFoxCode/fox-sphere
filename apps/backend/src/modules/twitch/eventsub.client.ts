@@ -5,13 +5,21 @@ import {
   EventSubChannelRedemptionAddEvent,
 } from "@twurple/eventsub-base";
 import { EventSubWsListener } from "@twurple/eventsub-ws";
-import { Logger } from "../../shared/services/logger.service.js";
+import { Logger } from "../../shared/services/logger.service";
+
+export interface EventSubConfig {
+  userId: string;
+  botId: string;
+}
 
 export class TwitchEventSubClient {
   private listener!: EventSubWsListener;
   private apiClient: ApiClient;
 
-  constructor(private authProvider: RefreshingAuthProvider) {
+  constructor(
+    private authProvider: RefreshingAuthProvider,
+    private config: EventSubConfig,
+  ) {
     this.apiClient = new ApiClient({ authProvider: this.authProvider });
   }
 
@@ -35,22 +43,29 @@ export class TwitchEventSubClient {
     }
   }
 
+  public async stop(): Promise<void> {
+    if (this.listener) {
+      await this.listener.stop();
+    }
+  }
+
   public async subscribeToFollows(
-    userId: string,
-    botId: string,
     callback: (e: EventSubChannelFollowEvent) => void,
   ) {
-    return this.listener.onChannelFollow(userId, botId, (e) => {
-      Logger.debug(
-        "TwitchEventSubClient",
-        `New follower detected: ${e.userDisplayName} (ID: ${e.userId}) 🎉`,
-      );
-      callback(e);
-    });
+    return this.listener.onChannelFollow(
+      this.config.userId,
+      this.config.botId,
+      (e) => {
+        Logger.debug(
+          "TwitchEventSubClient",
+          `New follower detected: ${e.userDisplayName} (ID: ${e.userId}) 🎉`,
+        );
+        callback(e);
+      },
+    );
   }
 
   public async subscribeToRewards(
-    streamerId: string,
     callback: (data: {
       userId: string;
       userDisplayName: string;
@@ -58,7 +73,7 @@ export class TwitchEventSubClient {
     }) => void,
   ) {
     return this.listener.onChannelRedemptionAdd(
-      streamerId,
+      this.config.userId,
       (event: EventSubChannelRedemptionAddEvent) => {
         Logger.debug(
           "TwitchEventSubClient",

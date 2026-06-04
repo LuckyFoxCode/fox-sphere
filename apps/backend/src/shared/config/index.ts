@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { AppError } from "../errors/app-error.js";
+import { AppError } from "../errors/app-error";
 
 const getEnv = (key: string, defaultValue?: string): string => {
   const value = process.env[key] || defaultValue;

@@ -1,6 +1,6 @@
 import { CreateUserSchema } from "@fox-sphere/shared-schemas";
 import { NextFunction, Request, Response } from "express";
-import { ValidationError } from "../../shared/errors/app-error.js";
+import { ValidationError } from "../../shared/errors/app-error";
 
 export const validateCreateUser = (
   req: Request,
