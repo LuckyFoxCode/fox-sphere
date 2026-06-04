@@ -43,6 +43,12 @@ export class TwitchEventSubClient {
     }
   }
 
+  public async stop(): Promise<void> {
+    if (this.listener) {
+      await this.listener.stop();
+    }
+  }
+
   public async subscribeToFollows(
     callback: (e: EventSubChannelFollowEvent) => void,
   ) {

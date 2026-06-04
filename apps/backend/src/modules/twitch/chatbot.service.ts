@@ -65,6 +65,7 @@ export class ChatbotService {
       this.setupChatClientListeners();
 
       this.chatClient.connect();
+
       Logger.info(
         "ChatbotService",
         "Chatbot successfully connected to Twitch!🚀",
@@ -80,6 +81,12 @@ export class ChatbotService {
         error,
       );
       throw error;
+    }
+  }
+
+  public async stop(): Promise<void> {
+    if (this.chatClient) {
+      await this.chatClient.quit();
     }
   }
 
