@@ -1,9 +1,8 @@
 import { ApiClient } from "@twurple/api";
 import { Logger } from "../../../shared/services/logger.service";
-import { TwitchConfig } from "../chatbot.service";
-import { COOLDOWNS } from "../twitch.constants";
 
-type AnnouncementColor = "blue" | "green" | "orange" | "purple" | "primary";
+import { COOLDOWNS } from "../twitch.constants";
+import { AnnouncementColor, TwitchConfig } from "../twitch.types";
 
 interface QueuedAnnouncement {
   message: string;

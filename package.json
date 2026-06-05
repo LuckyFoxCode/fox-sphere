@@ -15,7 +15,8 @@
     "lint:b": "pnpm --filter backend lint",
     "prisma:g": "pnpm --filter backend prisma:generate",
     "prisma:m": "pnpm --filter backend prisma:migrate",
-    "prisma:s": "pnpm --filter backend prisma:studio"
+    "prisma:s": "pnpm --filter backend prisma:studio",
+    "worker:t": "pnpm --filter backend worker:twitch"
   },
   "keywords": [],
   "author": "",

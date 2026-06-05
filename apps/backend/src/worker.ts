@@ -2,6 +2,7 @@ import { ChatbotService } from "./modules/twitch/chatbot.service";
 import { TwitchEventSubClient } from "./modules/twitch/eventsub.client";
 import { TokenService } from "./modules/twitch/token.service";
 import { TwitchAuthFactory } from "./modules/twitch/twitch-auth.factory";
+import { TwitchConfig } from "./modules/twitch/twitch.types";
 import { UserService } from "./modules/twitch/user.service";
 import { config } from "./shared/config/";
 import { registerShutdownHandlers } from "./shared/infra/lifecycle";
@@ -17,11 +18,7 @@ async function bootstrap() {
   // Создаем авторизацию через фабрику
   const authProvider = await TwitchAuthFactory.create(tokenService);
 
-  const twitchConfig = {
-    botId: config.twitch.botId,
-    userId: config.twitch.userId,
-    channelName: config.twitch.channelName,
-  };
+  const twitchConfig: TwitchConfig = config.twitch;
 
   // Инициализируем сервисы
   const chatbotService = new ChatbotService(

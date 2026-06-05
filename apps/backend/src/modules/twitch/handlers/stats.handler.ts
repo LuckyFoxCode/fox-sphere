@@ -1,6 +1,7 @@
 import { Logger } from "../../../shared/services/logger.service";
-import { ChatbotService, TwitchConfig } from "../chatbot.service";
+import { ChatbotService } from "../chatbot.service";
 import { REWARD_TITLES } from "../twitch.constants";
+import { TwitchConfig } from "../twitch.types";
 import { UserService } from "../user.service";
 import { RewardContext, RewardHandler } from "./reward.interface";
 

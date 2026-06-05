@@ -1,8 +1,9 @@
 import { ApiClient } from "@twurple/api";
 import { ChatMessage } from "@twurple/chat";
 import { Logger } from "../../../shared/services/logger.service";
-import { TwitchConfig } from "../chatbot.service";
+
 import { XP_REWARDS } from "../twitch.constants";
+import { TwitchConfig } from "../twitch.types";
 import { UserService } from "../user.service";
 
 export class TwitchActivityService {

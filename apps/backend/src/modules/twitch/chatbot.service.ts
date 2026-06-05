@@ -15,15 +15,8 @@ import {
   TwitchActivityService,
 } from "./services";
 import { COOLDOWNS } from "./twitch.constants";
+import { AnnouncementColor, TwitchConfig } from "./twitch.types";
 import { UserService } from "./user.service";
-
-type AnnouncementColor = "blue" | "green" | "orange" | "purple" | "primary";
-
-export interface TwitchConfig {
-  botId: string;
-  userId: string;
-  channelName: string;
-}
 
 export class ChatbotService {
   private chatClient!: ChatClient;
