@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma";
-import { Logger } from "../services/logger.service";
+import { Logger } from "../services";
 
 export interface CleanupTask {
   name: string;

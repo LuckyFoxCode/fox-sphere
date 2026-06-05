@@ -3,6 +3,7 @@ import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
 import { globalEventBus } from "../../shared/services/event-bus.service";
 import { Logger } from "../../shared/services/logger.service";
+import { COOLDOWNS as USER_COOLDOWNS, UserService } from "../user";
 import {
   CoinExchangeHandler,
   LeaderboardHandler,
@@ -14,9 +15,7 @@ import {
   CommandRegisry,
   TwitchActivityService,
 } from "./services";
-import { COOLDOWNS } from "./twitch.constants";
 import { AnnouncementColor, TwitchConfig } from "./twitch.types";
-import { UserService } from "./user.service";
 
 export class ChatbotService {
   private chatClient!: ChatClient;
@@ -66,7 +65,7 @@ export class ChatbotService {
 
       setInterval(() => {
         this.userService.clearCache();
-      }, COOLDOWNS.CACHE_CLEAR_INTERVAL);
+      }, USER_COOLDOWNS.CACHE_CLEAR_INTERVAL);
     } catch (error) {
       Logger.error(
         "ChatbotService",

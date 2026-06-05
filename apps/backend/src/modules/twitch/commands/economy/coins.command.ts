@@ -1,7 +1,7 @@
 import { Logger } from "../../../../shared/services/logger.service";
+import { UserService } from "../../../user";
 import { ChatbotService } from "../../chatbot.service";
 import { COOLDOWNS } from "../../twitch.constants";
-import { UserService } from "../../user.service";
 import { CommandContext, TwitchCommand } from "../command.interface";
 
 export class CoinsCommand implements TwitchCommand {

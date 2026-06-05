@@ -1,6 +1,6 @@
 import { app } from "./app";
 import { config } from "./shared/config/";
-import { Logger } from "./shared/services/logger.service";
+import { Logger } from "./shared/services";
 
 const startServer = () => {
   try {

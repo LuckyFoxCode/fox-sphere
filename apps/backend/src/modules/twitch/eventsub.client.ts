@@ -6,7 +6,7 @@ import {
   EventSubChannelRedemptionAddEvent,
 } from "@twurple/eventsub-base";
 import { EventSubWsListener } from "@twurple/eventsub-ws";
-import { Logger } from "../../shared/services/logger.service";
+import { Logger } from "../../shared/services";
 
 export interface EventSubConfig {
   userId: string;

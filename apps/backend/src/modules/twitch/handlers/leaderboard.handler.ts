@@ -1,4 +1,5 @@
-import { Logger } from "../../../shared/services/logger.service";
+import { Logger } from "../../../shared/services";
+import { UserService } from "../../user";
 import { ChatbotService } from "../chatbot.service";
 import {
   LEADERBOARD_LIMIT,
@@ -6,7 +7,6 @@ import {
   REWARD_TITLES,
 } from "../twitch.constants";
 import { TwitchConfig } from "../twitch.types";
-import { UserService } from "../user.service";
 import { RewardContext, RewardHandler } from "./reward.interface";
 
 export class LeaderboardHandler implements RewardHandler {
