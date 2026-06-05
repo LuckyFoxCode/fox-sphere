@@ -2,6 +2,7 @@ import EventEmitter from "events";
 
 interface AppEvents {
   "twitch:follow": { userId: string; username: string };
+  "twitch:raid": { raiderId: string; raiderName: string; viewers: number };
   "twitch:reward-redeem": {
     userId: string;
     username: string;

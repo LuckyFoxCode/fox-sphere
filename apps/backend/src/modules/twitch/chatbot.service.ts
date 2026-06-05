@@ -128,6 +128,26 @@ export class ChatbotService {
       }
     });
 
+    globalEventBus.on("twitch:raid", async (data) => {
+      try {
+        await this.sendAnnouncement(
+          `⚡ @${data.raiderName} just raided with ${data.viewers} viewers! Welcome to the Sphere! 🦊🌐✨`,
+          "purple",
+        );
+
+        await this.sendMessage(
+          this.twitchConfig.channelName,
+          `/shoutout ${data.raiderName}`,
+        );
+      } catch (error) {
+        Logger.error(
+          "ChatbotService",
+          `Failed to send raid alert message for streamer: ${data.raiderName}`,
+          error,
+        );
+      }
+    });
+
     globalEventBus.on("twitch:reward-redeem", async (data) => {
       const handler = this.rewardHandlers.get(data.rewardTitle);
 

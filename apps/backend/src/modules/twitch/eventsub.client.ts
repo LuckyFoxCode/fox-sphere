@@ -2,6 +2,7 @@ import { ApiClient } from "@twurple/api";
 import { RefreshingAuthProvider } from "@twurple/auth";
 import {
   EventSubChannelFollowEvent,
+  EventSubChannelRaidEvent,
   EventSubChannelRedemptionAddEvent,
 } from "@twurple/eventsub-base";
 import { EventSubWsListener } from "@twurple/eventsub-ws";
@@ -63,6 +64,18 @@ export class TwitchEventSubClient {
         callback(e);
       },
     );
+  }
+
+  public async subscribeToRaids(
+    callback: (e: EventSubChannelRaidEvent) => void,
+  ) {
+    return this.listener.onChannelRaidTo(this.config.userId, (e) => {
+      Logger.debug(
+        "TwitchEventSubClient",
+        `🎉 RAID! Streamer ${e.raidingBroadcasterDisplayName} brought ${e.viewers} awesome viewers! 🎉`,
+      );
+      callback(e);
+    });
   }
 
   public async subscribeToRewards(
