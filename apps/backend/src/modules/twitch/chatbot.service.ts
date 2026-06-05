@@ -3,6 +3,7 @@ import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
 import { globalEventBus } from "../../shared/services/event-bus.service";
 import { Logger } from "../../shared/services/logger.service";
+import { COOLDOWNS as USER_COOLDOWNS, UserService } from "../user";
 import {
   CoinExchangeHandler,
   LeaderboardHandler,
@@ -14,9 +15,8 @@ import {
   CommandRegisry,
   TwitchActivityService,
 } from "./services";
-import { COOLDOWNS } from "./twitch.constants";
+import { BOT_MESSAGES } from "./twitch.constants";
 import { AnnouncementColor, TwitchConfig } from "./twitch.types";
-import { UserService } from "./user.service";
 
 export class ChatbotService {
   private chatClient!: ChatClient;
@@ -66,7 +66,7 @@ export class ChatbotService {
 
       setInterval(() => {
         this.userService.clearCache();
-      }, COOLDOWNS.CACHE_CLEAR_INTERVAL);
+      }, USER_COOLDOWNS.CACHE_CLEAR_INTERVAL);
     } catch (error) {
       Logger.error(
         "ChatbotService",
@@ -100,10 +100,11 @@ export class ChatbotService {
   private setupGlobalEventListers(): void {
     globalEventBus.on("user:level-up", async (data) => {
       try {
-        await this.sendMessage(
-          this.twitchConfig.channelName,
-          `⚡ @${data.username} leveled up to Level ${data.newLevel}! 🚀 GG!`,
+        const message = BOT_MESSAGES.ALERTS.LEVEL_UP(
+          data.username,
+          data.newLevel,
         );
+        await this.sendMessage(this.twitchConfig.channelName, message);
       } catch (error) {
         Logger.error(
           "ChatbotService",
@@ -115,10 +116,8 @@ export class ChatbotService {
 
     globalEventBus.on("twitch:follow", async (data) => {
       try {
-        await this.sendMessage(
-          this.twitchConfig.channelName,
-          `🎉 Thanks for the follow, @${data.username}! Welcome to the Foxsphere family! 🚀`,
-        );
+        const message = BOT_MESSAGES.ALERTS.FOLLOW(data.username);
+        await this.sendMessage(this.twitchConfig.channelName, message);
       } catch (error) {
         Logger.error(
           "ChatbotService",
@@ -130,11 +129,8 @@ export class ChatbotService {
 
     globalEventBus.on("twitch:raid", async (data) => {
       try {
-        await this.sendAnnouncement(
-          `⚡ @${data.raiderName} just raided with ${data.viewers} viewers! Welcome to the Sphere! 🦊🌐✨`,
-          "purple",
-        );
-
+        const message = BOT_MESSAGES.ALERTS.RAID(data.raiderName, data.viewers);
+        await this.sendAnnouncement(message, "purple");
         await this.sendMessage(
           this.twitchConfig.channelName,
           `/shoutout ${data.raiderName}`,

@@ -1,10 +1,8 @@
 import { ApiClient } from "@twurple/api";
 import { ChatMessage } from "@twurple/chat";
-import { Logger } from "../../../shared/services/logger.service";
-
-import { XP_REWARDS } from "../twitch.constants";
+import { Logger } from "../../../shared/services";
+import { UserService, XP_REWARDS } from "../../user";
 import { TwitchConfig } from "../twitch.types";
-import { UserService } from "../user.service";
 
 export class TwitchActivityService {
   private followersCache = new Set<string>();

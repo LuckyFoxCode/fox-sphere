@@ -3,11 +3,10 @@ import { TwitchEventSubClient } from "./modules/twitch/eventsub.client";
 import { TokenService } from "./modules/twitch/token.service";
 import { TwitchAuthFactory } from "./modules/twitch/twitch-auth.factory";
 import { TwitchConfig } from "./modules/twitch/twitch.types";
-import { UserService } from "./modules/twitch/user.service";
-import { config } from "./shared/config/";
-import { registerShutdownHandlers } from "./shared/infra/lifecycle";
-import { globalEventBus } from "./shared/services/event-bus.service";
-import { Logger } from "./shared/services/logger.service";
+import { UserService } from "./modules/user";
+import { config } from "./shared/config";
+import { registerShutdownHandlers } from "./shared/infra";
+import { globalEventBus, Logger } from "./shared/services";
 
 async function bootstrap() {
   Logger.info("Bootstrap", "Initializing Twitch worker application...⚙️");

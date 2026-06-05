@@ -1,7 +1,11 @@
-import { Logger } from "../../../shared/services/logger.service";
+import { Logger } from "../../../shared/services";
+import { UserService } from "../../user";
 import { ChatbotService } from "../chatbot.service";
-import { COINS_EXCHANGE_AMOUNT, REWARD_TITLES } from "../twitch.constants";
-import { UserService } from "../user.service";
+import {
+  BOT_MESSAGES,
+  COINS_EXCHANGE_AMOUNT,
+  REWARD_TITLES,
+} from "../twitch.constants";
 import { RewardContext, RewardHandler } from "./reward.interface";
 
 export class CoinExchangeHandler implements RewardHandler {
@@ -15,10 +19,11 @@ export class CoinExchangeHandler implements RewardHandler {
   async execute(ctx: RewardContext): Promise<void> {
     try {
       await this.userService.addCoins(ctx.userId, COINS_EXCHANGE_AMOUNT);
-      await this.chatbotService.sendAnnouncement(
-        `💰 @${ctx.username} exchanged Channel Points for ${COINS_EXCHANGE_AMOUNT} Coins! Wallet updated! 🪙`,
-        "green",
+      const message = BOT_MESSAGES.REWARDS.COIN_EXCHANGE(
+        ctx.username,
+        COINS_EXCHANGE_AMOUNT,
       );
+      await this.chatbotService.sendAnnouncement(message, "green");
 
       Logger.info(
         "ChatbotService",

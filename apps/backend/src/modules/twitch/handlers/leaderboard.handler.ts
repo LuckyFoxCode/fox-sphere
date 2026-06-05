@@ -1,12 +1,13 @@
-import { Logger } from "../../../shared/services/logger.service";
+import { Logger } from "../../../shared/services";
+import { UserService } from "../../user";
 import { ChatbotService } from "../chatbot.service";
 import {
+  BOT_MESSAGES,
   LEADERBOARD_LIMIT,
   LEADERBOARD_MARKERS,
   REWARD_TITLES,
 } from "../twitch.constants";
 import { TwitchConfig } from "../twitch.types";
-import { UserService } from "../user.service";
 import { RewardContext, RewardHandler } from "./reward.interface";
 
 export class LeaderboardHandler implements RewardHandler {
@@ -37,10 +38,8 @@ export class LeaderboardHandler implements RewardHandler {
         })
         .join("   |   ");
 
-      await this.chatbotService.sendAnnouncement(
-        `🏆 LEADERBOARD (Ordered by @${ctx.username}) 🏆   ➔   ${topList}`,
-        "purple",
-      );
+      const message = BOT_MESSAGES.REWARDS.LEADERBOARD(ctx.username, topList);
+      await this.chatbotService.sendAnnouncement(message, "purple");
 
       Logger.debug(
         "LeaderboardHandler",

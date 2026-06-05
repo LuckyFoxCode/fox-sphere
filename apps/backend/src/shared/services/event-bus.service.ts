@@ -8,6 +8,7 @@ interface AppEvents {
     username: string;
     rewardTitle: string;
   };
+  "user:created": { twitchId: string; username: string };
   "user:level-up": { userId: string; username: string; newLevel: number };
 }
 

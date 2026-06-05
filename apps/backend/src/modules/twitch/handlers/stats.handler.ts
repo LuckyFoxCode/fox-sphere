@@ -1,8 +1,8 @@
-import { Logger } from "../../../shared/services/logger.service";
+import { Logger } from "../../../shared/services";
+import { UserService } from "../../user";
 import { ChatbotService } from "../chatbot.service";
-import { REWARD_TITLES } from "../twitch.constants";
+import { BOT_MESSAGES, REWARD_TITLES } from "../twitch.constants";
 import { TwitchConfig } from "../twitch.types";
-import { UserService } from "../user.service";
 import { RewardContext, RewardHandler } from "./reward.interface";
 
 export class StatsHandler implements RewardHandler {
@@ -37,10 +37,13 @@ export class StatsHandler implements RewardHandler {
       const totalUserXp = userData.xp;
       const totalXpNeededForNextLevel = getXpThresholdForLevel(userData.lvl);
 
-      await this.chatbotService.sendAnnouncement(
-        `✨ @${ctx.username}'s STATS:   ⭐ Level: ${userData.lvl}   🛡️   XP: ${totalUserXp} / ${totalXpNeededForNextLevel}   🚀`,
-        "orange",
+      const message = BOT_MESSAGES.REWARDS.USER_STATS(
+        ctx.username,
+        userData.lvl,
+        totalUserXp,
+        totalXpNeededForNextLevel,
       );
+      await this.chatbotService.sendAnnouncement(message, "orange");
 
       Logger.debug(
         "StatsHandler",

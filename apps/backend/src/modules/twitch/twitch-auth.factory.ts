@@ -1,8 +1,8 @@
 import { RefreshingAuthProvider } from "@twurple/auth";
 import { config } from "../../shared/config";
-import { AppError } from "../../shared/errors/app-error";
-import { prisma } from "../../shared/lib/prisma";
-import { Logger } from "../../shared/services/logger.service";
+import { AppError } from "../../shared/errors";
+import { prisma } from "../../shared/lib";
+import { Logger } from "../../shared/services";
 import { TokenService } from "./token.service";
 
 export class TwitchAuthFactory {

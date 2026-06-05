@@ -1,7 +1,7 @@
 import { Logger } from "../../../../shared/services/logger.service";
+import { UserService } from "../../../user";
 import { ChatbotService } from "../../chatbot.service";
-import { COOLDOWNS } from "../../twitch.constants";
-import { UserService } from "../../user.service";
+import { BOT_MESSAGES, COOLDOWNS } from "../../twitch.constants";
 import { CommandContext, TwitchCommand } from "../command.interface";
 
 export class CoinsCommand implements TwitchCommand {
@@ -27,10 +27,8 @@ export class CoinsCommand implements TwitchCommand {
     try {
       const coins = await this.userService.getUserCoins(twitchId);
 
-      await this.chatbotService.sendMessage(
-        ctx.channel,
-        `💰 Wallet • @${ctx.user} ➔ ${coins} Coins 🪙`,
-      );
+      const message = BOT_MESSAGES.COMMANDS.WALLET_BALANCE(ctx.user, coins);
+      await this.chatbotService.sendMessage(ctx.channel, message);
 
       this.coinsCommandCooldown.add(twitchId);
       setTimeout(() => {

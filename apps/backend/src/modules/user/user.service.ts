@@ -1,24 +1,186 @@
-import { CreateUserDto } from "@fox-sphere/shared-schemas";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
-import { ConflictError } from "../../shared/errors/app-error";
-import { prisma } from "../../shared/lib/prisma";
+import { User } from "../../generated/prisma/client";
+import { AppError } from "../../shared/errors";
+import { prisma } from "../../shared/lib";
+import { globalEventBus, Logger } from "../../shared/services";
+import { COOLDOWNS } from "./user.constants";
 
-export const createUser = async (data: CreateUserDto) => {
-  try {
-    return await prisma.user.create({ data });
-  } catch (error) {
-    if (
-      error instanceof PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      throw new ConflictError(
-        "A user with this Twitch ID is already registered",
+export class UserService {
+  private verifiedUsersCache = new Set<string>();
+  private xpCooldownCache = new Map<string, number>();
+  private coinsCache = new Map<string, { coins: number; createdAt: number }>();
+
+  public async findOrCreateUser(twitchId: string, username: string) {
+    try {
+      if (!this.verifiedUsersCache.has(twitchId)) {
+        let user = await prisma.user.findUnique({
+          where: { twitchId },
+        });
+
+        if (!user) {
+          user = await prisma.user.create({
+            data: {
+              twitchId,
+              username,
+            },
+          });
+
+          globalEventBus.emit("user:created", {
+            twitchId: user.twitchId,
+            username: user.username,
+          });
+        } else {
+          if (user.username !== username) {
+            user = await prisma.user.update({
+              where: { twitchId },
+              data: {
+                username,
+              },
+            });
+          }
+
+          const lastXpTime = user.lastXpAt
+            ? new Date(user.lastXpAt).getTime()
+            : 0;
+          this.xpCooldownCache.set(user.twitchId, lastXpTime);
+        }
+
+        this.verifiedUsersCache.add(twitchId);
+
+        return user;
+      }
+    } catch (error) {
+      Logger.error(
+        "UserService",
+        `Failed to find or create user: ${username} (${twitchId})`,
+        error,
+      );
+      throw new AppError("Internal user management error", 500);
+    }
+  }
+
+  public async addXpForMessage(
+    twitchId: string,
+    xpAmount: number,
+  ): Promise<void> {
+    const now = Date.now();
+    const lastXpTime = this.xpCooldownCache.get(twitchId) || 0;
+
+    if (now - lastXpTime < COOLDOWNS.XP_MESSAGE_COOLDOWN) return;
+
+    try {
+      const updatedUser = await prisma.user.update({
+        where: { twitchId },
+        data: {
+          xp: {
+            increment: xpAmount,
+          },
+          lastXpAt: new Date(now),
+        },
+      });
+
+      this.xpCooldownCache.set(twitchId, now);
+      await this.checkAndUpgradeLevel(updatedUser);
+    } catch (error) {
+      Logger.error(
+        "UserService",
+        `Failed to add XP for user: ${twitchId}`,
+        error,
       );
     }
-    throw error;
   }
-};
 
-export const getAllUsers = async () => {
-  return await prisma.user.findMany();
-};
+  private async checkAndUpgradeLevel(user: User): Promise<void> {
+    let currentLvl = user.lvl;
+    let hasLeveledUp = false;
+
+    const getXpThresholdForLevel = (lvl: number): number => {
+      let totalXpNeeded = 0;
+
+      for (let i = 1; i <= lvl; i++) {
+        totalXpNeeded += i * 100;
+      }
+
+      return totalXpNeeded;
+    };
+
+    let nextLevelThreshold = getXpThresholdForLevel(currentLvl);
+
+    while (user.xp >= nextLevelThreshold) {
+      currentLvl++;
+      nextLevelThreshold = getXpThresholdForLevel(currentLvl);
+      hasLeveledUp = true;
+    }
+
+    if (hasLeveledUp) {
+      const freshUserData = await prisma.user.update({
+        where: { twitchId: user.twitchId },
+        data: {
+          lvl: currentLvl,
+        },
+      });
+      globalEventBus.emit("user:level-up", {
+        userId: freshUserData.twitchId,
+        username: freshUserData.username,
+        newLevel: currentLvl,
+      });
+    }
+  }
+
+  public async getUsersStats(twitchId: string) {
+    return prisma.user.findUnique({
+      where: { twitchId },
+    });
+  }
+
+  public async getTopUsers(limit = 5) {
+    return prisma.user.findMany({
+      orderBy: {
+        xp: "desc",
+      },
+      take: limit,
+    });
+  }
+
+  public async addCoins(twitchId: string, amount: number): Promise<void> {
+    await prisma.user.update({
+      where: { twitchId },
+      data: {
+        coins: {
+          increment: amount,
+        },
+      },
+    });
+
+    this.coinsCache.delete(twitchId);
+
+    Logger.debug(
+      "UserService",
+      `Successfully added ${amount} coins to user: ${twitchId} and cleared cache.`,
+    );
+  }
+
+  public async getUserCoins(twitchId: string): Promise<number> {
+    const now = Date.now();
+    const cacheData = this.coinsCache.get(twitchId);
+
+    if (cacheData && now - cacheData.createdAt < COOLDOWNS.COINS_CACHE_TTL) {
+      return cacheData.coins;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { twitchId },
+      select: { coins: true },
+    });
+
+    const currentCoins = user ? user.coins : 0;
+
+    this.coinsCache.set(twitchId, { coins: currentCoins, createdAt: now });
+
+    return currentCoins;
+  }
+
+  public clearCache(): void {
+    this.verifiedUsersCache.clear();
+    Logger.info("UserService", "User cache cleared successfully🧹");
+  }
+}
