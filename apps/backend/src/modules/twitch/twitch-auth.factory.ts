@@ -52,6 +52,7 @@ export class TwitchAuthFactory {
           "chat:edit",
           "moderator:manage:announcements",
           "moderator:read:chatters",
+          "moderator:manage:shoutouts",
           "moderator:read:followers",
           "channel:bot",
           "user:bot",
