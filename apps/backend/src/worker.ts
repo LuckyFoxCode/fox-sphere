@@ -47,6 +47,14 @@ async function bootstrap() {
     });
   });
 
+  await eventSubClient.subscribeToRaids(async (event) => {
+    globalEventBus.emit("twitch:raid", {
+      raiderId: event.raidingBroadcasterId,
+      raiderName: event.raidingBroadcasterDisplayName,
+      viewers: event.viewers,
+    });
+  });
+
   await eventSubClient.subscribeToRewards(async (data) => {
     globalEventBus.emit("twitch:reward-redeem", {
       userId: data.userId,
