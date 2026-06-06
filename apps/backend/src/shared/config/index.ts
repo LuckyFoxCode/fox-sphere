@@ -15,7 +15,10 @@ const getEnv = (key: string, defaultValue?: string): string => {
 
 export const config = {
   port: Number(process.env.PORT) || 3000,
+  nodeEnv: process.env.NODE_ENV || "development",
+  debug: process.env.DEBUG === "true",
   databaseUrl: getEnv("DATABASE_URL"),
+  allowedOrigin: getEnv("ALLOWED_ORIGIN", "http://localhost:5173"),
 
   twitch: {
     userId: getEnv("TWITCH_USER_ID"),
@@ -25,7 +28,6 @@ export const config = {
     clientSecret: getEnv("TWITCH_CLIENT_SECRET"),
     clientAccessToken: getEnv("TWITCH_STREAMER_ACCESS_TOKEN"),
     clientRefreshToken: getEnv("TWITCH_STREAMER_REFRESH_TOKEN"),
-    botChannelName: getEnv("TWITCH_BOT_CHANNEL_NAME"),
     botAccessToken: getEnv("TWITCH_BOT_ACCESS_TOKEN"),
     botRefreshToken: getEnv("TWITCH_BOT_REFRESH_TOKEN"),
   },
