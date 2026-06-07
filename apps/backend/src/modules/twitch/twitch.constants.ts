@@ -46,6 +46,7 @@ export const BOT_MESSAGES = {
     TG: `📢 Telegram • Join for weekly devlogs, project updates, and live announcements: https://t.me/TheCodingFox 🦊🌐`,
     STACK: `💻 Tech Stack • Express / TypeScript • Vue 3 / TailwindCSS • PostgreSQL / Prisma / Docker ⚙️`,
     PROJECT: `🛠️ Current Project • FoxSphere: A custom Full-Stack Twitch interactive & gamification platform built from scratch (Vue 3 / Express / Postgres / Docker) to level up my dev skills live! 🦊🔮`,
+    HELP: `🔮 FoxSphere • Commands: !coins | Info: !gh • !tg • !stack • !project ➔ Type any command for details! 🚀`,
   },
 
   // Награды за баллы канала (Channel Points)

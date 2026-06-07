@@ -6,6 +6,7 @@ import { TwitchCommand } from "../commands/command.interface";
 import { CoinsCommand } from "../commands/economy";
 import {
   GitHubCommand,
+  HelpCommand,
   ProjectCommand,
   StackCommand,
   TelegramCommand,
@@ -27,9 +28,10 @@ export class CommandRegisry {
     const commandToRegister: TwitchCommand[] = [
       new CoinsCommand(this.chatbotService, this.userService),
       new GitHubCommand(this.chatbotService),
-      new TelegramCommand(this.chatbotService),
-      new StackCommand(this.chatbotService),
+      new HelpCommand(this.chatbotService),
       new ProjectCommand(this.chatbotService),
+      new StackCommand(this.chatbotService),
+      new TelegramCommand(this.chatbotService),
     ];
 
     for (const command of commandToRegister) {
