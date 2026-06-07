@@ -4,7 +4,12 @@ import { UserService } from "../../user";
 import { ChatbotService } from "../chatbot.service";
 import { TwitchCommand } from "../commands/command.interface";
 import { CoinsCommand } from "../commands/economy";
-import { GitHubCommand, TelegramCommand } from "../commands/general";
+import {
+  GitHubCommand,
+  ProjectCommand,
+  StackCommand,
+  TelegramCommand,
+} from "../commands/general";
 
 export class CommandRegisry {
   private commands = new Map<string, TwitchCommand>();
@@ -23,6 +28,8 @@ export class CommandRegisry {
       new CoinsCommand(this.chatbotService, this.userService),
       new GitHubCommand(this.chatbotService),
       new TelegramCommand(this.chatbotService),
+      new StackCommand(this.chatbotService),
+      new ProjectCommand(this.chatbotService),
     ];
 
     for (const command of commandToRegister) {

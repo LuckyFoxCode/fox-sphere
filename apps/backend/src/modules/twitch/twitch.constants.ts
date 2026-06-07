@@ -44,8 +44,8 @@ export const BOT_MESSAGES = {
       `💰 Wallet • @${username} ➔ ${coins} Coins 🪙`,
     GH: `🚀 GitHub • Follow my dev journey and explore the code: https://github.com/LuckyFoxCode 🌐`,
     TG: `📢 Telegram • Join for weekly devlogs, project updates, and live announcements: https://t.me/TheCodingFox 🦊🌐`,
-    STACK: `Tech stack: Node.js, Vue 3, TypeScript, TailwindCSS, Prisma, PostgreSQL, Docker 💻`,
-    PROJECT: `Текущий проект: Разработка собственного бэкенда для стримов FoxSphere. Сейчас мигрирую команды из StreamElements! 🛠️`,
+    STACK: `💻 Tech Stack • Express / TypeScript • Vue 3 / TailwindCSS • PostgreSQL / Prisma / Docker ⚙️`,
+    PROJECT: `🛠️ Current Project • FoxSphere: A custom Full-Stack Twitch interactive & gamification platform built from scratch (Vue 3 / Express / Postgres / Docker) to level up my dev skills live! 🦊🔮`,
   },
 
   // Награды за баллы канала (Channel Points)
