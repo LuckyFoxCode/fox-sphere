@@ -22,6 +22,7 @@ export const COINS_EXCHANGE_AMOUNT = 10;
 export const COOLDOWNS = {
   COINS_COMMAND: 5000,
   ANNOUNCEMENT_QUEUE: 2000,
+  GENERAL_COMMAND: 10000,
 };
 
 export const BOT_MESSAGES = {
@@ -41,6 +42,10 @@ export const BOT_MESSAGES = {
   COMMANDS: {
     WALLET_BALANCE: (username: string, coins: number) =>
       `💰 Wallet • @${username} ➔ ${coins} Coins 🪙`,
+    GH: `🚀 GitHub • Follow my dev journey and explore the code: https://github.com/LuckyFoxCode 🌐`,
+    TG: `Join the Telegram channel for weekly devlogs and updates: https://t.me/TheCodingFox 📢`,
+    STACK: `Tech stack: Node.js, Vue 3, TypeScript, TailwindCSS, Prisma, PostgreSQL, Docker 💻`,
+    PROJECT: `Текущий проект: Разработка собственного бэкенда для стримов FoxSphere. Сейчас мигрирую команды из StreamElements! 🛠️`,
   },
 
   // Награды за баллы канала (Channel Points)

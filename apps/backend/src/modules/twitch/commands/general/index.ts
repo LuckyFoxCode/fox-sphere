@@ -1,1 +1,1 @@
-export * from "./ping.command";
+export * from "./gh.command";
