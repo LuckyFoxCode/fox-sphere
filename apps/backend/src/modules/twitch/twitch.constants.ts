@@ -22,6 +22,7 @@ export const COINS_EXCHANGE_AMOUNT = 10;
 export const COOLDOWNS = {
   COINS_COMMAND: 5000,
   ANNOUNCEMENT_QUEUE: 2000,
+  GENERAL_COMMAND: 10000,
 };
 
 export const BOT_MESSAGES = {
@@ -41,6 +42,12 @@ export const BOT_MESSAGES = {
   COMMANDS: {
     WALLET_BALANCE: (username: string, coins: number) =>
       `💰 Wallet • @${username} ➔ ${coins} Coins 🪙`,
+    GH: `🚀 GitHub • Follow my dev journey and explore the code: https://github.com/LuckyFoxCode 🌐`,
+    TG: `📢 Telegram • Join for weekly devlogs, project updates, and live announcements: https://t.me/TheCodingFox 🦊🌐`,
+    STACK: `💻 Tech Stack • Express / TypeScript • Vue 3 / TailwindCSS • PostgreSQL / Prisma / Docker ⚙️`,
+    PROJECT: `🛠️ Current Project • FoxSphere: A custom Full-Stack Twitch interactive & gamification platform built from scratch (Vue 3 / Express / Postgres / Docker) to level up my dev skills live! 🦊🔮`,
+    HELP: `🔮 FoxSphere • Commands: !coins | Info: !gh • !tg • !stack • !project ➔ Type any command for details! 🚀`,
+    POINTS: `🪙 Economy • Channel Points automatically integrate with FoxSphere rewards. Earn Coins by watching and save them to unlock custom interactive features in the future! 🔮`,
   },
 
   // Награды за баллы канала (Channel Points)
