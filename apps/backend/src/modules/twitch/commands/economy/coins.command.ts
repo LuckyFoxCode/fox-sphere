@@ -9,6 +9,7 @@ import {
 
 export class CoinsCommand implements TwitchCommand {
   readonly name = "coins";
+  readonly alliases = ["balance", "wallet", "money", "копилка", "баланс"];
   readonly cooldown: CooldownConfig = {
     time: COOLDOWNS.COINS_COMMAND,
     type: "user" as const,

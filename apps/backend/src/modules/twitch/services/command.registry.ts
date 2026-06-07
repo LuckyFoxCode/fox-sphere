@@ -4,7 +4,7 @@ import { UserService } from "../../user";
 import { ChatbotService } from "../chatbot.service";
 import { TwitchCommand } from "../commands/command.interface";
 import { CoinsCommand } from "../commands/economy";
-import { GitHubCommand } from "../commands/general";
+import { GitHubCommand, TelegramCommand } from "../commands/general";
 
 export class CommandRegisry {
   private commands = new Map<string, TwitchCommand>();
@@ -19,11 +19,21 @@ export class CommandRegisry {
   }
 
   private registerCommands(): void {
-    const coinsCmd = new CoinsCommand(this.chatbotService, this.userService);
-    const ghCmd = new GitHubCommand(this.chatbotService);
+    const commandToRegister: TwitchCommand[] = [
+      new CoinsCommand(this.chatbotService, this.userService),
+      new GitHubCommand(this.chatbotService),
+      new TelegramCommand(this.chatbotService),
+    ];
 
-    this.commands.set(coinsCmd.name, coinsCmd);
-    this.commands.set(ghCmd.name, ghCmd);
+    for (const command of commandToRegister) {
+      this.commands.set(command.name.toLowerCase(), command);
+
+      if (command.alliases) {
+        for (const allias of command.alliases) {
+          this.commands.set(allias.toLowerCase(), command);
+        }
+      }
+    }
 
     Logger.info("CommandRegistry", "Twitch commands registered.");
   }

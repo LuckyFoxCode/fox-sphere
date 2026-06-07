@@ -6,9 +6,9 @@ import {
   TwitchCommand,
 } from "../command.interface";
 
-export class GitHubCommand implements TwitchCommand {
-  readonly name = "gh";
-  readonly alliases = ["github", "git", "code", "repo", "репозиторий", "код"];
+export class TelegramCommand implements TwitchCommand {
+  readonly name = "tg";
+  readonly alliases = ["telegram", "tgchannel", "телеграм", "телега"];
 
   readonly cooldown: CooldownConfig = {
     time: COOLDOWNS.GENERAL_COMMAND,
@@ -18,7 +18,7 @@ export class GitHubCommand implements TwitchCommand {
   constructor(private chatbotService: ChatbotService) {}
 
   async execute(ctx: CommandContext): Promise<void> {
-    const message = BOT_MESSAGES.COMMANDS.GH;
+    const message = BOT_MESSAGES.COMMANDS.TG;
     await this.chatbotService.sendMessage(ctx.channel, message);
   }
 }

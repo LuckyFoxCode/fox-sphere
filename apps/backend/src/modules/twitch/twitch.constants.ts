@@ -43,7 +43,7 @@ export const BOT_MESSAGES = {
     WALLET_BALANCE: (username: string, coins: number) =>
       `💰 Wallet • @${username} ➔ ${coins} Coins 🪙`,
     GH: `🚀 GitHub • Follow my dev journey and explore the code: https://github.com/LuckyFoxCode 🌐`,
-    TG: `Join the Telegram channel for weekly devlogs and updates: https://t.me/TheCodingFox 📢`,
+    TG: `📢 Telegram • Join for weekly devlogs, project updates, and live announcements: https://t.me/TheCodingFox 🦊🌐`,
     STACK: `Tech stack: Node.js, Vue 3, TypeScript, TailwindCSS, Prisma, PostgreSQL, Docker 💻`,
     PROJECT: `Текущий проект: Разработка собственного бэкенда для стримов FoxSphere. Сейчас мигрирую команды из StreamElements! 🛠️`,
   },
