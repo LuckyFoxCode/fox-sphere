@@ -98,6 +98,36 @@ export class ChatbotService {
   }
 
   private setupGlobalEventListers(): void {
+    globalEventBus.on("lottery:ticket-earned", async (data) => {
+      try {
+        await this.sendMessage(
+          this.twitchConfig.channelName,
+          `🎉 @${data.username} набрал необходимый опыт и получает лотерейный билет! Удачи в розыгрыше! 🎫`,
+        );
+      } catch (error) {
+        Logger.error(
+          "ChatbotService",
+          `Failed to send ticket ${data.username}`,
+          error,
+        );
+      }
+    });
+
+    globalEventBus.on("lottery:finished", async (data) => {
+      try {
+        await this.sendMessage(
+          this.twitchConfig.channelName,
+          `👑 ЕЖЕНЕДЕЛЬНАЯ ЛОТЕРЕЯ ЗАВЕРШЕНА! Встречайте "Королей чата" на этой неделе: ${data.winners}! Вы получаете модификатор +1 XP! 🚀✨`,
+        );
+      } catch (error) {
+        Logger.error(
+          "ChatbotService",
+          `Failed to send winners list ${data.winners}`,
+          error,
+        );
+      }
+    });
+
     globalEventBus.on("user:level-up", async (data) => {
       try {
         const message = BOT_MESSAGES.ALERTS.LEVEL_UP(

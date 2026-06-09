@@ -57,6 +57,30 @@ export class CommandRegisry {
   ): Promise<void> {
     if (!text.startsWith("!")) return;
 
+    if (text.toLowerCase().startsWith("!runlottery")) {
+      // 1. Проверяем права: только стример (бродкастер)
+      if (!msg.userInfo.isBroadcaster) {
+        Logger.debug(
+          "CommandRegistry",
+          `User ${user} tried to run lottery without permission.`,
+        );
+        return;
+      }
+
+      try {
+        await this.chatbotService.sendMessage(
+          channel,
+          "🔮 Тестовый запуск: Крутим барабан лотереи и выбираем победителей! 🎰",
+        );
+
+        await this.userService.lotteryService.runWeeklyLottery();
+
+        return; // Выходим, чтобы код не искал эту команду в Map
+      } catch (err) {
+        Logger.error("CommandRegistry", "Failed to run test lottery", err);
+      }
+    }
+
     const args = text.slice(1).trim().split(/ +/);
     const commandName = args.shift()?.toLowerCase();
 

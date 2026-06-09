@@ -8,22 +8,35 @@ datasource db {
 }
 
 model User {
-  id            Int           @id @default(autoincrement())
-  twitchId      String        @unique
-  username      String
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  coins         Int           @default(0)
-  lvl           Int           @default(1)
-  xp            Int           @default(0)
-  lastXpAt      DateTime      @default(now())
-  isMod         Boolean       @default(false)
-  isFounder     Boolean       @default(false)
-  isSubscriber  Boolean       @default(false)
-  spinsCount    Int           @default(0)
-  totalWin      Int           @default(0)
-  totalLoss     Int           @default(0)
-  coinHistories CoinHistory[]
+  id             Int           @id @default(autoincrement())
+  twitchId       String        @unique
+  username       String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  coins          Int           @default(0)
+  lvl            Int           @default(1)
+  xp             Int           @default(0)
+  lastXpAt       DateTime      @default(now())
+  isMod          Boolean       @default(false)
+  isFounder      Boolean       @default(false)
+  isSubscriber   Boolean       @default(false)
+  isPermanentVip Boolean       @default(false)
+  spinsCount     Int           @default(0)
+  totalWin       Int           @default(0)
+  totalLoss      Int           @default(0)
+  coinHistories  CoinHistory[]
+  lotteryContext UserLottery?
+}
+
+model UserLottery {
+  id         Int     @id @default(autoincrement())
+  xpThisWeek Int     @default(0)
+  hasTicket  Boolean @default(false)
+  isLuckyVip Boolean @default(false)
+  userId     Int     @unique
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model CoinHistory {

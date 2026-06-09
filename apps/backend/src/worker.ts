@@ -1,3 +1,4 @@
+import { LotteryService } from "./modules/lottery";
 import { ChatbotService } from "./modules/twitch/chatbot.service";
 import { TwitchEventSubClient } from "./modules/twitch/eventsub.client";
 import { TokenService } from "./modules/twitch/token.service";
@@ -12,7 +13,8 @@ async function bootstrap() {
   Logger.info("Bootstrap", "Initializing Twitch worker application...⚙️");
 
   const tokenService = new TokenService();
-  const userService = new UserService();
+  const lotteryService = new LotteryService();
+  const userService = new UserService(lotteryService);
 
   // Создаем авторизацию через фабрику
   const authProvider = await TwitchAuthFactory.create(tokenService);
