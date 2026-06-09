@@ -38,6 +38,27 @@ export const BOT_MESSAGES = {
       `⚡ @${raiderName} just raided with ${viewers} viewers! Welcome to the Sphere! 🦊🌐✨`,
   },
 
+  // Лотеря випок
+  LOTTERY: {
+    /** Текст, когда зритель набрал 5/100 XP и получил билет */
+    TICKET_EARNED: (username: string) =>
+      `🎉 @${username} earned enough weekly XP and received a Lottery Ticket! Good luck! 🎫✨`,
+
+    /** Анонс перед началом розыгрыша по команде !runlottery */
+    START_ROLL: () =>
+      `🔮 Spinning the Wheel of Fortune... Gathering all weekly tickets! 🎰`,
+
+    /** Торжественный анонс победителей лотереи */
+    FINISHED: (winners: string[]) => {
+      const winnersList = winners.map((name) => `@${name}`).join(", ");
+      return `👑 WEEKLY LOTTERY COMPLETED! Meet the Chat Kings for this week: ${winnersList}! You receive a +1 XP Modifier on all messages! 🚀✨`;
+    },
+
+    /** Если никто не успел получить билет за неделю */
+    NO_PARTICIPANTS: () =>
+      `⚠ No one managed to get a Lottery Ticket this week. The lottery is postponed! Push harder next time! 💪`,
+  },
+
   // Текстовые команды из чата (!coins и т.д.)
   COMMANDS: {
     WALLET_BALANCE: (username: string, coins: number) =>

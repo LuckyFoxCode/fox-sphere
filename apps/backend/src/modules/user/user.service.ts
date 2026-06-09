@@ -121,6 +121,10 @@ export class UserService {
     }
   }
 
+  public async triggerLottery(): Promise<void> {
+    await this.lotteryService.runWeeklyLottery();
+  }
+
   private async checkAndUpgradeLevel(user: User): Promise<void> {
     let currentLvl = user.lvl;
     let hasLeveledUp = false;
