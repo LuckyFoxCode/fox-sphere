@@ -1,8 +1,16 @@
 import EventEmitter from "events";
 
+export interface LotteryWinnerDto {
+  twitchId: string;
+  username: string;
+}
+
 interface AppEvents {
   "lottery:ticket-earned": { twitchId: string; username: string };
-  "lottery:finished": { winners: string[] };
+  "lottery:finished": {
+    oldWinners: LotteryWinnerDto[];
+    newWinners: LotteryWinnerDto[];
+  };
   "twitch:follow": { userId: string; username: string };
   "twitch:raid": { raiderId: string; raiderName: string; viewers: number };
   "twitch:reward-redeem": {

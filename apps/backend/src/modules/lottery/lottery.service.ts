@@ -58,6 +58,11 @@ export class LotteryService {
 
   async runWeeklyLottery(): Promise<void> {
     try {
+      const oldWinners = await prisma.userLottery.findMany({
+        where: { isLuckyVip: true },
+        include: { user: true },
+      });
+
       const participants = await prisma.userLottery.findMany({
         where: { hasTicket: true },
         include: { user: true },
@@ -96,10 +101,20 @@ export class LotteryService {
         "LotteryService",
         `Лотерея успешно проведена! Выбрано победителей: ${winners.length}`,
       );
-      const winnersNames = winners.map((w) => w.user.username);
+
+      const oldWinnersMapped = oldWinners.map((w) => ({
+        twitchId: w.user.twitchId,
+        username: w.user.username,
+      }));
+
+      const newWinnersMapped = winners.map((w) => ({
+        twitchId: w.user.twitchId,
+        username: w.user.username,
+      }));
 
       globalEventBus.emit("lottery:finished", {
-        winners: winnersNames,
+        oldWinners: oldWinnersMapped,
+        newWinners: newWinnersMapped,
       });
     } catch (error) {
       Logger.error(
