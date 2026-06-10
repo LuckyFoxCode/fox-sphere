@@ -1,5 +1,6 @@
 import { prisma } from "../../shared/lib";
 import { globalEventBus, Logger } from "../../shared/services";
+import { LOTTERY_CONFIG } from "./lottery.constants";
 
 export class LotteryService {
   async processMessageXp(userId: number, baseXp: number = 1): Promise<void> {
@@ -16,7 +17,10 @@ export class LotteryService {
       },
     });
 
-    if (lotteryContext.xpThisWeek >= 5 && !lotteryContext.hasTicket) {
+    if (
+      lotteryContext.xpThisWeek >= LOTTERY_CONFIG.TICKET_XP_THRESHOLD &&
+      !lotteryContext.hasTicket
+    ) {
       await prisma.userLottery.update({
         where: { userId },
         data: {
@@ -42,6 +46,16 @@ export class LotteryService {
     }
   }
 
+  private shuffle<T>(array: T[]): T[] {
+    const shuffled = [...array];
+
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
+
   async runWeeklyLottery(): Promise<void> {
     try {
       const participants = await prisma.userLottery.findMany({
@@ -50,16 +64,13 @@ export class LotteryService {
       });
 
       if (participants.length === 0) {
-        Logger.info(
-          "LotteryService",
-          "Розыгрыш запущен, но участников с билетами нет.",
-        );
+        Logger.info("LotteryService", "Розыгрыш запущен, но участников нет.");
         return;
       }
 
-      const shuffled = [...participants].sort(() => 0.5 - Math.random());
+      const shuffled = this.shuffle(participants);
 
-      const winners = shuffled.slice(0, 5);
+      const winners = shuffled.slice(0, LOTTERY_CONFIG.WINNERS_COUNT);
       const winnersUserIds = winners.map((w) => w.userId);
 
       await prisma.$transaction([
