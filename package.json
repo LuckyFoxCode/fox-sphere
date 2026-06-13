@@ -4,6 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "pnpm --filter \"./packages/*\" build && pnpm --filter frontend build",
+    "build:all": "pnpm -r build",
+    "build:p": "pnpm --filter \"./packages/*\" build",
+    "new:pkg": "node scripts/create-package.mjs",
     "lint:f": "pnpm --filter frontend lint",
     "format:f": "pnpm --filter frontend format",
     "dev:f": "pnpm --filter frontend dev",
