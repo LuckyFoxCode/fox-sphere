@@ -63,25 +63,30 @@ export class TwitchAuthFactory {
       ["chat"],
     );
 
-    await authProvider.addUser(userId, {
-      accessToken: streamerTokenRecord.accessToken,
-      refreshToken: streamerTokenRecord.refreshToken ?? undefined,
-      expiresIn: streamerTokenRecord.expiresIn ?? 0,
-      obtainmentTimestamp: Number(streamerTokenRecord.obtainmentTimestamp),
-      scope: [
-        "bits:read", // Track cheer events and Bits donations
-        "channel:read:subscriptions", // Track tier-1/2/3 subs and sub gifts
-        "moderation:read", // Read moderators/VIPs lists (VIP lottery check)
-        "channel:manage:broadcast", // Change stream title and category via commands
-        "channel:read:redemptions", // Track Twitch channel points rewards redemption
-        "channel:read:hype_train", // Track Hype Train events
-        "channel:manage:redemptions", // Manage channel points status (approve/refund)
-        "channel:manage:polls", // Create and manage chat polls
-        "channel:manage:predictions", // Create predictions (Casino/Games betting system)
-        "channel:manage:moderators", // Manage channel moderators (for future rewards)
-        "channel:manage:vips", // Add and remove VIP statuses (VIP lottery core)
-      ],
-    });
+    await authProvider.addUser(
+      userId,
+      {
+        accessToken: streamerTokenRecord.accessToken,
+        refreshToken: streamerTokenRecord.refreshToken ?? undefined,
+        expiresIn: streamerTokenRecord.expiresIn ?? 0,
+        obtainmentTimestamp: Number(streamerTokenRecord.obtainmentTimestamp),
+        scope: [
+          "bits:read", // Track cheer events and Bits donations
+          "channel:read:subscriptions", // Track tier-1/2/3 subs and sub gifts
+          "moderation:read", // Read moderators/VIPs lists (VIP lottery check)
+          "channel:read:redemptions", // Track Twitch channel points rewards redemption
+          "channel:read:hype_train", // Track Hype Train events
+          "channel:manage:broadcast", // Change stream title and category via commands
+          "channel:manage:redemptions", // Manage channel points status (approve/refund)
+          "channel:manage:polls", // Create and manage chat polls
+          "channel:manage:predictions", // Create predictions (Casino/Games betting system)
+          "channel:manage:moderators", // Manage channel moderators (for future rewards)
+          "channel:read:vips", // Read the list of VIPs in your channel.
+          "channel:manage:vips", // Add and remove VIP statuses (VIP lottery core)
+        ],
+      },
+      [],
+    );
 
     return authProvider;
   }
