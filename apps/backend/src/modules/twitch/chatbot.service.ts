@@ -1,8 +1,10 @@
 import { ApiClient } from "@twurple/api";
 import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
+import { prisma } from "../../shared/lib";
 import { globalEventBus } from "../../shared/services/event-bus.service";
 import { Logger } from "../../shared/services/logger.service";
+import { LOTTERY_DELAYS, LOTTERY_MESSAGES } from "../lottery";
 import { COOLDOWNS as USER_COOLDOWNS, UserService } from "../user";
 import {
   CoinExchangeHandler,
@@ -100,7 +102,7 @@ export class ChatbotService {
   private setupGlobalEventListers(): void {
     globalEventBus.on("lottery:ticket-earned", async (data) => {
       try {
-        const message = BOT_MESSAGES.LOTTERY.TICKET_EARNED(data.username);
+        const message = LOTTERY_MESSAGES.TICKET_EARNED(data.username);
         await this.sendMessage(this.twitchConfig.channelName, message);
       } catch (error) {
         Logger.error(
@@ -117,16 +119,28 @@ export class ChatbotService {
         const channelId = this.twitchConfig.userId;
         const channelName = this.twitchConfig.channelName;
 
+        const delay = (ms: number) =>
+          new Promise((resolve) => setTimeout(resolve, ms));
+
         Logger.info(
           "ChatbotService",
           "Начался процесс ротации лотерейных VIP-статусов...",
         );
 
-        const delay = (ms: number) =>
-          new Promise((resolve) => setTimeout(resolve, ms));
-
         for (const oldWinner of oldWinners) {
           try {
+            const currentDbUser = await prisma.user.findUnique({
+              where: { twitchId: oldWinner.twitchId },
+            });
+
+            if (currentDbUser?.isPermanentVip) {
+              Logger.debug(
+                "ChatbotService",
+                `Пропускаем снятие VIP с перманентного пользователя: ${oldWinner.username}`,
+              );
+              continue;
+            }
+
             const isWinnerAgain = newWinners.some(
               (nw) => nw.twitchId === oldWinner.twitchId,
             );
@@ -141,7 +155,7 @@ export class ChatbotService {
                 `Временный VIP успешно снят с @${oldWinner.username}`,
               );
 
-              await delay(1500);
+              await delay(LOTTERY_DELAYS.BEFORE_START_ANNOUNCEMENT);
             }
           } catch (error) {
             Logger.error(
@@ -153,17 +167,37 @@ export class ChatbotService {
         }
 
         await this.sendAnnouncement(
-          "🎰 Недельная лотерея запущена! Колесо фортуны крутится на оверлее... 🎰",
+          LOTTERY_MESSAGES.START_ANNOUNCEMENT,
           "purple",
         );
 
-        await delay(4000);
+        await delay(LOTTERY_DELAYS.ROTATION_PAUSE);
 
         for (let i = 0; i < newWinners.length; i++) {
           const winner = newWinners[i];
           const placesLeft = newWinners.length - (i + 1);
 
           try {
+            const wasWinnerAlready = oldWinners.some(
+              (ow) => ow.twitchId === winner.twitchId,
+            );
+
+            if (wasWinnerAlready) {
+              Logger.info(
+                "ChatbotService",
+                `@${winner.username} уже имеет VIP с прошлой недели. Пропускаем запрос.`,
+              );
+              const message = LOTTERY_MESSAGES.REPEATED_WINNER(
+                i + 1,
+                winner.username,
+                placesLeft,
+              );
+              await this.sendMessage(channelName, message);
+
+              if (placesLeft > 0) await delay(LOTTERY_DELAYS.NEXT_WINNER_PAUSE);
+              continue;
+            }
+
             await this.apiClient.asUser(channelId, async (ctx) => {
               await ctx.channels.addVip(channelId, winner.twitchId);
             });
@@ -172,30 +206,32 @@ export class ChatbotService {
               "ChatbotService",
               `VIP успешно выдан для @${winner.username}`,
             );
-            await this.sendMessage(
-              channelName,
-              `🎉 Место #${i + 1} занимает @${winner.username}! Лови законную VIP-ку на неделю! 🎫 (Осталось мест: ${placesLeft})`,
+            const message = LOTTERY_MESSAGES.NEW_WINNER(
+              i + 1,
+              winner.username,
+              placesLeft,
             );
+            await this.sendMessage(channelName, message);
           } catch (error) {
             Logger.error(
               "ChatbotService",
               `Ошибка при выдаче VIP для ${winner.username}`,
               error,
             );
-            await this.sendMessage(
-              channelName,
-              `⚠️ Не удалось выдать VIP для @${winner.username}. Возможно, закончились слоты!`,
-            );
+
+            const message = LOTTERY_MESSAGES.ERROR_ADDING_VIP(winner.username);
+            await this.sendMessage(channelName, message);
           }
 
           if (placesLeft > 0) {
-            await delay(5500);
+            await delay(LOTTERY_DELAYS.NEXT_WINNER_PAUSE);
           }
         }
 
-        await delay(2000);
+        await delay(LOTTERY_DELAYS.FINAL_PAUSE);
+
         await this.sendAnnouncement(
-          "✨ Все VIP-статусы успешно распределены! Спасибо за вашу активность на стримах! Увидимся на следующей неделе! ✨",
+          LOTTERY_MESSAGES.FINAL_ANNOUNCEMENT,
           "purple",
         );
       } catch (error) {

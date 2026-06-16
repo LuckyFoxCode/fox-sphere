@@ -12,14 +12,14 @@ import { globalEventBus, Logger } from "./shared/services";
 async function bootstrap() {
   Logger.info("Bootstrap", "Initializing Twitch worker application...⚙️");
 
+  const twitchConfig: TwitchConfig = config.twitch;
+
   const tokenService = new TokenService();
-  const lotteryService = new LotteryService();
+  const lotteryService = new LotteryService(twitchConfig); // <== edited
   const userService = new UserService(lotteryService);
 
   // Создаем авторизацию через фабрику
   const authProvider = await TwitchAuthFactory.create(tokenService);
-
-  const twitchConfig: TwitchConfig = config.twitch;
 
   // Инициализируем сервисы
   const chatbotService = new ChatbotService(

@@ -4,7 +4,6 @@ import {
   EventSubChannelFollowEvent,
   EventSubChannelRaidEvent,
   EventSubChannelRedemptionAddEvent,
-  EventSubChannelVipEvent,
 } from "@twurple/eventsub-base";
 import { EventSubWsListener } from "@twurple/eventsub-ws";
 import { Logger } from "../../shared/services";
@@ -98,24 +97,6 @@ export class TwitchEventSubClient {
           userId: event.userId,
           userDisplayName: event.userDisplayName,
           rewardTitle: event.rewardTitle,
-        });
-      },
-    );
-  }
-
-  public async subscribeToAddVipStatus(
-    callback: (data: { userId: string }) => void,
-  ) {
-    return this.listener.onChannelVipAdd(
-      this.config.userId,
-      (event: EventSubChannelVipEvent) => {
-        console.log("asdasd");
-        Logger.debug(
-          "TwitchEventSubClient",
-          `Added VIP status for users... 🎉`,
-        );
-        callback({
-          userId: event.userId,
         });
       },
     );

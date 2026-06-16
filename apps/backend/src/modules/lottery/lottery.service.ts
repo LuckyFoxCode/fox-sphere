@@ -1,9 +1,24 @@
 import { prisma } from "../../shared/lib";
 import { globalEventBus, Logger } from "../../shared/services";
+import { TwitchConfig } from "../twitch/twitch.types";
 import { LOTTERY_CONFIG } from "./lottery.constants";
+import { shuffleArray } from "./lottery.utils";
 
 export class LotteryService {
+  constructor(private twitchConfig: TwitchConfig) {}
+
   async processMessageXp(userId: number, baseXp: number = 1): Promise<void> {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return;
+
+    if (
+      user.twitchId === this.twitchConfig.userId ||
+      user.twitchId === this.twitchConfig.botId ||
+      user.isPermanentVip
+    ) {
+      return;
+    }
+
     const lotteryContext = await prisma.userLottery.upsert({
       where: { userId },
       update: {
@@ -33,27 +48,11 @@ export class LotteryService {
         `Пользователь с ID ${userId} набрал ${lotteryContext.xpThisWeek} XP и получил лотерейный билет!🎫`,
       );
 
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
+      globalEventBus.emit("lottery:ticket-earned", {
+        twitchId: user.twitchId,
+        username: user.username,
       });
-
-      if (user) {
-        globalEventBus.emit("lottery:ticket-earned", {
-          twitchId: user.twitchId,
-          username: user.username,
-        });
-      }
     }
-  }
-
-  private shuffle<T>(array: T[]): T[] {
-    const shuffled = [...array];
-
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
   }
 
   async runWeeklyLottery(): Promise<void> {
@@ -64,7 +63,12 @@ export class LotteryService {
       });
 
       const participants = await prisma.userLottery.findMany({
-        where: { hasTicket: true },
+        where: {
+          hasTicket: true,
+          user: {
+            isPermanentVip: false,
+          },
+        },
         include: { user: true },
       });
 
@@ -73,8 +77,7 @@ export class LotteryService {
         return;
       }
 
-      const shuffled = this.shuffle(participants);
-
+      const shuffled = shuffleArray(participants);
       const winners = shuffled.slice(0, LOTTERY_CONFIG.WINNERS_COUNT);
       const winnersUserIds = winners.map((w) => w.userId);
 

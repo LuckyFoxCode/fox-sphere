@@ -1,6 +1,5 @@
 import { COOLDOWNS, UserService } from "../../../user";
 import { ChatbotService } from "../../chatbot.service";
-import { BOT_MESSAGES } from "../../twitch.constants";
 import {
   CommandContext,
   CooldownConfig,
@@ -22,12 +21,10 @@ export class LotteryCommand implements TwitchCommand {
   ) {}
 
   async execute(ctx: CommandContext): Promise<void> {
-    const broadcater = ctx.msg.userInfo.isBroadcaster;
+    const broadcaster = ctx.msg.userInfo.isBroadcaster;
 
-    if (!broadcater) return;
+    if (!broadcaster) return;
 
-    const message = BOT_MESSAGES.LOTTERY.START_ROLL();
-    await this.chatbotService.sendMessage(ctx.channel, message);
     await this.userService.triggerLottery();
   }
 }
