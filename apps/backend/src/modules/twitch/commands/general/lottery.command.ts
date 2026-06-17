@@ -1,3 +1,4 @@
+import { LOTTERY_MESSAGES } from "../../../lottery";
 import { COOLDOWNS, UserService } from "../../../user";
 import { ChatbotService } from "../../chatbot.service";
 import {
@@ -25,6 +26,14 @@ export class LotteryCommand implements TwitchCommand {
 
     if (!broadcaster) return;
 
-    await this.userService.triggerLottery();
+    const isLotterySuccess = await this.userService.triggerLottery();
+
+    if (!isLotterySuccess) {
+      const channelName = ctx.channel;
+      await this.chatbotService.sendMessage(
+        channelName,
+        LOTTERY_MESSAGES.NO_PARTICIPANTS(),
+      );
+    }
   }
 }

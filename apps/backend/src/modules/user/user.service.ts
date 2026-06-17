@@ -121,8 +121,8 @@ export class UserService {
     }
   }
 
-  public async triggerLottery(): Promise<void> {
-    await this.lotteryService.runWeeklyLottery();
+  public async triggerLottery(): Promise<boolean> {
+    return await this.lotteryService.runWeeklyLottery();
   }
 
   private async checkAndUpgradeLevel(user: User): Promise<void> {

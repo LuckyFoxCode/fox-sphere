@@ -55,7 +55,7 @@ export class LotteryService {
     }
   }
 
-  async runWeeklyLottery(): Promise<void> {
+  async runWeeklyLottery(): Promise<boolean> {
     try {
       const oldWinners = await prisma.userLottery.findMany({
         where: { isLuckyVip: true },
@@ -74,7 +74,29 @@ export class LotteryService {
 
       if (participants.length === 0) {
         Logger.info("LotteryService", "Розыгрыш запущен, но участников нет.");
-        return;
+
+        await prisma.$transaction([
+          prisma.userLottery.updateMany({
+            where: { isLuckyVip: true },
+            data: { isLuckyVip: false },
+          }),
+          prisma.userLottery.updateMany({
+            data: {
+              xpThisWeek: 0,
+              hasTicket: false,
+            },
+          }),
+        ]);
+
+        globalEventBus.emit("lottery:finished", {
+          oldWinners: oldWinners.map((w) => ({
+            twitchId: w.user.twitchId,
+            username: w.user.username,
+          })),
+          newWinners: [],
+        });
+
+        return false;
       }
 
       const shuffled = shuffleArray(participants);
@@ -105,26 +127,26 @@ export class LotteryService {
         `Лотерея успешно проведена! Выбрано победителей: ${winners.length}`,
       );
 
-      const oldWinnersMapped = oldWinners.map((w) => ({
-        twitchId: w.user.twitchId,
-        username: w.user.username,
-      }));
-
-      const newWinnersMapped = winners.map((w) => ({
-        twitchId: w.user.twitchId,
-        username: w.user.username,
-      }));
-
       globalEventBus.emit("lottery:finished", {
-        oldWinners: oldWinnersMapped,
-        newWinners: newWinnersMapped,
+        oldWinners: oldWinners.map((w) => ({
+          twitchId: w.user.twitchId,
+          username: w.user.username,
+        })),
+        newWinners: winners.map((w) => ({
+          twitchId: w.user.twitchId,
+          username: w.user.username,
+        })),
       });
+
+      return true;
     } catch (error) {
       Logger.error(
         "LotteryService",
         "Ошибка при выполнении рандомайзера лотереи",
         error,
       );
+
+      return false;
     }
   }
 }
