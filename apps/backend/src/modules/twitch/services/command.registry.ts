@@ -7,6 +7,7 @@ import { CoinsCommand } from "../commands/economy";
 import {
   GitHubCommand,
   HelpCommand,
+  LotteryCommand,
   PointsCommand,
   ProjectCommand,
   StackCommand,
@@ -30,6 +31,7 @@ export class CommandRegisry {
       new CoinsCommand(this.chatbotService, this.userService),
       new GitHubCommand(this.chatbotService),
       new HelpCommand(this.chatbotService),
+      new LotteryCommand(this.chatbotService, this.userService),
       new PointsCommand(this.chatbotService),
       new ProjectCommand(this.chatbotService),
       new StackCommand(this.chatbotService),

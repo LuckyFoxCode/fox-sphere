@@ -2,12 +2,16 @@ import { User } from "../../generated/prisma/client";
 import { AppError } from "../../shared/errors";
 import { prisma } from "../../shared/lib";
 import { globalEventBus, Logger } from "../../shared/services";
-import { COOLDOWNS } from "./user.constants";
+import { LotteryService } from "../lottery";
+import { COOLDOWNS, XP_REWARDS } from "./user.constants";
 
 export class UserService {
   private verifiedUsersCache = new Set<string>();
   private xpCooldownCache = new Map<string, number>();
+  private lotteryCooldownCache = new Map<string, number>();
   private coinsCache = new Map<string, { coins: number; createdAt: number }>();
+
+  constructor(private lotteryService: LotteryService) {}
 
   public async findOrCreateUser(twitchId: string, username: string) {
     try {
@@ -63,16 +67,44 @@ export class UserService {
     xpAmount: number,
   ): Promise<void> {
     const now = Date.now();
-    const lastXpTime = this.xpCooldownCache.get(twitchId) || 0;
-
-    if (now - lastXpTime < COOLDOWNS.XP_MESSAGE_COOLDOWN) return;
 
     try {
+      const userWithLottery = await prisma.user.findUnique({
+        where: { twitchId },
+        select: {
+          id: true,
+          isPermanentVip: true,
+          lotteryContext: {
+            select: { isLuckyVip: true },
+          },
+        },
+      });
+
+      if (!userWithLottery) return;
+
+      const lastLotteryTime = this.lotteryCooldownCache.get(twitchId) || 0;
+
+      if (now - lastLotteryTime >= COOLDOWNS.XP_LOTTERY_COOLDOWN) {
+        await this.lotteryService.processMessageXp(
+          userWithLottery.id,
+          Number(XP_REWARDS.LOTTERY),
+        );
+        this.lotteryCooldownCache.set(twitchId, now);
+      }
+
+      const lastXpTime = this.xpCooldownCache.get(twitchId) || 0;
+      if (now - lastXpTime < COOLDOWNS.XP_MESSAGE_COOLDOWN) return;
+
+      const isVip =
+        userWithLottery.lotteryContext?.isLuckyVip ||
+        userWithLottery.isPermanentVip;
+      const finalXpAmount = isVip ? xpAmount + XP_REWARDS.LOTTERY : xpAmount;
+
       const updatedUser = await prisma.user.update({
         where: { twitchId },
         data: {
           xp: {
-            increment: xpAmount,
+            increment: finalXpAmount,
           },
           lastXpAt: new Date(now),
         },
@@ -87,6 +119,10 @@ export class UserService {
         error,
       );
     }
+  }
+
+  public async triggerLottery(): Promise<boolean> {
+    return await this.lotteryService.runWeeklyLottery();
   }
 
   private async checkAndUpgradeLevel(user: User): Promise<void> {
