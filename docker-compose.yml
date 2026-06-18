@@ -44,9 +44,16 @@ services:
       DATABASE_URL: "postgresql://fox_user:fox_password@postgres:5432/foxsphere_db?schema=public"
       NODE_ENV: development
     # Build shared-schemas once, then run backend in watch mode (tsx).
+    # Runs as the non-root `node` user (set in Dockerfile, uid 1000) so files it
+    # writes into the bind mounts below — packages/*/dist (tsdown) and
+    # apps/backend/src/generated (Prisma client) — are owned by the host user,
+    # not root. Otherwise a host-side `pnpm build` dies with EACCES on those
+    # paths. Clean up files left root-owned from before this change:
+    #     sudo rm -rf apps/backend/src/generated packages/*/dist
+    #     docker compose build backend   # regenerates them as `node`
     command: sh -c "pnpm --filter shared-schemas build && pnpm --filter backend dev"
     volumes:
-      # Live source for hot reload...
+      # Live source for hot reload (written back to host as uid 1000 = host user)...
       - ./apps/backend:/app/apps/backend
       - ./packages:/app/packages
       # ...but keep the image's per-package node_modules (don't let the host shadow them).
