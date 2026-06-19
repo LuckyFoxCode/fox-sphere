@@ -7,7 +7,7 @@ const startServer = () => {
     app.listen(config.port, () => {
       Logger.info(
         "Server",
-        `Backend is running on http://localhost:${config.port} 🦊`,
+        `Backend with Socket.io running on http://localhost:${config.port} 🦊`,
       );
     });
   } catch (error) {

@@ -7,7 +7,11 @@ import { TwitchConfig } from "./modules/twitch/twitch.types";
 import { UserService } from "./modules/user";
 import { config } from "./shared/config";
 import { registerShutdownHandlers } from "./shared/infra";
-import { globalEventBus, Logger } from "./shared/services";
+import {
+  forwardEventToBackend,
+  globalEventBus,
+  Logger,
+} from "./shared/services";
 
 async function bootstrap() {
   Logger.info("Bootstrap", "Initializing Twitch worker application...⚙️");
@@ -15,7 +19,7 @@ async function bootstrap() {
   const twitchConfig: TwitchConfig = config.twitch;
 
   const tokenService = new TokenService();
-  const lotteryService = new LotteryService(twitchConfig); // <== edited
+  const lotteryService = new LotteryService(twitchConfig);
   const userService = new UserService(lotteryService);
 
   // Создаем авторизацию через фабрику
@@ -62,6 +66,31 @@ async function bootstrap() {
       username: data.userDisplayName,
       rewardTitle: data.rewardTitle,
     });
+  });
+
+  globalEventBus.on("lottery:started", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `Lottery command triggered! Total duration: ${data.duration}s. Forwarding to overlay...`,
+    );
+    await forwardEventToBackend("lottery:started", data);
+  });
+
+  globalEventBus.on("lottery:winner-drawn", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `Победитель #${data.place} объявлен в чате, шлем на оверлей!`,
+    );
+    await forwardEventToBackend("lottery:winner-drawn", data);
+  });
+
+  globalEventBus.on("lottery:finished", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      "Lottery finished event captured, forwarding to Socket.io via Backend!",
+    );
+
+    await forwardEventToBackend("lottery:finished", data);
   });
 
   Logger.info(

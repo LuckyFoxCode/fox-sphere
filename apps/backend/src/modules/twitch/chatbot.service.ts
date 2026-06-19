@@ -212,6 +212,12 @@ export class ChatbotService {
               placesLeft,
             );
             await this.sendMessage(channelName, message);
+
+            globalEventBus.emit("lottery:winner-drawn", {
+              place: i + 1,
+              username: winner.username,
+              twitchId: winner.twitchId,
+            });
           } catch (error) {
             Logger.error(
               "ChatbotService",
