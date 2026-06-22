@@ -9,7 +9,7 @@
     "prisma:studio": "prisma studio",
     "build": "prisma generate && tsc",
     "start": "node dist/server.js",
-    "dev": "tsdown src/server.ts --watch --sourcemap --inspect=9229",
+    "dev": "tsx watch --inspect=9229 src/server.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "worker:twitch": "tsx watch src/worker.ts"
