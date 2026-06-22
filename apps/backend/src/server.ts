@@ -1,10 +1,10 @@
-import { app } from "./app";
+import { httpServer } from "./app";
 import { config } from "./shared/config/";
 import { Logger } from "./shared/services";
 
 const startServer = () => {
   try {
-    app.listen(config.port, () => {
+    httpServer.listen(config.port, () => {
       Logger.info(
         "Server",
         `Backend with Socket.io running on http://localhost:${config.port} 🦊`,

@@ -46,4 +46,4 @@ io.on("connection", (socket) => {
 });
 
 app.use(errorHandler);
-export { httpServer as app };
+export { app, httpServer, io };
