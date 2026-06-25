@@ -9,7 +9,7 @@
     "prisma:studio": "prisma studio",
     "build": "prisma generate && tsc",
     "start": "node dist/server.js",
-    "dev": "tsdown src/server.ts --watch --sourcemap --inspect=9229",
+    "dev": "tsx watch --inspect=9229 src/server.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "worker:twitch": "tsx watch src/worker.ts"
@@ -30,7 +30,8 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
