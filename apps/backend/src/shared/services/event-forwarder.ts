@@ -3,8 +3,6 @@ import { Logger } from "./logger.service";
 
 export async function forwardEventToBackend(event: string, data: unknown) {
   try {
-    console.log("PORT:", config.port);
-
     const response = await fetch(
       `http://localhost:${config.port}/api/internal/events`,
       {
