@@ -1,6 +1,7 @@
 import { ApiClient } from "@twurple/api";
 import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
+import { config } from "../../shared/config";
 import { prisma } from "../../shared/lib";
 import { globalEventBus } from "../../shared/services/event-bus.service";
 import { Logger } from "../../shared/services/logger.service";
@@ -194,6 +195,12 @@ export class ChatbotService {
               );
               await this.sendMessage(channelName, message);
 
+              globalEventBus.emit("lottery:winner-drawn", {
+                place: i + 1,
+                username: winner.username,
+                twitchId: winner.twitchId,
+              });
+
               if (placesLeft > 0) await delay(LOTTERY_DELAYS.NEXT_WINNER_PAUSE);
               continue;
             }
@@ -278,9 +285,9 @@ export class ChatbotService {
       try {
         const message = BOT_MESSAGES.ALERTS.RAID(data.raiderName, data.viewers);
         await this.sendAnnouncement(message, "purple");
-        await this.sendMessage(
-          this.twitchConfig.channelName,
-          `/shoutout ${data.raiderName}`,
+        await this.apiClient.chat.shoutoutUser(
+          config.twitch.userId,
+          data.raiderId,
         );
       } catch (error) {
         Logger.error(
