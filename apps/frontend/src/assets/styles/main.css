@@ -3,16 +3,62 @@
 @import 'tailwindcss';
 
 :root {
-  --bg: #0a0a0a;
-  --text-main: #eeeeee;
+  --bg: #09090b;
+  --card: #18181b;
+  --popover: #202024;
+  --line: #27272a;
+  --lime: #a3e635;
+
+  --text-main: #fafafa;
+  --text-second: #a1a1aa;
+  --text-inverse: #09090b;
+
+  --success: #22c55e;
+  --error: #ef4444;
+  --warning: #f97316;
+  --info: #3b82f6;
 }
 
 @theme {
   --font-rubik: 'Rubik', sans-serif;
+
   --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-popover: var(--popover);
+  --color-line: var(--line);
+
   --color-text-main: var(--text-main);
+  --color-text-second: var(--text-second);
+  --color-text-inverse: var(--text-inverse);
+
+  --color-lime: var(--lime);
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
 }
 
-body {
-  @apply font-rubik bg-bg text-text-main;
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply font-rubik bg-bg text-text-main;
+    overflow-x: hidden;
+  }
+
+  svg {
+    @apply vertical-mid inline-block;
+  }
+
+  *:focus-visible {
+    @apply outline-lime outline-2 outline-offset-2;
+  }
+
+  ::selection {
+    @apply bg-lime text-text-inverse;
+  }
 }
