@@ -51,7 +51,7 @@
   }
 
   svg {
-    @apply vertical-mid inline-block;
+    @apply inline-block align-middle;
   }
 
   *:focus-visible {
