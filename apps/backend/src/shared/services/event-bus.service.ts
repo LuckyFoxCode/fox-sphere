@@ -24,6 +24,7 @@ interface AppEvents {
   "lottery:winners": {
     oldWinners: LotteryWinnerDto[];
     newWinners: LotteryWinnerDto[];
+    participants: LotteryWinnerDto[];
   };
   "lottery:winner-drawn": { place: number; username: string; twitchId: string };
   "lottery:finished": LotteryFinishedPayload;

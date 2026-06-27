@@ -75,6 +75,10 @@ async function bootstrap() {
     );
     await forwardEventToBackend("lottery:started", data);
   });
+  globalEventBus.on("lottery:winners", async (data) => {
+    Logger.info("Bootstrap", `°❀⋆.ೃ࿔*:･°❀⋆.ೃ࿔*:･ Lottery winners...`);
+    await forwardEventToBackend("lottery:winners", data);
+  });
 
   globalEventBus.on("lottery:winner-drawn", async (data) => {
     Logger.info(

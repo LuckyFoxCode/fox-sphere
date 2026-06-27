@@ -135,6 +135,10 @@ export class LotteryService {
           twitchId: w.user.twitchId,
           username: w.user.username,
         })),
+        participants: participants.map((w) => ({
+          twitchId: w.user.twitchId,
+          username: w.user.username,
+        })),
       });
 
       return true;
