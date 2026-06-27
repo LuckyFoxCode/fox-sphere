@@ -3,7 +3,10 @@ import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
 import { config } from "../../shared/config";
 import { prisma } from "../../shared/lib";
-import { globalEventBus } from "../../shared/services/event-bus.service";
+import {
+  globalEventBus,
+  LotteryWinnerDto,
+} from "../../shared/services/event-bus.service";
 import { Logger } from "../../shared/services/logger.service";
 import { LOTTERY_DELAYS, LOTTERY_MESSAGES } from "../lottery";
 import { COOLDOWNS as USER_COOLDOWNS, UserService } from "../user";
@@ -114,7 +117,23 @@ export class ChatbotService {
       }
     });
 
-    globalEventBus.on("lottery:finished", async (data) => {
+    globalEventBus.on("lottery:no-participants", async (data) => {
+      try {
+        await this.removeVipFromUsers(data.oldWinners);
+        await this.sendMessage(
+          this.twitchConfig.channelName,
+          LOTTERY_MESSAGES.NO_PARTICIPANTS(),
+        );
+      } catch (error) {
+        Logger.error(
+          "ChatbotService",
+          "Failed to handle no-participants cleanup",
+          error,
+        );
+      }
+    });
+
+    globalEventBus.on("lottery:winners", async (data) => {
       try {
         const { oldWinners, newWinners } = data;
         const channelId = this.twitchConfig.userId;
@@ -128,44 +147,7 @@ export class ChatbotService {
           "Начался процесс ротации лотерейных VIP-статусов...",
         );
 
-        for (const oldWinner of oldWinners) {
-          try {
-            const currentDbUser = await prisma.user.findUnique({
-              where: { twitchId: oldWinner.twitchId },
-            });
-
-            if (currentDbUser?.isPermanentVip) {
-              Logger.debug(
-                "ChatbotService",
-                `Пропускаем снятие VIP с перманентного пользователя: ${oldWinner.username}`,
-              );
-              continue;
-            }
-
-            const isWinnerAgain = newWinners.some(
-              (nw) => nw.twitchId === oldWinner.twitchId,
-            );
-
-            if (!isWinnerAgain) {
-              await this.apiClient.asUser(channelId, async (ctx) => {
-                await ctx.channels.removeVip(channelId, oldWinner.twitchId);
-              });
-
-              Logger.info(
-                "ChatbotService",
-                `Временный VIP успешно снят с @${oldWinner.username}`,
-              );
-
-              await delay(LOTTERY_DELAYS.BEFORE_START_ANNOUNCEMENT);
-            }
-          } catch (error) {
-            Logger.error(
-              "ChatbotService",
-              `Не удалось снять VIP с ${oldWinner.username}`,
-              error,
-            );
-          }
-        }
+        await this.removeVipFromUsers(data.oldWinners, data.newWinners);
 
         await this.sendAnnouncement(
           LOTTERY_MESSAGES.START_ANNOUNCEMENT,
@@ -247,6 +229,7 @@ export class ChatbotService {
           LOTTERY_MESSAGES.FINAL_ANNOUNCEMENT,
           "purple",
         );
+        globalEventBus.emit("lottery:finished", { winners: newWinners });
       } catch (error) {
         Logger.error("ChatbotService", `Failed to send winners alert`, error);
       }
@@ -321,6 +304,54 @@ export class ChatbotService {
         );
       }
     });
+  }
+
+  private async removeVipFromUsers(
+    oldWinners: LotteryWinnerDto[],
+    newWinners: LotteryWinnerDto[] = [],
+  ) {
+    const channelId = this.twitchConfig.userId;
+    const delay = (ms: number) =>
+      new Promise((resolve) => setTimeout(resolve, ms));
+
+    for (const oldWinner of oldWinners) {
+      try {
+        const currentDbUser = await prisma.user.findUnique({
+          where: { twitchId: oldWinner.twitchId },
+        });
+
+        if (currentDbUser?.isPermanentVip) {
+          Logger.debug(
+            "ChatbotService",
+            `Пропускаем снятие VIP с перманентного пользователя: ${oldWinner.username}`,
+          );
+          continue;
+        }
+
+        const isWinnerAgain = newWinners.some(
+          (nw) => nw.twitchId === oldWinner.twitchId,
+        );
+
+        if (!isWinnerAgain) {
+          await this.apiClient.asUser(channelId, async (ctx) => {
+            await ctx.channels.removeVip(channelId, oldWinner.twitchId);
+          });
+
+          Logger.info(
+            "ChatbotService",
+            `Временный VIP успешно снят с @${oldWinner.username}`,
+          );
+
+          await delay(LOTTERY_DELAYS.BEFORE_START_ANNOUNCEMENT);
+        }
+      } catch (error) {
+        Logger.error(
+          "ChatbotService",
+          `Не удалось снять VIP с ${oldWinner.username}`,
+          error,
+        );
+      }
+    }
   }
 
   private setupChatClientListeners(): void {

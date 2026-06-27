@@ -5,14 +5,28 @@ export interface LotteryWinnerDto {
   username: string;
 }
 
+export interface LotteryStartedPayload {
+  duration: number;
+}
+
+export interface LotteryNoParticipantsPayload {
+  oldWinners: LotteryWinnerDto[];
+}
+
+export interface LotteryFinishedPayload {
+  winners: LotteryWinnerDto[];
+}
+
 interface AppEvents {
-  "lottery:started": { duration: number };
+  "lottery:started": LotteryStartedPayload;
+  "lottery:no-participants": LotteryNoParticipantsPayload;
   "lottery:ticket-earned": { twitchId: string; username: string };
-  "lottery:finished": {
+  "lottery:winners": {
     oldWinners: LotteryWinnerDto[];
     newWinners: LotteryWinnerDto[];
   };
   "lottery:winner-drawn": { place: number; username: string; twitchId: string };
+  "lottery:finished": LotteryFinishedPayload;
   "twitch:follow": { userId: string; username: string };
   "twitch:raid": { raiderId: string; raiderName: string; viewers: number };
   "twitch:reward-redeem": {
