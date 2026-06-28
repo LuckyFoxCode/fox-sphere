@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { io } from 'socket.io-client';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { LotteryAnnouncePanel, LotteryWinnerReveal } from './lottery/widgets';
+import { LotteryAnnouncePanel, LotteryFinalSummary, LotteryWinnerReveal } from './lottery/widgets';
 
 interface Winner {
   place: number;
@@ -46,11 +46,15 @@ onMounted(() => {
   });
 
   socket.on('lottery:finished', (data) => {
-    console.log(data);
-    winners.value = data.winners;
-    console.log('---local winners---', winners.value);
+    if (timer.value) clearInterval(timer.value);
 
+    winners.value = data.winners;
     currentLotteryStatus.value = 'finished';
+
+    timer.value = setTimeout(() => {
+      currentLotteryStatus.value = 'idle';
+    }, 3000);
+    console.log('---local winners---', winners.value);
   });
 });
 
@@ -69,6 +73,12 @@ onUnmounted(() => {
         v-show="currentLotteryStatus === 'drawer'"
         :username="winnerData.username"
         :place="winnerData.place"
+      />
+    </Transition>
+    <Transition name="slow-down">
+      <LotteryFinalSummary
+        :winners
+        v-if="currentLotteryStatus === 'finished'"
       />
     </Transition>
   </div>
