@@ -24,8 +24,14 @@ const socket = io('http://localhost:3000');
 
 onMounted(() => {
   socket.on('lottery:started', (payload) => {
+    if (timer.value) clearInterval(timer.value);
+
     lotteryDuration.value = payload;
     currentLotteryStatus.value = 'started';
+
+    timer.value = setTimeout(() => {
+      currentLotteryStatus.value = 'idle';
+    }, 5000);
   });
 
   socket.on('lottery:winners', (data) => {
@@ -41,7 +47,7 @@ onMounted(() => {
 
     timer.value = setTimeout(() => {
       currentLotteryStatus.value = 'idle';
-    }, 3000);
+    }, 4000);
     console.log('---DRAWN---', data);
   });
 
@@ -53,7 +59,7 @@ onMounted(() => {
 
     timer.value = setTimeout(() => {
       currentLotteryStatus.value = 'idle';
-    }, 3000);
+    }, 5000);
     console.log('---local winners---', winners.value);
   });
 });
