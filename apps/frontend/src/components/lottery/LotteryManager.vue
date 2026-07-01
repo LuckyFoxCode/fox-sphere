@@ -26,8 +26,8 @@ onUnmounted(() => {
     </Transition>
     <Transition name="slow-down">
       <LotteryFinalSummary
-        :winners
         v-if="currentLotteryStatus === 'finished'"
+        :winners
       />
     </Transition>
   </div>
