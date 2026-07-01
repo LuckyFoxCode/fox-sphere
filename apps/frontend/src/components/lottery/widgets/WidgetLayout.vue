@@ -6,11 +6,11 @@ defineProps<{
 
 <template>
   <div
-    class="border-line/40 from-card/95 to-bg/80 animate-fade-in relative flex flex-col justify-between overflow-hidden rounded-2xl border bg-radial-[at_50%_0%] p-6 shadow-[0_30px_60px_rgba(0,0,0,0.8),0_0_50px_rgba(163,230,53,0.05)] backdrop-blur-xl select-none"
+    class="border-line/40 from-card/95 to-bg/80 animate-fade-in relative flex flex-col justify-between overflow-hidden rounded-2xl border bg-radial-[at_50%_0%] p-6 shadow-[0_30px_60px_var(--color-bg-bg,0.8),0_0_50px_var(--color-lime,0.05)] backdrop-blur-xl select-none"
     :class="cardClass"
   >
     <div
-      class="via-lime/60 absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-transparent to-transparent shadow-[0_1px_10px_rgba(163,230,53,0.4)]"
+      class="via-lime/60 absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-transparent to-transparent shadow-[0_1px_10px_var(--color-lime,0.4)]"
     />
 
     <slot />

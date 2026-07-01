@@ -27,7 +27,7 @@ const firstLetter = computed(() => props.username.charAt(0).toUpperCase());
       </div>
 
       <span
-        class="bg-lime/10 border-lime/30 text-lime rounded-md border px-2.5 py-0.5 text-xs font-black tracking-wider uppercase shadow-[0_0_10px_rgba(163,230,53,0.1)]"
+        class="bg-lime/10 border-lime/30 text-lime rounded-md border px-2.5 py-0.5 text-xs font-black tracking-wider uppercase shadow-[0_0_10px_var(--color-lime,0.1)]"
       >
         🏆 Place #{{ place }}
       </span>
@@ -35,7 +35,7 @@ const firstLetter = computed(() => props.username.charAt(0).toUpperCase());
 
     <div class="my-auto flex w-full items-center gap-x-4 text-left">
       <div
-        class="border-lime/25 bg-popover font-rubik text-lime relative flex size-16 shrink-0 items-center justify-center rounded-xl border text-2xl font-black shadow-[0_8px_20px_rgba(0,0,0,0.4),inset_0_0_15px_rgba(163,230,53,0.15)]"
+        class="border-lime/25 bg-popover font-rubik text-lime relative flex size-16 shrink-0 items-center justify-center rounded-xl border text-2xl font-black shadow-[0_8px_20px_var(--color-bg-bg,0.4),inset_0_0_15px_var(--color-lime,0.15)]"
       >
         {{ firstLetter }}
         <span class="absolute -top-1 -right-1 flex size-3">
@@ -50,13 +50,13 @@ const firstLetter = computed(() => props.username.charAt(0).toUpperCase());
 
       <div class="flex min-w-0 flex-col">
         <span
-          class="text-text-main truncate text-2xl font-black tracking-wide capitalize drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+          class="text-text-main truncate text-2xl font-black tracking-wide capitalize drop-shadow-[0_2px_4px_var(--color-bg-bg,0.5)]"
         >
           {{ username }}
         </span>
         <p class="text-text-second mt-0.5 text-xs font-medium">
           Claimed weekly
-          <span class="text-lime font-bold drop-shadow-[0_0_6px_rgba(163,230,53,0.3)]"
+          <span class="text-lime font-bold drop-shadow-[0_0_6px_var(--color-lime,0.3)]"
             >VIP status</span
           >! 🎫
         </p>

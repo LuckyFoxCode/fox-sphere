@@ -23,17 +23,17 @@ const getFirstLetter = (username: string) => username.charAt(0).toUpperCase();
 
 <template>
   <div
-    class="border-line/40 from-card/95 to-bg/85 animate-fade-in relative flex w-96 flex-col overflow-hidden rounded-2xl border bg-radial-[at_50%_0%] shadow-[0_30px_60px_rgba(0,0,0,0.8),0_0_50px_rgba(163,230,53,0.05)] backdrop-blur-xl select-none"
+    class="border-line/40 from-card/95 to-bg/85 animate-fade-in relative flex w-96 flex-col overflow-hidden rounded-2xl border bg-radial-[at_50%_0%] shadow-[0_30px_60px_var(--color-bg-bg,0.8),0_0_50px_var(--color-lime,0.05)] backdrop-blur-xl select-none"
   >
     <div
-      class="via-lime/60 absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-transparent to-transparent shadow-[0_1px_10px_rgba(163,230,53,0.4)]"
+      class="via-lime/60 absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-transparent to-transparent shadow-[0_1px_10px_var(--color-lime,0.4)]"
     ></div>
 
     <div
       class="border-line/20 from-lime/5 flex flex-col items-center border-b bg-linear-to-b to-transparent pt-5 pb-3"
     >
       <span
-        class="text-lime text-[10px] font-black tracking-[0.4em] uppercase drop-shadow-[0_0_6px_rgba(163,230,53,0.3)]"
+        class="text-lime text-[10px] font-black tracking-[0.4em] uppercase drop-shadow-[0_0_6px_var(--color-lime,0.3)]"
       >
         Weekly Event
       </span>
@@ -102,7 +102,7 @@ const getFirstLetter = (username: string) => username.charAt(0).toUpperCase();
             class="truncate font-black tracking-wide capitalize"
             :class="[
               winner.place === 1
-                ? 'bg-linear-to-r from-amber-200 to-amber-400 bg-clip-text text-lg text-transparent drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]'
+                ? 'bg-linear-to-r from-amber-200 to-amber-400 bg-clip-text text-lg text-transparent drop-shadow-[0_2px_4px_rgba(--color-bg-bg,0.3)]'
                 : winner.place === 2
                   ? 'bg-linear-to-r from-slate-200 to-slate-400 bg-clip-text text-base text-transparent'
                   : winner.place === 3
@@ -116,7 +116,7 @@ const getFirstLetter = (username: string) => username.charAt(0).toUpperCase();
 
         <div class="flex shrink-0 items-center pl-2">
           <span
-            class="text-lime flex items-center gap-x-1 text-xs font-bold drop-shadow-[0_0_4px_rgba(163,230,53,0.4)]"
+            class="text-lime flex items-center gap-x-1 text-xs font-bold drop-shadow-[0_0_4px_var(--color-lime,0.4)]"
           >
             🎫 <span class="text-lime/80 text-[9px] font-black tracking-wider uppercase">VIP</span>
           </span>
