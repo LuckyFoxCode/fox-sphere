@@ -20,13 +20,8 @@ export function useLotterySocket(socketInstance: Socket) {
   const currentLotteryStatus = ref<LotteryStatus>('idle');
   const timer = ref<ReturnType<typeof setTimeout> | null>(null);
 
-  function onLotteryEvent<T extends keyof LotteryEventsMap>(
-    eventName: T,
-    handler: (payload: LotteryEventsMap[T]) => void,
-    timeoutMs?: number,
-  ) {
-    socketInstance.on(eventName, ((payload: LotteryEventsMap[T]) => {
-      if (timer.value) clearInterval(timer.value);
+  function resetTimeout(timeoutMs?: number) {
+    if (timer.value) clearTimeout(timer.value);
 
       handler(payload);
       if (timeoutMs !== undefined) {
