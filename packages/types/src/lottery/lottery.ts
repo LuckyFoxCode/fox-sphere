@@ -31,10 +31,10 @@ export interface LotteryWinnersPayload {
 export interface LotteryWinnerDrawnPayload extends TwitchUserDto {
   place: number;
 }
-export interface ServerToClientEvents {
+export interface LotteryServerToClientEvents {
   "lottery:started": (data: LotteryStartedPayload) => void;
   "lottery:winner-drawn": (data: LotteryWinnerDrawnPayload) => void;
   "lottery:finished": (data: LotteryFinishedPayload) => void;
 }
 
-export interface ClientToServerEvents {}
+export interface LotteryClientToServerEvents {}
