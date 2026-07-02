@@ -1,19 +1,19 @@
+import type {
+  ClientToServerEvents,
+  LotteryWinnerDrawnPayload,
+  ServerToClientEvents,
+  TwitchUserDto,
+} from '@fox-sphere/types';
 import type { Socket } from 'socket.io-client';
 import { ref } from 'vue';
-import type { ServerToClientEvents, ClientToServerEvents } from '@fox-sphere/shared-schemas';
 
-export interface Winner {
-  place: number;
-  twitchId: string;
-  username: string;
-}
 export type LotteryStatus = 'idle' | 'started' | 'drawer' | 'finished';
 
 export function useLotterySocket(
   socketInstance: Socket<ServerToClientEvents, ClientToServerEvents>,
 ) {
-  const winners = ref<Winner[]>([]);
-  const winner = ref<Winner>({ place: 0, twitchId: '', username: '' });
+  const winners = ref<TwitchUserDto[]>([]);
+  const winner = ref<LotteryWinnerDrawnPayload>({ place: 0, twitchId: '', username: '' });
   const currentLotteryStatus = ref<LotteryStatus>('idle');
   const timer = ref<ReturnType<typeof setTimeout> | null>(null);
 
@@ -29,7 +29,7 @@ export function useLotterySocket(
 
   socketInstance.on('lottery:started', () => {
     currentLotteryStatus.value = 'started';
-    resetTimeout(5000);
+    resetTimeout(4000);
   });
 
   socketInstance.on('lottery:winner-drawn', (data) => {

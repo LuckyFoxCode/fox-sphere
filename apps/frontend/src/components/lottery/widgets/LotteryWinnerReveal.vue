@@ -12,7 +12,7 @@ const firstLetter = computed(() => props.username.charAt(0).toUpperCase());
 </script>
 
 <template>
-  <WidgetLayout cardClass="w-96 h-44">
+  <WidgetLayout card-class="w-96 h-44">
     <div class="border-line/20 flex w-full items-center justify-between border-b pb-2">
       <div class="flex items-center gap-x-2">
         <span class="relative flex size-2">

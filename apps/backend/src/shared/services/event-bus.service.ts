@@ -1,32 +1,23 @@
+import {
+  LotteryFinishedPayload,
+  LotteryNoParticipantsPayload,
+  LotteryStartedPayload,
+  LotteryTicketEarnedPayload,
+  LotteryWinnerDrawnPayload,
+  TwitchUserDto,
+} from "@fox-sphere/types";
 import EventEmitter from "events";
-
-export interface LotteryWinnerDto {
-  twitchId: string;
-  username: string;
-}
-
-export interface LotteryStartedPayload {
-  duration: number;
-}
-
-export interface LotteryNoParticipantsPayload {
-  oldWinners: LotteryWinnerDto[];
-}
-
-export interface LotteryFinishedPayload {
-  winners: LotteryWinnerDto[];
-}
 
 interface AppEvents {
   "lottery:started": LotteryStartedPayload;
   "lottery:no-participants": LotteryNoParticipantsPayload;
-  "lottery:ticket-earned": { twitchId: string; username: string };
+  "lottery:ticket-earned": LotteryTicketEarnedPayload;
   "lottery:winners": {
-    oldWinners: LotteryWinnerDto[];
-    newWinners: LotteryWinnerDto[];
-    participants: LotteryWinnerDto[];
+    oldWinners: TwitchUserDto[];
+    newWinners: TwitchUserDto[];
+    participants: TwitchUserDto[];
   };
-  "lottery:winner-drawn": { place: number; username: string; twitchId: string };
+  "lottery:winner-drawn": LotteryWinnerDrawnPayload;
   "lottery:finished": LotteryFinishedPayload;
   "twitch:follow": { userId: string; username: string };
   "twitch:raid": { raiderId: string; raiderName: string; viewers: number };

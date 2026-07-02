@@ -1,12 +1,10 @@
+import { TwitchUserDto } from "@fox-sphere/types";
 import { ApiClient } from "@twurple/api";
 import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
 import { config } from "../../shared/config";
 import { prisma } from "../../shared/lib";
-import {
-  globalEventBus,
-  LotteryWinnerDto,
-} from "../../shared/services/event-bus.service";
+import { globalEventBus } from "../../shared/services/event-bus.service";
 import { Logger } from "../../shared/services/logger.service";
 import { LOTTERY_DELAYS, LOTTERY_MESSAGES } from "../lottery";
 import { COOLDOWNS as USER_COOLDOWNS, UserService } from "../user";
@@ -307,8 +305,8 @@ export class ChatbotService {
   }
 
   private async removeVipFromUsers(
-    oldWinners: LotteryWinnerDto[],
-    newWinners: LotteryWinnerDto[] = [],
+    oldWinners: TwitchUserDto[],
+    newWinners: TwitchUserDto[] = [],
   ) {
     const channelId = this.twitchConfig.userId;
     const delay = (ms: number) =>

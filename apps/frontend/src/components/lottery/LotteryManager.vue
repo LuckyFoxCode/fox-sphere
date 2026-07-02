@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useLotterySocket } from '@/composables';
+import type { ClientToServerEvents, ServerToClientEvents } from '@fox-sphere/types';
+import type { Socket } from 'socket.io-client';
 import { io } from 'socket.io-client';
 import { onUnmounted } from 'vue';
 import { LotteryAnnouncePanel, LotteryFinalSummary, LotteryWinnerReveal } from './widgets';
-import type { Socket } from 'socket.io-client';
-import type { ServerToClientEvents, ClientToServerEvents } from '@fox-sphere/shared-schemas';
 
 const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io('http://localhost:3000');
 const { winner, winners, currentLotteryStatus, disconnect } = useLotterySocket(socket);

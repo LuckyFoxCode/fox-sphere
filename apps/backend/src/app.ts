@@ -1,3 +1,4 @@
+import { ClientToServerEvents, ServerToClientEvents } from "@fox-sphere/types";
 import cors from "cors";
 import express from "express";
 import { createServer } from "http";
@@ -5,7 +6,6 @@ import { Server } from "socket.io";
 import { config } from "./shared/config";
 import { errorHandler } from "./shared/middleware/error-handler";
 import { Logger } from "./shared/services";
-import type { ServerToClientEvents,ClientToServerEvents } from "@fox-sphere/shared-schemas";
 
 const app = express();
 const httpServer = createServer(app);

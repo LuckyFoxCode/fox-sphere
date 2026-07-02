@@ -4,7 +4,7 @@ import WidgetLayout from './WidgetLayout.vue';
 </script>
 
 <template>
-  <WidgetLayout cardClass="w-lg h-64">
+  <WidgetLayout card-class="w-lg h-64">
     <div class="flex items-center justify-center gap-x-2">
       <span class="relative flex size-2">
         <span
