@@ -3,27 +3,45 @@ import { computed } from 'vue';
 import DecorativeCap from './DecorativeCap.vue';
 
 interface Props {
-  type?: 'follow' | 'sub' | 'raid' | 'roulette' | 'default';
+  variant?: 'cyan' | 'purple' | 'red' | 'amber' | 'blue';
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  type: 'default',
+  variant: 'blue',
 });
 
-const themeColors: Record<string, string> = {
-  follow: '#00ffcc',
-  sub: '#bf55ec',
-  raid: '#ff4757',
-  roulette: '#ffa502',
-  default: '#3b82f6',
+const themeColors: Record<NonNullable<Props['variant']>, string> = {
+  cyan: 'var(--twitch-cyan)',
+  purple: 'var(--twitch-purple)',
+  red: 'var(--twitch-red)',
+  amber: 'var(--twitch-amber)',
+  blue: 'var(--twitch-blue)',
 };
 
-const frameColor = computed(() => themeColors[props.type] || themeColors.default);
+const frameColor = computed(() => themeColors[props.variant] || themeColors.blue);
+
+const capsConfig = [
+  { direction: 'top', size: '150px', classes: 'top-0 left-1/2 -translate-x-1/2 ' },
+  {
+    direction: 'bottom',
+    size: '150px',
+    classes: 'bottom-0 left-1/2 -translate-x-1/2',
+  },
+  { direction: 'left', size: '60px', classes: 'top-1/2 left-0 -translate-y-1/2 ' },
+  { direction: 'right', size: '60px', classes: 'top-1/2 right-0 -translate-y-1/2 ' },
+] as const;
+
+const boltPositions = [
+  'top-3.5 left-3.5',
+  'top-3.5 right-3.5',
+  'bottom-3.5 left-3.5',
+  'right-3.5 bottom-3.5',
+];
 </script>
 
 <template>
   <div
-    class="relative inline-block min-h-32 min-w-72 p-8 transition-all duration-300 ease-out"
+    class="relative flex min-h-32 min-w-72 items-center justify-center p-8 transition-all duration-300 ease-out"
     :style="{ '--widget-color': frameColor }"
   >
     <div
@@ -31,53 +49,31 @@ const frameColor = computed(() => themeColors[props.type] || themeColors.default
       style="
         border-color: var(--widget-color);
         box-shadow:
-          0 0 1px var(--widget-color),
-          inset 0 0 5px var(--color-bg, 0.8);
+          0 0 2px var(--widget-color),
+          inset 0 0 10px var(--color-card, 0.6);
       "
     />
 
-    <div class="absolute top-0 left-1/2 z-20 -translate-x-1/2">
+    <div
+      v-for="cap in capsConfig"
+      :key="cap.direction"
+      class="absolute z-20"
+      :class="cap.classes"
+    >
       <DecorativeCap
-        size="150px"
-        direction="horizontal"
-      />
-    </div>
-
-    <div class="absolute bottom-0 left-1/2 z-20 -translate-x-1/2 rotate-180">
-      <DecorativeCap
-        size="150px"
-        direction="horizontal"
-      />
-    </div>
-
-    <div class="absolute top-1/2 left-0 z-20 -translate-y-1/2">
-      <DecorativeCap
-        size="70px"
-        direction="vertical"
-      />
-    </div>
-
-    <div class="absolute top-1/2 right-0 z-20 -translate-y-1/2 rotate-180">
-      <DecorativeCap
-        size="70px"
-        direction="vertical"
+        :size="cap.size"
+        :direction="cap.direction"
       />
     </div>
 
     <div
-      class="bg-bg absolute top-3.5 left-3.5 z-20 h-1.5 w-1.5 rounded-full border border-slate-600 opacity-60"
-    ></div>
-    <div
-      class="bg-bg absolute top-3.5 right-3.5 z-20 h-1.5 w-1.5 rounded-full border border-slate-600 opacity-60"
-    ></div>
-    <div
-      class="bg-bg absolute bottom-3.5 left-3.5 z-20 h-1.5 w-1.5 rounded-full border border-slate-600 opacity-60"
-    ></div>
-    <div
-      class="bg-bg absolute right-3.5 bottom-3.5 z-20 h-1.5 w-1.5 rounded-full border border-slate-600 opacity-60"
-    ></div>
+      v-for="(position, index) in boltPositions"
+      :key="index"
+      class="border-line bg-card absolute z-20 h-1.5 w-1.5 rounded-full border opacity-80"
+      :class="position"
+    />
 
-    <div class="text-text-main relative z-10 font-sans">
+    <div class="text-text-main relative z-10">
       <slot></slot>
     </div>
   </div>
@@ -87,13 +83,13 @@ const frameColor = computed(() => themeColors[props.type] || themeColors.default
 @keyframes pulseGlow {
   0%,
   100% {
-    filter: drop-shadow(0 0 2px var(--widget-color));
+    filter: drop-shadow(0 0 1px var(--widget-color));
   }
   50% {
-    filter: drop-shadow(0 0 8px var(--widget-color));
+    filter: drop-shadow(0 0 6px var(--widget-color));
   }
 }
 .animate-pulse-soft {
-  animation: pulseGlow 4s infinite ease-in-out;
+  animation: pulseGlow 3.5s infinite ease-in-out;
 }
 </style>

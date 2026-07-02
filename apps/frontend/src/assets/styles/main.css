@@ -17,6 +17,12 @@
   --error: #ef4444;
   --warning: #f97316;
   --info: #3b82f6;
+
+  --twitch-cyan: #00ffcc;
+  --twitch-purple: #bf55ec;
+  --twitch-red: #ff4757;
+  --twitch-amber: #ffa502;
+  --twitch-blue: #3b82f6;
 }
 
 @theme {
@@ -36,6 +42,12 @@
   --color-error: var(--error);
   --color-warning: var(--warning);
   --color-info: var(--info);
+
+  --color-event-cyan: var(--twitch-cyan);
+  --color-event-purple: var(--twitch-purple);
+  --color-event-red: var(--twitch-red);
+  --color-event-amber: var(--twitch-amber);
+  --color-event-blue: var(--twitch-blue);
 }
 
 @layer base {
