@@ -5,13 +5,14 @@ import { Server } from "socket.io";
 import { config } from "./shared/config";
 import { errorHandler } from "./shared/middleware/error-handler";
 import { Logger } from "./shared/services";
+import type { ServerToClientEvents,ClientToServerEvents } from "@fox-sphere/shared-schemas";
 
 const app = express();
 const httpServer = createServer(app);
 
 const allowedOrigin = config.allowedOrigin || "http://localhost:5173";
 
-const io = new Server(httpServer, {
+const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: {
     origin: allowedOrigin,
     methods: ["GET", "POST"],

@@ -1,5 +1,6 @@
 import type { Socket } from 'socket.io-client';
 import { ref } from 'vue';
+import type { ServerToClientEvents, ClientToServerEvents } from '@fox-sphere/shared-schemas';
 
 export interface Winner {
   place: number;
@@ -8,60 +9,40 @@ export interface Winner {
 }
 export type LotteryStatus = 'idle' | 'started' | 'drawer' | 'finished';
 
-export interface LotteryEventsMap {
-  'lottery:started': number;
-  'lottery:winner-drawn': Winner;
-  'lottery:finished': { winners: Winner[] };
-}
-
-export function useLotterySocket(socketInstance: Socket) {
+export function useLotterySocket(
+  socketInstance: Socket<ServerToClientEvents, ClientToServerEvents>,
+) {
   const winners = ref<Winner[]>([]);
   const winner = ref<Winner>({ place: 0, twitchId: '', username: '' });
   const currentLotteryStatus = ref<LotteryStatus>('idle');
   const timer = ref<ReturnType<typeof setTimeout> | null>(null);
 
-  function onLotteryEvent<T extends keyof LotteryEventsMap>(
-    eventName: T,
-    handler: (payload: LotteryEventsMap[T]) => void,
-    timeoutMs?: number,
-  ) {
-    socketInstance.on(eventName, ((payload: LotteryEventsMap[T]) => {
-      if (timer.value) clearInterval(timer.value);
+  function resetTimeout(timeoutMs?: number) {
+    if (timer.value) clearTimeout(timer.value);
 
-      handler(payload);
-      if (timeoutMs !== undefined) {
-        timer.value = setTimeout(() => {
-          currentLotteryStatus.value = 'idle';
-        }, timeoutMs);
-      }
-    }) as any);
+    if (timeoutMs !== undefined) {
+      timer.value = setTimeout(() => {
+        currentLotteryStatus.value = 'idle';
+      }, timeoutMs);
+    }
   }
 
-  onLotteryEvent(
-    'lottery:started',
-    () => {
-      currentLotteryStatus.value = 'started';
-    },
-    5000,
-  );
+  socketInstance.on('lottery:started', () => {
+    currentLotteryStatus.value = 'started';
+    resetTimeout(5000);
+  });
 
-  onLotteryEvent(
-    'lottery:winner-drawn',
-    (data: Winner) => {
-      winner.value = data;
-      currentLotteryStatus.value = 'drawer';
-    },
-    4000,
-  );
+  socketInstance.on('lottery:winner-drawn', (data) => {
+    winner.value = data;
+    currentLotteryStatus.value = 'drawer';
+    resetTimeout(4000);
+  });
 
-  onLotteryEvent(
-    'lottery:finished',
-    (data: { winners: Winner[] }) => {
-      winners.value = data.winners;
-      currentLotteryStatus.value = 'finished';
-    },
-    5000,
-  );
+  socketInstance.on('lottery:finished', (data) => {
+    winners.value = data.winners;
+    currentLotteryStatus.value = 'finished';
+    resetTimeout(5000);
+  });
 
   return {
     winner,
