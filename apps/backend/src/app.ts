@@ -1,3 +1,4 @@
+import { ClientToServerEvents, ServerToClientEvents } from "@fox-sphere/types";
 import cors from "cors";
 import express from "express";
 import { createServer } from "http";
@@ -11,7 +12,7 @@ const httpServer = createServer(app);
 
 const allowedOrigin = config.allowedOrigin || "http://localhost:5173";
 
-const io = new Server(httpServer, {
+const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: {
     origin: allowedOrigin,
     methods: ["GET", "POST"],

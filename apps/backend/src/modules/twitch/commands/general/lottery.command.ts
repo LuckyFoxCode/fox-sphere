@@ -1,9 +1,5 @@
 import { globalEventBus } from "../../../../shared/services";
-import {
-  LOTTERY_CONFIG,
-  LOTTERY_DELAYS,
-  LOTTERY_MESSAGES,
-} from "../../../lottery";
+import { LOTTERY_CONFIG, LOTTERY_DELAYS } from "../../../lottery";
 import { COOLDOWNS, UserService } from "../../../user";
 import { ChatbotService } from "../../chatbot.service";
 import {
@@ -37,16 +33,12 @@ export class LotteryCommand implements TwitchCommand {
       LOTTERY_DELAYS.FINAL_PAUSE;
     const totalDurationSeconds = Math.ceil(totalDurationMs / 1000);
 
-    globalEventBus.emit("lottery:started", { duration: totalDurationSeconds });
-
     const isLotterySuccess = await this.userService.triggerLottery();
 
-    if (!isLotterySuccess) {
-      const channelName = ctx.channel;
-      await this.chatbotService.sendMessage(
-        channelName,
-        LOTTERY_MESSAGES.NO_PARTICIPANTS(),
-      );
+    if (isLotterySuccess) {
+      globalEventBus.emit("lottery:started", {
+        duration: totalDurationSeconds,
+      });
     }
   }
 }

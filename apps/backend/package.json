@@ -20,6 +20,7 @@
   "type": "module",
   "dependencies": {
     "@fox-sphere/shared-schemas": "workspace:*",
+    "@fox-sphere/types": "workspace:*",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@twurple/api": "^8.1.4",

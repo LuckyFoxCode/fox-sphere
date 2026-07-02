@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import UserForm from './components/UserForm.vue';
+import TheOverlay from './components/TheOverlay.vue';
 </script>
 
 <template>
-  <UserForm />
+  <TheOverlay />
 </template>
-
-<style scoped></style>

@@ -88,12 +88,11 @@ export class LotteryService {
           }),
         ]);
 
-        globalEventBus.emit("lottery:finished", {
+        globalEventBus.emit("lottery:no-participants", {
           oldWinners: oldWinners.map((w) => ({
             twitchId: w.user.twitchId,
             username: w.user.username,
           })),
-          newWinners: [],
         });
 
         return false;
@@ -127,12 +126,16 @@ export class LotteryService {
         `Лотерея успешно проведена! Выбрано победителей: ${winners.length}`,
       );
 
-      globalEventBus.emit("lottery:finished", {
+      globalEventBus.emit("lottery:winners", {
         oldWinners: oldWinners.map((w) => ({
           twitchId: w.user.twitchId,
           username: w.user.username,
         })),
         newWinners: winners.map((w) => ({
+          twitchId: w.user.twitchId,
+          username: w.user.username,
+        })),
+        participants: participants.map((w) => ({
           twitchId: w.user.twitchId,
           username: w.user.username,
         })),
