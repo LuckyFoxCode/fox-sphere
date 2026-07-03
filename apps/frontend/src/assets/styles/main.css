@@ -17,6 +17,12 @@
   --error: #ef4444;
   --warning: #f97316;
   --info: #3b82f6;
+
+  --twitch-cyan: #00ffcc;
+  --twitch-purple: #bf55ec;
+  --twitch-red: #ff4757;
+  --twitch-amber: #ffa502;
+  --twitch-blue: #3b82f6;
 }
 
 @theme {
@@ -36,6 +42,12 @@
   --color-error: var(--error);
   --color-warning: var(--warning);
   --color-info: var(--info);
+
+  --color-event-cyan: var(--twitch-cyan);
+  --color-event-purple: var(--twitch-purple);
+  --color-event-red: var(--twitch-red);
+  --color-event-amber: var(--twitch-amber);
+  --color-event-blue: var(--twitch-blue);
 }
 
 @layer base {
@@ -60,5 +72,22 @@
 
   ::selection {
     @apply bg-lime text-text-inverse;
+  }
+
+  .zoom-in-enter-active,
+  .zoom-in-leave-active {
+    transition:
+      opacity 0.7s,
+      transform 0.7s ease-in-out;
+  }
+  .zoom-in-enter-from,
+  .zoom-in-leave-to {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  .zoom-in-enter-to,
+  .zoom-in-leave-from {
+    opacity: 1;
+    transform: scale(1);
   }
 }
