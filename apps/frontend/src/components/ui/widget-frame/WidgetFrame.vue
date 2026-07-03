@@ -4,10 +4,14 @@ import DecorativeCap from './DecorativeCap.vue';
 
 interface Props {
   variant?: 'cyan' | 'purple' | 'red' | 'amber' | 'blue';
+  positionY?: string;
+  positionX?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   variant: 'blue',
+  positionY: '150',
+  positionX: '60',
 });
 
 const themeColors: Record<NonNullable<Props['variant']>, string> = {
@@ -21,14 +25,18 @@ const themeColors: Record<NonNullable<Props['variant']>, string> = {
 const frameColor = computed(() => themeColors[props.variant] || themeColors.blue);
 
 const capsConfig = [
-  { direction: 'top', size: '150px', classes: 'top-0 left-1/2 -translate-x-1/2 ' },
+  { direction: 'top', size: `${props.positionY}px`, classes: 'top-0 left-1/2 -translate-x-1/2 ' },
   {
     direction: 'bottom',
-    size: '150px',
+    size: `${props.positionY}px`,
     classes: 'bottom-0 left-1/2 -translate-x-1/2',
   },
-  { direction: 'left', size: '60px', classes: 'top-1/2 left-0 -translate-y-1/2 ' },
-  { direction: 'right', size: '60px', classes: 'top-1/2 right-0 -translate-y-1/2 ' },
+  { direction: 'left', size: `${props.positionX}px`, classes: 'top-1/2 left-0 -translate-y-1/2 ' },
+  {
+    direction: 'right',
+    size: `${props.positionX}px`,
+    classes: 'top-1/2 right-0 -translate-y-1/2 ',
+  },
 ] as const;
 
 const boltPositions = [
@@ -53,6 +61,7 @@ const boltPositions = [
           inset 0 0 10px var(--color-card, 0.6);
       "
     />
+    <div class="border-bg/70 absolute inset-1 z-10 w-[calc(100%-8px)] rounded-2xl border-6" />
 
     <div
       v-for="cap in capsConfig"
@@ -69,7 +78,7 @@ const boltPositions = [
     <div
       v-for="(position, index) in boltPositions"
       :key="index"
-      class="border-line bg-card absolute z-20 h-1.5 w-1.5 rounded-full border opacity-80"
+      class="bg-card absolute z-20 h-1.5 w-1.5 rounded-full border border-(--widget-color) opacity-80"
       :class="position"
     />
 
