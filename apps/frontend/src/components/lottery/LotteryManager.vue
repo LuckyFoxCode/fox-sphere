@@ -16,7 +16,7 @@ onUnmounted(() => {
 
 <template>
   <div class="mx-auto flex h-270 w-480 items-center justify-center">
-    <Transition name="slow-down">
+    <Transition name="zoom-in">
       <LotteryAnnouncePanel v-if="currentLotteryStatus === 'started'" />
     </Transition>
     <Transition name="zoom-in">
@@ -26,7 +26,7 @@ onUnmounted(() => {
         :place="winner.place"
       />
     </Transition>
-    <Transition name="slow-down">
+    <Transition name="zoom-in">
       <LotteryFinalSummary
         v-if="currentLotteryStatus === 'finished'"
         :winners
@@ -34,39 +34,3 @@ onUnmounted(() => {
     </Transition>
   </div>
 </template>
-
-<style scoped>
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: transform 0.5s;
-}
-.slide-down-enter-from {
-  transform: translateY(-20px);
-}
-.slide-down-enter-to {
-  transform: translateY(0);
-}
-
-.zoom-in-enter-active,
-.zoom-in-leave-active {
-  transition:
-    opacity 0.7s,
-    transform 0.7s ease-in-out;
-}
-.zoom-in-enter-from {
-  opacity: 0;
-  transform: scale(0.8);
-}
-.zoom-in-enter-to {
-  opacity: 1;
-  transform: scale(1);
-}
-.zoom-in-leave-from {
-  opacity: 1;
-  transform: scale(1);
-}
-.zoom-in-leave-to {
-  opacity: 0;
-  transform: scale(0.8);
-}
-</style>
