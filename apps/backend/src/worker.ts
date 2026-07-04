@@ -71,19 +71,20 @@ async function bootstrap() {
   globalEventBus.on("lottery:started", async (data) => {
     Logger.info(
       "Bootstrap",
-      `Lottery command triggered! Total duration: ${data.duration}s. Forwarding to overlay...`,
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Lottery command triggered! Total duration: ${data.duration}s. Forwarding to overlay...`,
     );
     await forwardEventToBackend("lottery:started", data);
   });
+
   globalEventBus.on("lottery:winners", async (data) => {
-    Logger.info("Bootstrap", `°❀⋆.ೃ࿔*:･°❀⋆.ೃ࿔*:･ Lottery winners...`);
+    Logger.info("Bootstrap", `.𖥔 ݁ ˖ִ🛸༄˖°. Lottery winners...`);
     await forwardEventToBackend("lottery:winners", data);
   });
 
   globalEventBus.on("lottery:winner-drawn", async (data) => {
     Logger.info(
       "Bootstrap",
-      `Победитель #${data.place} объявлен в чате, шлем на оверлей!`,
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Победитель #${data.place} объявлен в чате, шлем на оверлей!`,
     );
     await forwardEventToBackend("lottery:winner-drawn", data);
   });
@@ -91,10 +92,33 @@ async function bootstrap() {
   globalEventBus.on("lottery:finished", async (data) => {
     Logger.info(
       "Bootstrap",
-      "Lottery finished event captured, forwarding to Socket.io via Backend!",
+      ".𖥔 ݁ ˖ִ🛸༄˖°. Lottery finished event captured, forwarding to Socket.io via Backend!",
     );
-
     await forwardEventToBackend("lottery:finished", data);
+  });
+
+  globalEventBus.on("twitch:follow", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding twitch:follow to overlay for: ${data.username}`,
+    );
+    await forwardEventToBackend("twitch:follow", data);
+  });
+
+  globalEventBus.on("twitch:raid", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding twitch:raid to overlay from: ${data.raiderName}`,
+    );
+    await forwardEventToBackend("twitch:twitch:raid", data);
+  });
+
+  globalEventBus.on("twitch:reward-redeem", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding reward-redeem to overlay: ${data.rewardTitle}`,
+    );
+    await forwardEventToBackend("twitch:reward-redeem", data);
   });
 
   Logger.info(
