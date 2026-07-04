@@ -2,8 +2,13 @@ import {
   LotteryClientToServerEvents,
   LotteryServerToClientEvents,
 } from "./lottery/lottery.js";
+import {
+  TwitchClientToServerEvents,
+  TwitchServerToClientEvents,
+} from "./twitch/twitch.js";
 
 export * from "./lottery/index.js";
+export * from "./twitch/index.js";
 
 type IntersectionFromTuple<T extends readonly unknown[]> = T extends readonly [
   infer Head,
@@ -12,8 +17,14 @@ type IntersectionFromTuple<T extends readonly unknown[]> = T extends readonly [
   ? Head & IntersectionFromTuple<Tail>
   : unknown;
 
-type AllServerEvents = [LotteryServerToClientEvents];
-type AllClientEvents = [LotteryClientToServerEvents];
+type AllServerEvents = [
+  LotteryServerToClientEvents,
+  TwitchServerToClientEvents,
+];
+type AllClientEvents = [
+  LotteryClientToServerEvents,
+  TwitchClientToServerEvents,
+];
 
 export type ServerToClientEvents = IntersectionFromTuple<AllServerEvents>;
 export type ClientToServerEvents = IntersectionFromTuple<AllClientEvents>;

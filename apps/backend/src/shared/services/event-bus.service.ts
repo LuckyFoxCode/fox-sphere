@@ -5,6 +5,9 @@ import {
   LotteryTicketEarnedPayload,
   LotteryUserDto,
   LotteryWinnerDrawnPayload,
+  TwitchFollowPayload,
+  TwitchRaidPayload,
+  TwitchRewardPayload,
 } from "@fox-sphere/types";
 import EventEmitter from "events";
 
@@ -19,13 +22,9 @@ interface AppEvents {
   };
   "lottery:winner-drawn": LotteryWinnerDrawnPayload;
   "lottery:finished": LotteryFinishedPayload;
-  "twitch:follow": { userId: string; username: string };
-  "twitch:raid": { raiderId: string; raiderName: string; viewers: number };
-  "twitch:reward-redeem": {
-    userId: string;
-    username: string;
-    rewardTitle: string;
-  };
+  "twitch:follow": TwitchFollowPayload;
+  "twitch:raid": TwitchRaidPayload;
+  "twitch:reward-redeem": TwitchRewardPayload;
   "user:created": { twitchId: string; username: string };
   "user:level-up": { userId: string; username: string; newLevel: number };
 }
