@@ -3,8 +3,8 @@ import {
   LotteryNoParticipantsPayload,
   LotteryStartedPayload,
   LotteryTicketEarnedPayload,
+  LotteryUserDto,
   LotteryWinnerDrawnPayload,
-  TwitchUserDto,
 } from "@fox-sphere/types";
 import EventEmitter from "events";
 
@@ -13,9 +13,9 @@ interface AppEvents {
   "lottery:no-participants": LotteryNoParticipantsPayload;
   "lottery:ticket-earned": LotteryTicketEarnedPayload;
   "lottery:winners": {
-    oldWinners: TwitchUserDto[];
-    newWinners: TwitchUserDto[];
-    participants: TwitchUserDto[];
+    oldWinners: LotteryUserDto[];
+    newWinners: LotteryUserDto[];
+    participants: LotteryUserDto[];
   };
   "lottery:winner-drawn": LotteryWinnerDrawnPayload;
   "lottery:finished": LotteryFinishedPayload;

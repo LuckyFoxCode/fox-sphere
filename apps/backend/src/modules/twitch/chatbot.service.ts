@@ -1,4 +1,4 @@
-import { TwitchUserDto } from "@fox-sphere/types";
+import { LotteryUserDto } from "@fox-sphere/types";
 import { ApiClient } from "@twurple/api";
 import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
@@ -305,8 +305,8 @@ export class ChatbotService {
   }
 
   private async removeVipFromUsers(
-    oldWinners: TwitchUserDto[],
-    newWinners: TwitchUserDto[] = [],
+    oldWinners: LotteryUserDto[],
+    newWinners: LotteryUserDto[] = [],
   ) {
     const channelId = this.twitchConfig.userId;
     const delay = (ms: number) =>
