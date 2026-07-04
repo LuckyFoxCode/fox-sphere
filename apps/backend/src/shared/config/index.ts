@@ -17,6 +17,7 @@ export const config = {
   port: Number(process.env.PORT) || 3000,
   nodeEnv: process.env.NODE_ENV || "development",
   debug: process.env.DEBUG === "true",
+  commandPrefix: getEnv("COMMAND_PREFIX"),
   databaseUrl: getEnv("DATABASE_URL"),
   allowedOrigin: getEnv("ALLOWED_ORIGIN", "http://localhost:5173"),
 

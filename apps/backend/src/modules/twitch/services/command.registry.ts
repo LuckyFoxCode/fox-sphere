@@ -1,4 +1,5 @@
 import { ChatMessage } from "@twurple/chat";
+import { config } from "../../../shared/config";
 import { Logger } from "../../../shared/services/logger.service";
 import { UserService } from "../../user";
 import { ChatbotService } from "../chatbot.service";
@@ -57,9 +58,9 @@ export class CommandRegisry {
     text: string,
     msg: ChatMessage,
   ): Promise<void> {
-    if (!text.startsWith("!")) return;
+    if (!text.startsWith(config.commandPrefix)) return;
 
-    const args = text.slice(1).trim().split(/ +/);
+    const args = text.slice(config.commandPrefix.length).trim().split(/ +/);
     const commandName = args.shift()?.toLowerCase();
 
     if (!commandName) return;
@@ -67,7 +68,10 @@ export class CommandRegisry {
     const command = this.commands.get(commandName);
 
     if (!command) {
-      Logger.debug("CommandRegistry", `Unknown command: !${commandName}`);
+      Logger.debug(
+        "CommandRegistry",
+        `Unknown command: ${config.commandPrefix}${commandName}`,
+      );
       return;
     }
 
@@ -79,7 +83,7 @@ export class CommandRegisry {
       if (type === "global" && this.globalCooldowns.has(command.name)) {
         Logger.debug(
           "CommandRegistry",
-          `Ignored global spam for !${commandName}`,
+          `Ignored global spam for ${config.commandPrefix}${commandName}`,
         );
         return;
       }
@@ -90,7 +94,7 @@ export class CommandRegisry {
       ) {
         Logger.debug(
           "CommandRegistry",
-          `Ignored user spam for !${commandName} from ${user}`,
+          `Ignored user spam for ${config.commandPrefix}${commandName} from ${user}`,
         );
         return;
       }
@@ -100,7 +104,7 @@ export class CommandRegisry {
       await command.execute({ channel, user, text, msg });
       Logger.debug(
         "CommandRegistry",
-        `Executed command: !${commandName} by ${user}`,
+        `── ⟡ ˙🌱 ̟ Executed command: ${config.commandPrefix}${commandName} by ${user}`,
       );
 
       if (command.cooldown) {
@@ -122,7 +126,7 @@ export class CommandRegisry {
     } catch (error) {
       Logger.error(
         "CommandRegistry",
-        `Error executing !${commandName} by ${user}`,
+        `Error executing ${config.commandPrefix}${commandName} by ${user}`,
         error,
       );
     }
