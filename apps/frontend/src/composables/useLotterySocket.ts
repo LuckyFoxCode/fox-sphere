@@ -15,13 +15,14 @@ export function useLotterySocket(
   const winners = ref<LotteryUserDto[]>([]);
   const winner = ref<LotteryWinnerDrawnPayload>({ place: 0, twitchId: '', username: '' });
   const currentLotteryStatus = ref<LotteryStatus>('idle');
-  const timer = ref<ReturnType<typeof setTimeout> | null>(null);
+
+  let timer: ReturnType<typeof setTimeout> | null = null;
 
   function resetTimeout(timeoutMs?: number) {
-    if (timer.value) clearTimeout(timer.value);
+    if (timer) clearTimeout(timer);
 
     if (timeoutMs !== undefined) {
-      timer.value = setTimeout(() => {
+      timer = setTimeout(() => {
         currentLotteryStatus.value = 'idle';
       }, timeoutMs);
     }
