@@ -3,11 +3,11 @@ import { useTwitchSocket } from '@/composables';
 import type { ClientToServerEvents, ServerToClientEvents } from '@fox-sphere/types';
 import { io, Socket } from 'socket.io-client';
 import { onUnmounted } from 'vue';
-import { TwitchRewardRedeem } from './widgets';
+import { TwitchRaid, TwitchRewardRedeem } from './widgets';
 
 const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io('http://localhost:3000');
 
-const { isShowWidget, redeemData, disconnect } = useTwitchSocket(socket);
+const { currentEventType, raid, reward, disconnect } = useTwitchSocket(socket);
 
 onUnmounted(() => {
   disconnect();
@@ -18,8 +18,14 @@ onUnmounted(() => {
   <div class="fixed bottom-[15%]">
     <Transition name="zoom-in">
       <TwitchRewardRedeem
-        v-show="isShowWidget"
-        :event-data="redeemData"
+        v-show="currentEventType === 'reward'"
+        :reward
+      />
+    </Transition>
+    <Transition name="zoom-in">
+      <TwitchRaid
+        v-show="currentEventType === 'raid'"
+        :raid
       />
     </Transition>
   </div>

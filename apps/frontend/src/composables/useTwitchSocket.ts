@@ -1,8 +1,9 @@
 import { SOUNDS } from '@/constants/sound';
-import type {
-  ClientToServerEvents,
-  ServerToClientEvents,
-  TwitchRewardPayload,
+import {
+  type ClientToServerEvents,
+  type ServerToClientEvents,
+  type TwitchRaidPayload,
+  type TwitchRewardPayload,
 } from '@fox-sphere/types';
 import type { Socket } from 'socket.io-client';
 import { ref } from 'vue';
@@ -10,23 +11,33 @@ import { useSound } from './useSound';
 
 const { playSound } = useSound();
 
+type WidgetEventType = 'idle' | 'reward' | 'raid' | 'follow';
+
 export function useTwitchSocket(
   socketInstance: Socket<ServerToClientEvents, ClientToServerEvents>,
 ) {
   const isShowWidget = ref(false);
-  const timer = ref<ReturnType<typeof setTimeout> | null>(null);
-  const redeemData = ref<TwitchRewardPayload>({
-    userId: 'dasdasd',
-    username: 'LuckyFoxCode',
-    rewardTitle: 'Coin Exchange',
+  const currentEventType = ref<WidgetEventType>('idle');
+  const raid = ref<TwitchRaidPayload>({
+    raiderId: '',
+    raiderName: '',
+    viewers: 0,
+  });
+  const reward = ref<TwitchRewardPayload>({
+    userId: '',
+    username: '',
+    rewardTitle: '',
   });
 
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
   function resetTimeout(timeoutMs?: number) {
-    if (timer.value) clearTimeout(timer.value);
+    if (timer) clearTimeout(timer);
 
     if (timeoutMs !== undefined) {
-      timer.value = setTimeout(() => {
+      timer = setTimeout(() => {
         isShowWidget.value = false;
+        currentEventType.value = 'idle';
       }, timeoutMs);
     }
   }
@@ -39,12 +50,15 @@ export function useTwitchSocket(
 
   socketInstance.on('twitch:raid', (data) => {
     console.log(data);
+    currentEventType.value = 'raid';
     isShowWidget.value = true;
+    playSound(SOUNDS.reward);
     resetTimeout(5000);
   });
 
   socketInstance.on('twitch:reward-redeem', (data) => {
-    redeemData.value = data;
+    reward.value = data;
+    currentEventType.value = 'reward';
     isShowWidget.value = true;
     playSound(SOUNDS.reward);
     resetTimeout(5000);
@@ -52,7 +66,9 @@ export function useTwitchSocket(
 
   return {
     isShowWidget,
-    redeemData,
+    currentEventType,
+    raid,
+    reward,
     disconnect: () => socketInstance.disconnect(),
   };
 }
