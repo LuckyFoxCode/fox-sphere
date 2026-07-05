@@ -15,7 +15,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="mx-auto flex h-270 w-480 items-center justify-center">
+  <div class="fixed mx-auto flex h-270 w-480 items-center justify-center">
     <Transition name="zoom-in">
       <LotteryAnnouncePanel v-if="currentLotteryStatus === 'started'" />
     </Transition>

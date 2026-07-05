@@ -29,7 +29,7 @@ import { WidgetFrame } from '../../ui/widget-frame/';
           <h2 class="text-text-main text-4xl leading-none font-black tracking-wide uppercase">
             Weekly Lottery Started
           </h2>
-          <p class="text-text-second mt-1 text-lg leading-relaxed font-medium">
+          <p class="text-text-second mt-1 text-center text-lg leading-relaxed font-medium">
             Spinning the Wheel of Fortune on overlay. <br />
             Who will get the next
             <span class="text-lime font-bold drop-shadow-[0_0_8px_var(--color-lime,0.4)]"
