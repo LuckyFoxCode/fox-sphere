@@ -49,9 +49,8 @@ export function useTwitchSocket(
   });
 
   socketInstance.on('twitch:raid', (data) => {
-    console.log(data);
+    raid.value = data;
     currentEventType.value = 'raid';
-    isShowWidget.value = true;
     playSound(SOUNDS.reward);
     resetTimeout(5000);
   });
@@ -59,7 +58,6 @@ export function useTwitchSocket(
   socketInstance.on('twitch:reward-redeem', (data) => {
     reward.value = data;
     currentEventType.value = 'reward';
-    isShowWidget.value = true;
     playSound(SOUNDS.reward);
     resetTimeout(5000);
   });
