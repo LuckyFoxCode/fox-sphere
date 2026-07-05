@@ -2,6 +2,7 @@ import { SOUNDS } from '@/constants/sound';
 import {
   type ClientToServerEvents,
   type ServerToClientEvents,
+  type TwitchFollowPayload,
   type TwitchRaidPayload,
   type TwitchRewardPayload,
 } from '@fox-sphere/types';
@@ -16,8 +17,8 @@ type WidgetEventType = 'idle' | 'reward' | 'raid' | 'follow';
 export function useTwitchSocket(
   socketInstance: Socket<ServerToClientEvents, ClientToServerEvents>,
 ) {
-  const isShowWidget = ref(false);
   const currentEventType = ref<WidgetEventType>('idle');
+  const follow = ref<TwitchFollowPayload>({ userId: '', username: '' });
   const raid = ref<TwitchRaidPayload>({
     raiderId: '',
     raiderName: '',
@@ -36,22 +37,22 @@ export function useTwitchSocket(
 
     if (timeoutMs !== undefined) {
       timer = setTimeout(() => {
-        isShowWidget.value = false;
         currentEventType.value = 'idle';
       }, timeoutMs);
     }
   }
 
   socketInstance.on('twitch:follow', (data) => {
-    console.log(data);
-    isShowWidget.value = true;
+    follow.value = data;
+    currentEventType.value = 'follow';
+    playSound(SOUNDS.follow);
     resetTimeout(5000);
   });
 
   socketInstance.on('twitch:raid', (data) => {
     raid.value = data;
     currentEventType.value = 'raid';
-    playSound(SOUNDS.reward);
+    playSound(SOUNDS.raid);
     resetTimeout(5000);
   });
 
@@ -63,8 +64,8 @@ export function useTwitchSocket(
   });
 
   return {
-    isShowWidget,
     currentEventType,
+    follow,
     raid,
     reward,
     disconnect: () => socketInstance.disconnect(),

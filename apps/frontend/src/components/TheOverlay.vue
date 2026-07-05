@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { LotteryManager } from './lottery';
-import TwitchWidget from './twitch/TwitchWidget.vue';
+import { TwitchWidget } from './twitch';
 </script>
 
 <template>
