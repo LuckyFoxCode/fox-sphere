@@ -11,8 +11,6 @@ import {
   LotteryWinnerReveal,
 } from './widgets';
 
-// Пусто (VITE_API_BASE_URL не задан) → same-origin: overlay и Socket.io за одним
-// Caddy. Задан (Cloudflare Pages) → абсолютный URL бэкенда.
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const socket: Socket<ServerToClientEvents, ClientToServerEvents> = apiBaseUrl
   ? io(apiBaseUrl)

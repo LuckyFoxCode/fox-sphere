@@ -5,7 +5,10 @@ import { io, Socket } from 'socket.io-client';
 import { onUnmounted } from 'vue';
 import { UserLevelUp } from './widgets';
 
-const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io('http://localhost:3000');
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+const socket: Socket<ServerToClientEvents, ClientToServerEvents> = apiBaseUrl
+  ? io(apiBaseUrl)
+  : io();
 
 const { currentEventType, levelUp, disconnect } = useUserSocker(socket);
 
