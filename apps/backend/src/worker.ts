@@ -12,8 +12,9 @@ import {
   globalEventBus,
   Logger,
 } from "./shared/services";
+import { pathToFileURL } from "url";
 
-async function bootstrap() {
+export async function bootstrap() {
   Logger.info("Bootstrap", "Initializing Twitch worker application...⚙️");
 
   const twitchConfig: TwitchConfig = config.twitch;
@@ -127,12 +128,16 @@ async function bootstrap() {
   );
 }
 
-// Запуск всего воркера
-bootstrap().catch((err) => {
-  Logger.error(
-    "Bootstrap",
-    "Critical uncaught error during worker startup process",
-    err,
-  );
-  process.exit(1);
-});
+// Auto-run ТОЛЬКО при прямом запуске (`tsx worker.ts`, dev-воркер).
+// При импорте из prod.ts (объединённый процесс) bootstrap вызывается вручную —
+// иначе воркер стартовал бы дважды.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  bootstrap().catch((err) => {
+    Logger.error(
+      "Bootstrap",
+      "Critical uncaught error during worker startup process",
+      err,
+    );
+    process.exit(1);
+  });
+}

@@ -11,6 +11,9 @@ dist
 **/.env
 **/.env.*
 
+# Local runtime data (dev postgres bind-mount — root-owned, never in image)
+data
+
 # VCS / tooling / local
 .git
 .gitignore

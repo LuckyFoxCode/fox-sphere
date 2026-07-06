@@ -6,7 +6,12 @@ import { io } from 'socket.io-client';
 import { onUnmounted } from 'vue';
 import { LotteryAnnouncePanel, LotteryFinalSummary, LotteryWinnerReveal } from './widgets';
 
-const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io('http://localhost:3000');
+// Пусто (VITE_API_BASE_URL не задан) → same-origin: overlay и Socket.io за одним
+// Caddy. Задан (Cloudflare Pages) → абсолютный URL бэкенда.
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+const socket: Socket<ServerToClientEvents, ClientToServerEvents> = apiBaseUrl
+  ? io(apiBaseUrl)
+  : io();
 const { winner, winners, currentLotteryStatus, disconnect } = useLotterySocket(socket);
 
 onUnmounted(() => {

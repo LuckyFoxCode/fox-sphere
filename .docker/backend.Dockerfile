@@ -36,6 +36,7 @@ FROM base AS deps
 # which also seeds the named node_modules volumes with node ownership.
 COPY --chown=node:node package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY --chown=node:node apps/backend/package.json ./apps/backend/
+COPY --chown=node:node packages/types/package.json ./packages/types/
 COPY --chown=node:node packages/shared-schemas/package.json ./packages/shared-schemas/
 RUN pnpm install --frozen-lockfile
 
@@ -60,7 +61,8 @@ ARG DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholde
 ENV DATABASE_URL=$DATABASE_URL
 COPY --chown=node:node . .
 RUN pnpm --filter backend exec prisma generate
-RUN pnpm --filter shared-schemas build
+# backend imports @fox-sphere/types AND @fox-sphere/shared-schemas — build both.
+RUN pnpm --filter "./packages/*" build
 RUN pnpm --filter backend build
 
 # ==========================================
@@ -75,4 +77,6 @@ RUN pnpm install --prod --frozen-lockfile
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
   CMD node -e "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-CMD ["pnpm", "--filter", "backend", "start"]
+# Merged server+worker (see src/prod.ts). `prisma migrate deploy` is run separately
+# by the deploy pipeline via `pnpm --filter backend migrate:deploy`.
+CMD ["pnpm", "--filter", "backend", "start:prod"]

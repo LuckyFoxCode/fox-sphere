@@ -1,0 +1,72 @@
+# Production stack for the Oracle Always Free ARM VM.
+# Images are built + pushed by CI (.github/workflows/deploy.yml); the VM only pulls.
+#   docker compose -f docker-compose.prod.yml up -d
+name: foxsphere
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: foxsphere-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      # PG18 alpine mounts the cluster root here (same as the dev stack's note).
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - foxsphere
+
+  # Merged server + Twitch worker in one process (src/prod.ts).
+  backend:
+    image: ghcr.io/luckyfoxcode/foxsphere-backend:latest
+    container_name: foxsphere-backend
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      # Point Prisma at the compose postgres service (overrides any .env.prod value).
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "3000"
+    networks:
+      - foxsphere
+
+  # Caddy edge: serves the overlay + proxies /socket.io + /api to backend.
+  # Option A (overlay on Cloudflare Pages): swap this image for `caddy:2-alpine`
+  # with a proxy-only Caddyfile mounted in.
+  web:
+    image: ghcr.io/luckyfoxcode/foxsphere-web:latest
+    container_name: foxsphere-web
+    restart: unless-stopped
+    environment:
+      # ":80" = HTTP on the raw IP now. Set to a domain later -> auto-HTTPS.
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - foxsphere
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+
+networks:
+  foxsphere:
+    driver: bridge

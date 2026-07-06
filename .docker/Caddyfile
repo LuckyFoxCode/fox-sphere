@@ -1,0 +1,20 @@
+# SITE_ADDRESS controls IP-now vs domain-later with ONE env var:
+#   :80                  -> plain HTTP on the raw Oracle IP (no cert)
+#   overlay.example.com  -> Caddy auto-provisions Let's Encrypt, wss:// works
+{$SITE_ADDRESS::80} {
+	encode gzip
+
+	# Socket.io handshake + WS upgrade AND the internal event bridge -> backend.
+	# reverse_proxy upgrades WebSockets automatically.
+	@api path /socket.io/* /api/* /health
+	handle @api {
+		reverse_proxy backend:3000
+	}
+
+	# Everything else: the Vue overlay SPA (served same-origin -> no CORS).
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}
