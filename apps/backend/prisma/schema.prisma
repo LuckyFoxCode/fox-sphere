@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             Int           @id @default(autoincrement())
+  twitchId       String        @unique
+  username       String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  coins          Int           @default(0)
+  lvl            Int           @default(1)
+  xp             Int           @default(0)
+  lastXpAt       DateTime      @default(now())
+  isMod          Boolean       @default(false)
+  isFounder      Boolean       @default(false)
+  isSubscriber   Boolean       @default(false)
+  isPermanentVip Boolean       @default(false)
+  spinsCount     Int           @default(0)
+  totalWin       Int           @default(0)
+  totalLoss      Int           @default(0)
+  coinHistories  CoinHistory[]
+  lotteryContext UserLottery?
+}
+
+model UserLottery {
+  id         Int     @id @default(autoincrement())
+  xpThisWeek Int     @default(0)
+  hasTicket  Boolean @default(false)
+  isLuckyVip Boolean @default(false)
+  userId     Int     @unique
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model CoinHistory {
+  id        Int      @id @default(autoincrement())
+  amount    Int
+  reason    String
+  createdAt DateTime @default(now())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model TwitchToken {
+  id                  String
+  twitchUserId        String   @unique
+  accessToken         String
+  refreshToken        String
+  expiresIn           Int      @default(0)
+  obtainmentTimestamp BigInt
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("twitch_tokens")
+}

@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
+
+@import 'tailwindcss';
+
+:root {
+  --bg: #09090b;
+  --card: #18181b;
+  --popover: #202024;
+  --line: #27272a;
+  --lime: #a3e635;
+
+  --text-main: #fafafa;
+  --text-second: #a1a1aa;
+  --text-inverse: #09090b;
+
+  --success: #22c55e;
+  --error: #ef4444;
+  --warning: #f97316;
+  --info: #3b82f6;
+
+  --twitch-cyan: #00ffcc;
+  --twitch-purple: #bf55ec;
+  --twitch-red: #ff4757;
+  --twitch-amber: #ffa502;
+  --twitch-blue: #3b82f6;
+}
+
+@theme {
+  --font-rubik: 'Rubik', sans-serif;
+
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-popover: var(--popover);
+  --color-line: var(--line);
+
+  --color-text-main: var(--text-main);
+  --color-text-second: var(--text-second);
+  --color-text-inverse: var(--text-inverse);
+
+  --color-lime: var(--lime);
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+
+  --color-event-cyan: var(--twitch-cyan);
+  --color-event-purple: var(--twitch-purple);
+  --color-event-red: var(--twitch-red);
+  --color-event-amber: var(--twitch-amber);
+  --color-event-blue: var(--twitch-blue);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply font-rubik bg-bg text-text-main;
+    overflow-x: hidden;
+  }
+
+  svg {
+    @apply inline-block align-middle;
+  }
+
+  *:focus-visible {
+    @apply outline-lime outline-2 outline-offset-2;
+  }
+
+  ::selection {
+    @apply bg-lime text-text-inverse;
+  }
+
+  .zoom-in-enter-active,
+  .zoom-in-leave-active {
+    transition:
+      opacity 0.7s,
+      transform 0.7s ease-in-out;
+  }
+  .zoom-in-enter-from,
+  .zoom-in-leave-to {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  .zoom-in-enter-to,
+  .zoom-in-leave-from {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

@@ -4,6 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "pnpm --filter \"./packages/*\" build && pnpm --filter frontend build",
+    "build:all": "pnpm -r build",
+    "build:p": "pnpm --filter \"./packages/*\" build",
+    "new:pkg": "node scripts/create-package.mjs",
     "lint:f": "pnpm --filter frontend lint",
     "format:f": "pnpm --filter frontend format",
     "dev:f": "pnpm --filter frontend dev",
@@ -12,17 +16,15 @@
     "dev:b": "pnpm --filter backend dev",
     "build:b": "pnpm --filter backend build",
     "start:b": "pnpm --filter backend start",
-    "lint:b": "pnpm --filter backend lint"
+    "lint:b": "pnpm --filter backend lint",
+    "prisma:g": "pnpm --filter backend prisma:generate",
+    "prisma:m": "pnpm --filter backend prisma:migrate",
+    "prisma:s": "pnpm --filter backend prisma:studio",
+    "worker:t": "pnpm --filter backend worker:twitch"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "^11.1.2",
-      "onFail": "download"
-    }
-  },
-  "type": "module"
+  "type": "module",
+  "packageManager": "pnpm@11.2.2"
 }

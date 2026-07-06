@@ -9,6 +9,9 @@ pnpm-debug.log*
 dist/
 build/
 
+# Docker bind-mounted Postgres data
+data/
+
 .env
 .env.local
 .env.*.local

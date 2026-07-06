@@ -1,0 +1,104 @@
+import { ApiClient } from "@twurple/api";
+import { RefreshingAuthProvider } from "@twurple/auth";
+import {
+  EventSubChannelFollowEvent,
+  EventSubChannelRaidEvent,
+  EventSubChannelRedemptionAddEvent,
+} from "@twurple/eventsub-base";
+import { EventSubWsListener } from "@twurple/eventsub-ws";
+import { Logger } from "../../shared/services";
+
+export interface EventSubConfig {
+  userId: string;
+  botId: string;
+}
+
+export class TwitchEventSubClient {
+  private listener!: EventSubWsListener;
+  private apiClient: ApiClient;
+
+  constructor(
+    private authProvider: RefreshingAuthProvider,
+    private config: EventSubConfig,
+  ) {
+    this.apiClient = new ApiClient({ authProvider: this.authProvider });
+  }
+
+  public async start(): Promise<void> {
+    try {
+      this.listener = new EventSubWsListener({
+        apiClient: this.apiClient,
+      });
+
+      await this.listener.start();
+      Logger.info(
+        "TwitchEventSubClient",
+        "WebSocket listener successfully started.📡",
+      );
+    } catch (error) {
+      Logger.error(
+        "TwitchEventSubClient",
+        "Failed to start EventSub WebSocket listener",
+        error,
+      );
+    }
+  }
+
+  public async stop(): Promise<void> {
+    if (this.listener) {
+      await this.listener.stop();
+    }
+  }
+
+  public async subscribeToFollows(
+    callback: (e: EventSubChannelFollowEvent) => void,
+  ) {
+    return this.listener.onChannelFollow(
+      this.config.userId,
+      this.config.botId,
+      (e) => {
+        Logger.debug(
+          "TwitchEventSubClient",
+          `New follower detected: ${e.userDisplayName} (ID: ${e.userId}) 🎉`,
+        );
+        callback(e);
+      },
+    );
+  }
+
+  public async subscribeToRaids(
+    callback: (e: EventSubChannelRaidEvent) => void,
+  ) {
+    return this.listener.onChannelRaidTo(this.config.userId, (e) => {
+      Logger.debug(
+        "TwitchEventSubClient",
+        `🎉 RAID! Streamer ${e.raidingBroadcasterDisplayName} brought ${e.viewers} awesome viewers! 🎉`,
+      );
+      callback(e);
+    });
+  }
+
+  public async subscribeToRewards(
+    callback: (data: {
+      userId: string;
+      userDisplayName: string;
+      rewardTitle: string;
+    }) => void,
+  ) {
+    return this.listener.onChannelRedemptionAdd(
+      this.config.userId,
+      (event: EventSubChannelRedemptionAddEvent) => {
+        Logger.debug(
+          "TwitchEventSubClient",
+          `Reward redeemed: [${event.rewardTitle}] by ${event.userDisplayName} 🎉`,
+        );
+
+        callback({
+          userId: event.userId,
+          userDisplayName: event.userDisplayName,
+          rewardTitle: event.rewardTitle,
+        });
+      },
+    );
+  }
+}

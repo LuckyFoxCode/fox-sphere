@@ -1,0 +1,27 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "coins" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "isFounder" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "isMod" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "isSubscriber" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "lvl" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN     "spinsCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "totalLoss" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "totalWin" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "xp" INTEGER NOT NULL DEFAULT 0;
+
+-- CreateTable
+CREATE TABLE "CoinHistory" (
+    "id" SERIAL NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "reason" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "userId" INTEGER NOT NULL,
+
+    CONSTRAINT "CoinHistory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE INDEX "CoinHistory_userId_idx" ON "CoinHistory"("userId");
+
+-- AddForeignKey
+ALTER TABLE "CoinHistory" ADD CONSTRAINT "CoinHistory_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

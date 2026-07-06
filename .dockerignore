@@ -1,0 +1,28 @@
+node_modules
+**/node_modules
+dist
+**/dist
+.prisma
+**/src/generated
+
+# Secrets — never bake into image layers
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Local runtime data (dev postgres bind-mount — root-owned, never in image)
+data
+
+# VCS / tooling / local
+.git
+.gitignore
+.vscode
+.idea
+*.log
+.DS_Store
+
+# Docker meta
+Dockerfile
+docker-compose*.yml
+.dockerignore
