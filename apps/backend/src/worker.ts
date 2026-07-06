@@ -1,3 +1,4 @@
+import { pathToFileURL } from "url";
 import { LotteryService } from "./modules/lottery";
 import { ChatbotService } from "./modules/twitch/chatbot.service";
 import { TwitchEventSubClient } from "./modules/twitch/eventsub.client";
@@ -12,7 +13,6 @@ import {
   globalEventBus,
   Logger,
 } from "./shared/services";
-import { pathToFileURL } from "url";
 
 export async function bootstrap() {
   Logger.info("Bootstrap", "Initializing Twitch worker application...⚙️");
@@ -69,6 +69,14 @@ export async function bootstrap() {
     });
   });
 
+  globalEventBus.on("lottery:ticket-earned", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Ticket earned | User: ${data.username}`,
+    );
+    await forwardEventToBackend("lottery:ticket-earned", data);
+  });
+
   globalEventBus.on("lottery:started", async (data) => {
     Logger.info(
       "Bootstrap",
@@ -122,6 +130,14 @@ export async function bootstrap() {
     await forwardEventToBackend("twitch:reward-redeem", data);
   });
 
+  globalEventBus.on("user:level-up", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding level-up to overlay | User: ${data.username}, New Level: ${data.newLevel}`,
+    );
+    await forwardEventToBackend("user:level-up", data);
+  });
+
   Logger.info(
     "Bootstrap",
     "Application bootstrap completed. Live subscriptions active! 🚀",
@@ -131,7 +147,10 @@ export async function bootstrap() {
 // Auto-run ТОЛЬКО при прямом запуске (`tsx worker.ts`, dev-воркер).
 // При импорте из prod.ts (объединённый процесс) bootstrap вызывается вручную —
 // иначе воркер стартовал бы дважды.
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   bootstrap().catch((err) => {
     Logger.error(
       "Bootstrap",

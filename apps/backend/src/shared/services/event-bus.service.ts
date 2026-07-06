@@ -8,6 +8,8 @@ import {
   TwitchFollowPayload,
   TwitchRaidPayload,
   TwitchRewardPayload,
+  UserCreatePayload,
+  UserLevelUpPayload,
 } from "@fox-sphere/types";
 import EventEmitter from "events";
 
@@ -25,8 +27,8 @@ interface AppEvents {
   "twitch:follow": TwitchFollowPayload;
   "twitch:raid": TwitchRaidPayload;
   "twitch:reward-redeem": TwitchRewardPayload;
-  "user:created": { twitchId: string; username: string };
-  "user:level-up": { userId: string; username: string; newLevel: number };
+  "user:created": UserCreatePayload;
+  "user:level-up": UserLevelUpPayload;
 }
 
 class TypedEventBus extends EventEmitter {
