@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useUserSocker } from '@/composables';
+import { useUserSocker } from '@/composables/sockets';
 import type { ClientToServerEvents, ServerToClientEvents } from '@fox-sphere/types';
 import { io, Socket } from 'socket.io-client';
 import { onUnmounted } from 'vue';
@@ -21,8 +21,8 @@ onUnmounted(() => {
   <div class="fixed top-[20%]">
     <Transition name="zoom-in">
       <UserLevelUp
-        v-show="currentEventType === 'level-up'"
-        :level-up
+        v-if="currentEventType === 'level-up' && levelUp"
+        :level-up="levelUp"
       />
     </Transition>
   </div>

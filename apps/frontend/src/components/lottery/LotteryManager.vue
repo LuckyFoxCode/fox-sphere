@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useLotterySocket } from '@/composables';
+import { useLotterySocket } from '@/composables/sockets';
 import type { ClientToServerEvents, ServerToClientEvents } from '@fox-sphere/types';
 import type { Socket } from 'socket.io-client';
 import { io } from 'socket.io-client';
@@ -26,8 +26,8 @@ onUnmounted(() => {
   <div class="fixed mx-auto flex h-270 w-480 items-center justify-center">
     <Transition name="zoom-in">
       <LotteryTicket
-        v-show="currentLotteryStatus === 'ticket'"
-        :ticket
+        v-if="currentLotteryStatus === 'ticket' && ticket"
+        :ticket="ticket"
       />
     </Transition>
     <Transition name="zoom-in">
@@ -35,15 +35,14 @@ onUnmounted(() => {
     </Transition>
     <Transition name="zoom-in">
       <LotteryWinnerReveal
-        v-show="currentLotteryStatus === 'drawer'"
-        :username="winner.username"
-        :place="winner.place"
+        v-if="currentLotteryStatus === 'drawer' && winner"
+        :winner="winner"
       />
     </Transition>
     <Transition name="zoom-in">
       <LotteryFinalSummary
-        v-show="currentLotteryStatus === 'finished'"
-        :winners
+        v-if="currentLotteryStatus === 'finished'"
+        :winners="winners"
       />
     </Transition>
   </div>

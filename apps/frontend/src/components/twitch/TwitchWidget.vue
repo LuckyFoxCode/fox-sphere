@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useTwitchSocket } from '@/composables';
+import { useTwitchSocket } from '@/composables/sockets';
 import type { ClientToServerEvents, ServerToClientEvents } from '@fox-sphere/types';
 import { io, Socket } from 'socket.io-client';
 import { onUnmounted } from 'vue';
@@ -21,20 +21,20 @@ onUnmounted(() => {
   <div class="fixed bottom-[15%]">
     <Transition name="zoom-in">
       <TwitchRewardRedeem
-        v-show="currentEventType === 'reward'"
-        :reward
+        v-if="currentEventType === 'reward' && reward"
+        :reward="reward"
       />
     </Transition>
     <Transition name="zoom-in">
       <TwitchRaid
-        v-show="currentEventType === 'raid'"
-        :raid
+        v-if="currentEventType === 'raid' && raid"
+        :raid="raid"
       />
     </Transition>
     <Transition name="zoom-in">
       <TwitchFollow
-        :follow
-        v-show="currentEventType === 'follow'"
+        v-if="currentEventType === 'follow' && follow"
+        :follow="follow"
       />
     </Transition>
   </div>
