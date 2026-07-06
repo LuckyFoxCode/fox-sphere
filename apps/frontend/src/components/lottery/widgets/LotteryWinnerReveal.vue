@@ -1,14 +1,13 @@
 <script setup lang="ts">
+import type { LotteryWinnerDrawnPayload } from '@fox-sphere/types';
 import { computed } from 'vue';
 import { WidgetFrame } from '../../ui/widget-frame/';
 
 const props = defineProps<{
-  place: number;
-  username: string;
-  lostPlace?: number;
+  winner: LotteryWinnerDrawnPayload;
 }>();
 
-const firstLetter = computed(() => props.username.charAt(0).toUpperCase());
+const firstLetter = computed(() => props.winner.username.charAt(0).toUpperCase());
 </script>
 
 <template>
@@ -35,7 +34,7 @@ const firstLetter = computed(() => props.username.charAt(0).toUpperCase());
         <span
           class="bg-lime/5 border-lime/40 text-lime/70 rounded-md border-2 px-2.5 py-0.5 text-xs font-bold tracking-wider uppercase"
         >
-          🏆 Place <span class="text-lime">#{{ place }}</span>
+          🏆 Place <span class="text-lime">#{{ winner.place }}</span>
         </span>
       </div>
 
@@ -58,7 +57,7 @@ const firstLetter = computed(() => props.username.charAt(0).toUpperCase());
           <span
             class="text-text-main truncate text-3xl font-semibold tracking-wide capitalize drop-shadow-[0_2px_4px_var(--color-bg-bg,0.5)]"
           >
-            {{ username }}
+            {{ winner.username }}
           </span>
           <p class="text-text-second mt-0.5 text-sm font-medium">
             Claimed weekly
