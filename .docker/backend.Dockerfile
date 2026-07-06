@@ -36,6 +36,7 @@ FROM base AS deps
 # which also seeds the named node_modules volumes with node ownership.
 COPY --chown=node:node package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY --chown=node:node apps/backend/package.json ./apps/backend/
+COPY --chown=node:node packages/types/package.json ./packages/types/
 COPY --chown=node:node packages/shared-schemas/package.json ./packages/shared-schemas/
 RUN pnpm install --frozen-lockfile
 
@@ -60,7 +61,8 @@ ARG DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholde
 ENV DATABASE_URL=$DATABASE_URL
 COPY --chown=node:node . .
 RUN pnpm --filter backend exec prisma generate
-RUN pnpm --filter shared-schemas build
+# backend imports @fox-sphere/types AND @fox-sphere/shared-schemas — build both.
+RUN pnpm --filter "./packages/*" build
 RUN pnpm --filter backend build
 
 # ==========================================
