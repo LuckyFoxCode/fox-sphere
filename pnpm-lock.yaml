@@ -248,9 +248,15 @@ importers:
       pg:
         specifier: ^8.20.0
         version: 8.20.0
+      prisma:
+        specifier: ^7.8.0
+        version: 7.8.0(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)
       socket.io:
         specifier: ^4.8.3
         version: 4.8.3
+      tsx:
+        specifier: ^4.22.1
+        version: 4.22.1
     devDependencies:
       '@eslint/js':
         specifier: ^10.0.1
@@ -270,15 +276,9 @@ importers:
       eslint:
         specifier: ^10.4.0
         version: 10.4.0(jiti@2.7.0)
-      prisma:
-        specifier: ^7.8.0
-        version: 7.8.0(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)
       tsdown:
         specifier: ^0.22.1
         version: 0.22.1(tsx@4.22.1)(typescript@6.0.3)(vue-tsc@3.2.9(typescript@6.0.3))
-      tsx:
-        specifier: ^4.22.1
-        version: 4.22.1
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
