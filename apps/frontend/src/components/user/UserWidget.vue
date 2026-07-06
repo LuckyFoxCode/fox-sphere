@@ -16,11 +16,11 @@ onUnmounted(() => {
 
 <template>
   <div class="fixed top-[20%]">
-    <Transition
-      v-show="currentEventType === 'level-up'"
-      name="zoom-in"
-    >
-      <UserLevelUp :level-up />
+    <Transition name="zoom-in">
+      <UserLevelUp
+        v-show="currentEventType === 'level-up'"
+        :level-up
+      />
     </Transition>
   </div>
 </template>

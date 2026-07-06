@@ -32,6 +32,7 @@ export interface LotteryWinnerDrawnPayload extends LotteryUserDto {
   place: number;
 }
 export interface LotteryServerToClientEvents {
+  "lottery:ticket-earned": (data: LotteryTicketEarnedPayload) => void;
   "lottery:started": (data: LotteryStartedPayload) => void;
   "lottery:winner-drawn": (data: LotteryWinnerDrawnPayload) => void;
   "lottery:finished": (data: LotteryFinishedPayload) => void;
