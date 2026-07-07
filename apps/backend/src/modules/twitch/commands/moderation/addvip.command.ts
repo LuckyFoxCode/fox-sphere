@@ -50,13 +50,13 @@ export class AddVipCommand implements TwitchCommand {
       }
 
       const targetTwitchId = userResponse.id;
-      const cleanUsername = userResponse.displayName;
+      const cleanUsername = userResponse.name;
 
       await this.apiClient.asUser(channelId, async (api) => {
         return api.channels.addVip(channelId, targetTwitchId);
       });
 
-      // TODO: add userService for use method addVipToPrisma(targetTwitchId, ctx.user)
+      await this.userService.addVipToDb(targetTwitchId, cleanUsername);
 
       const message = BOT_MESSAGES.COMMANDS.ADD_VIP(ctx.user, cleanUsername);
       await this.chatbotService.sendMessage(ctx.channel, message);

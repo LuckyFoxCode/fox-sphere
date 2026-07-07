@@ -62,6 +62,35 @@ export class UserService {
     }
   }
 
+  public async addVipToDb(twitchId: string, username: string): Promise<void> {
+    try {
+      await prisma.user.upsert({
+        where: {
+          twitchId: twitchId,
+        },
+        update: {
+          isPermanentVip: true,
+          username,
+        },
+        create: {
+          isPermanentVip: true,
+          twitchId: twitchId,
+          username,
+        },
+      });
+      Logger.debug(
+        "UserService",
+        `✩°｡🧸𓏲⋆.🧺𖦹 ₊˚ Successfully added permanent VIP ${username} in Prisma.`,
+      );
+    } catch (error) {
+      Logger.error(
+        "UserService",
+        `𓏲๋࣭࣪˖🪼.ᐟ Failed to add VIP for user: ${twitchId}`,
+        error,
+      );
+    }
+  }
+
   public async addXpForMessage(
     twitchId: string,
     xpAmount: number,
