@@ -15,7 +15,7 @@ import {
   StackCommand,
   TelegramCommand,
 } from "../commands/general";
-import { AddVipCommand } from "../commands/moderation";
+import { AddVipCommand, RemoveVipCommand } from "../commands/moderation";
 
 export class CommandRegisry {
   private commands = new Map<string, TwitchCommand>();
@@ -41,6 +41,11 @@ export class CommandRegisry {
       new StackCommand(this.chatbotService),
       new TelegramCommand(this.chatbotService),
       new AddVipCommand(this.chatbotService, this.userService, this.apiClient),
+      new RemoveVipCommand(
+        this.chatbotService,
+        this.userService,
+        this.apiClient,
+      ),
     ];
 
     for (const command of commandToRegister) {

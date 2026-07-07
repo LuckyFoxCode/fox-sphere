@@ -56,6 +56,14 @@ export const BOT_MESSAGES = {
       `@${username}, you don't have permission to use this command!`,
     ADD_VIP_NOTFOUND: (username: string) =>
       `User @${username} not found on Twitch.`,
+    REMOVE_VIP: (moderator: string, username: string) =>
+      `✨ VIP status removed: @${moderator} has updated @${username}'s permissions.`,
+    REMOVE_VIP_WARNING: (username: string) =>
+      `@${username}, please specify a username: !removevip <username>`,
+    REMOVE_VIP_DENIED: (username: string) =>
+      `@${username}, you don't have permission to use this command!`,
+    REMOVE_VIP_NOTFOUND: (username: string) =>
+      `User @${username} not found on Twitch.`,
   },
 
   // Награды за баллы канала (Channel Points)

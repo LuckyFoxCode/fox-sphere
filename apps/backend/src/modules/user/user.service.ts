@@ -91,6 +91,38 @@ export class UserService {
     }
   }
 
+  public async removeVipFromDb(
+    twitchId: string,
+    username: string,
+  ): Promise<void> {
+    try {
+      await prisma.user.upsert({
+        where: {
+          twitchId: twitchId,
+        },
+        update: {
+          isPermanentVip: false,
+          username,
+        },
+        create: {
+          isPermanentVip: false,
+          twitchId,
+          username,
+        },
+      });
+      Logger.debug(
+        "UserService",
+        `✩°｡🧸𓏲⋆.🧺𖦹 ₊˚ Successfully remove permanent VIP ${username} in Prisma.`,
+      );
+    } catch (error) {
+      Logger.error(
+        "UserService",
+        `𓏲๋࣭࣪˖🪼.ᐟ Failed to remove VIP for user: ${twitchId}`,
+        error,
+      );
+    }
+  }
+
   public async addXpForMessage(
     twitchId: string,
     xpAmount: number,
