@@ -42,7 +42,11 @@ export class ChatbotService {
       this.userService,
       this.twitchConfig,
     );
-    this.commandRegistry = new CommandRegisry(this, this.userService);
+    this.commandRegistry = new CommandRegisry(
+      this,
+      this.userService,
+      this.apiClient,
+    );
     this.announcementService = new AnnouncementService(
       this.apiClient,
       this.twitchConfig,
