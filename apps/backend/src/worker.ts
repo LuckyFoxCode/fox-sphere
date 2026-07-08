@@ -106,6 +106,14 @@ export async function bootstrap() {
     await forwardEventToBackend("lottery:finished", data);
   });
 
+  globalEventBus.on("twitch:add-vip", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding twitch:add-vip to overlay for: ${data.username}`,
+    );
+    await forwardEventToBackend("twitch:add-vip", data);
+  });
+
   globalEventBus.on("twitch:follow", async (data) => {
     Logger.info(
       "Bootstrap",
