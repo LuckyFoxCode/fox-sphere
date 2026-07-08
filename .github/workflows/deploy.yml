@@ -66,7 +66,12 @@ jobs:
           script: |
             set -e
             cd ~/foxsphere
-            docker compose pull
-            docker compose run --rm backend pnpm --filter backend migrate:deploy
-            docker compose up -d
+            # --env-file so top-level ${POSTGRES_*}/DATABASE_URL interpolation resolves.
+            # (compose's env_file: only injects into the container, not YAML interpolation —
+            # without this, postgres starts blank-credentialed and never becomes healthy.)
+            DC="docker compose --env-file .env.prod -f docker-compose.prod.yml"
+            $DC pull
+            # Run migrations before swapping the app (one-shot container).
+            $DC run --rm backend pnpm --filter backend migrate:deploy
+            $DC up -d
             docker image prune -f
