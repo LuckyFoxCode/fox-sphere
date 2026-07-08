@@ -1,5 +1,5 @@
 // Сущность (Data Transfer Object)
-export interface TwitchUserDto {
+export interface LotteryUserDto {
   twitchId: string;
   username: string;
 }
@@ -10,11 +10,11 @@ export interface LotteryStartedPayload {
 }
 
 export interface LotteryNoParticipantsPayload {
-  oldWinners: TwitchUserDto[];
+  oldWinners: LotteryUserDto[];
 }
 
 export interface LotteryFinishedPayload {
-  winners: TwitchUserDto[];
+  winners: LotteryUserDto[];
 }
 
 export interface LotteryTicketEarnedPayload {
@@ -23,15 +23,16 @@ export interface LotteryTicketEarnedPayload {
 }
 
 export interface LotteryWinnersPayload {
-  oldWinners: TwitchUserDto[];
-  newWinners: TwitchUserDto[];
-  participants: TwitchUserDto[];
+  oldWinners: LotteryUserDto[];
+  newWinners: LotteryUserDto[];
+  participants: LotteryUserDto[];
 }
 
-export interface LotteryWinnerDrawnPayload extends TwitchUserDto {
+export interface LotteryWinnerDrawnPayload extends LotteryUserDto {
   place: number;
 }
 export interface LotteryServerToClientEvents {
+  "lottery:ticket-earned": (data: LotteryTicketEarnedPayload) => void;
   "lottery:started": (data: LotteryStartedPayload) => void;
   "lottery:winner-drawn": (data: LotteryWinnerDrawnPayload) => void;
   "lottery:finished": (data: LotteryFinishedPayload) => void;

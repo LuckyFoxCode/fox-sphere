@@ -1,3 +1,4 @@
+import { pathToFileURL } from "url";
 import { LotteryService } from "./modules/lottery";
 import { ChatbotService } from "./modules/twitch/chatbot.service";
 import { TwitchEventSubClient } from "./modules/twitch/eventsub.client";
@@ -12,7 +13,6 @@ import {
   globalEventBus,
   Logger,
 } from "./shared/services";
-import { pathToFileURL } from "url";
 
 export async function bootstrap() {
   Logger.info("Bootstrap", "Initializing Twitch worker application...⚙️");
@@ -69,22 +69,31 @@ export async function bootstrap() {
     });
   });
 
+  globalEventBus.on("lottery:ticket-earned", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Ticket earned | User: ${data.username}`,
+    );
+    await forwardEventToBackend("lottery:ticket-earned", data);
+  });
+
   globalEventBus.on("lottery:started", async (data) => {
     Logger.info(
       "Bootstrap",
-      `Lottery command triggered! Total duration: ${data.duration}s. Forwarding to overlay...`,
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Lottery command triggered! Total duration: ${data.duration}s. Forwarding to overlay...`,
     );
     await forwardEventToBackend("lottery:started", data);
   });
+
   globalEventBus.on("lottery:winners", async (data) => {
-    Logger.info("Bootstrap", `°❀⋆.ೃ࿔*:･°❀⋆.ೃ࿔*:･ Lottery winners...`);
+    Logger.info("Bootstrap", `.𖥔 ݁ ˖ִ🛸༄˖°. Lottery winners...`);
     await forwardEventToBackend("lottery:winners", data);
   });
 
   globalEventBus.on("lottery:winner-drawn", async (data) => {
     Logger.info(
       "Bootstrap",
-      `Победитель #${data.place} объявлен в чате, шлем на оверлей!`,
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Победитель #${data.place} объявлен в чате, шлем на оверлей!`,
     );
     await forwardEventToBackend("lottery:winner-drawn", data);
   });
@@ -92,10 +101,49 @@ export async function bootstrap() {
   globalEventBus.on("lottery:finished", async (data) => {
     Logger.info(
       "Bootstrap",
-      "Lottery finished event captured, forwarding to Socket.io via Backend!",
+      ".𖥔 ݁ ˖ִ🛸༄˖°. Lottery finished event captured, forwarding to Socket.io via Backend!",
     );
-
     await forwardEventToBackend("lottery:finished", data);
+  });
+
+  globalEventBus.on("twitch:add-vip", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding twitch:add-vip to overlay for: ${data.username}`,
+    );
+    await forwardEventToBackend("twitch:add-vip", data);
+  });
+
+  globalEventBus.on("twitch:follow", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding twitch:follow to overlay for: ${data.username}`,
+    );
+    await forwardEventToBackend("twitch:follow", data);
+  });
+
+  globalEventBus.on("twitch:raid", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding twitch:raid to overlay from: ${data.raiderName}`,
+    );
+    await forwardEventToBackend("twitch:twitch:raid", data);
+  });
+
+  globalEventBus.on("twitch:reward-redeem", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding reward-redeem to overlay: ${data.rewardTitle}`,
+    );
+    await forwardEventToBackend("twitch:reward-redeem", data);
+  });
+
+  globalEventBus.on("user:level-up", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding level-up to overlay | User: ${data.username}, New Level: ${data.newLevel}`,
+    );
+    await forwardEventToBackend("user:level-up", data);
   });
 
   Logger.info(
@@ -107,7 +155,10 @@ export async function bootstrap() {
 // Auto-run ТОЛЬКО при прямом запуске (`tsx worker.ts`, dev-воркер).
 // При импорте из prod.ts (объединённый процесс) bootstrap вызывается вручную —
 // иначе воркер стартовал бы дважды.
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   bootstrap().catch((err) => {
     Logger.error(
       "Bootstrap",

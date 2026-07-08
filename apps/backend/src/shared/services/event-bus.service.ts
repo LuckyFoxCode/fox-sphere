@@ -3,8 +3,15 @@ import {
   LotteryNoParticipantsPayload,
   LotteryStartedPayload,
   LotteryTicketEarnedPayload,
+  LotteryUserDto,
   LotteryWinnerDrawnPayload,
-  TwitchUserDto,
+  TwitchAddVipPaylod,
+  TwitchFollowPayload,
+  TwitchRaidPayload,
+  TwitchRemoveVipPaylod,
+  TwitchRewardPayload,
+  UserCreatePayload,
+  UserLevelUpPayload,
 } from "@fox-sphere/types";
 import EventEmitter from "events";
 
@@ -13,21 +20,19 @@ interface AppEvents {
   "lottery:no-participants": LotteryNoParticipantsPayload;
   "lottery:ticket-earned": LotteryTicketEarnedPayload;
   "lottery:winners": {
-    oldWinners: TwitchUserDto[];
-    newWinners: TwitchUserDto[];
-    participants: TwitchUserDto[];
+    oldWinners: LotteryUserDto[];
+    newWinners: LotteryUserDto[];
+    participants: LotteryUserDto[];
   };
   "lottery:winner-drawn": LotteryWinnerDrawnPayload;
   "lottery:finished": LotteryFinishedPayload;
-  "twitch:follow": { userId: string; username: string };
-  "twitch:raid": { raiderId: string; raiderName: string; viewers: number };
-  "twitch:reward-redeem": {
-    userId: string;
-    username: string;
-    rewardTitle: string;
-  };
-  "user:created": { twitchId: string; username: string };
-  "user:level-up": { userId: string; username: string; newLevel: number };
+  "twitch:add-vip": TwitchAddVipPaylod;
+  "twitch:follow": TwitchFollowPayload;
+  "twitch:raid": TwitchRaidPayload;
+  "twitch:remove-vip": TwitchRemoveVipPaylod;
+  "twitch:reward-redeem": TwitchRewardPayload;
+  "user:created": UserCreatePayload;
+  "user:level-up": UserLevelUpPayload;
 }
 
 class TypedEventBus extends EventEmitter {

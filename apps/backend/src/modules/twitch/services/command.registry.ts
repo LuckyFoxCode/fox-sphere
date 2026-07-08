@@ -1,3 +1,4 @@
+import { ApiClient } from "@twurple/api";
 import { ChatMessage } from "@twurple/chat";
 import { config } from "../../../shared/config";
 import { Logger } from "../../../shared/services/logger.service";
@@ -14,6 +15,7 @@ import {
   StackCommand,
   TelegramCommand,
 } from "../commands/general";
+import { AddVipCommand, RemoveVipCommand } from "../commands/moderation";
 
 export class CommandRegisry {
   private commands = new Map<string, TwitchCommand>();
@@ -23,6 +25,7 @@ export class CommandRegisry {
   constructor(
     private chatbotService: ChatbotService,
     private userService: UserService,
+    private apiClient: ApiClient,
   ) {
     this.registerCommands();
   }
@@ -37,6 +40,12 @@ export class CommandRegisry {
       new ProjectCommand(this.chatbotService),
       new StackCommand(this.chatbotService),
       new TelegramCommand(this.chatbotService),
+      new AddVipCommand(this.chatbotService, this.userService, this.apiClient),
+      new RemoveVipCommand(
+        this.chatbotService,
+        this.userService,
+        this.apiClient,
+      ),
     ];
 
     for (const command of commandToRegister) {
@@ -101,7 +110,7 @@ export class CommandRegisry {
     }
 
     try {
-      await command.execute({ channel, user, text, msg });
+      await command.execute({ channel, user, text, msg, args });
       Logger.debug(
         "CommandRegistry",
         `── ⟡ ˙🌱 ̟ Executed command: ${config.commandPrefix}${commandName} by ${user}`,

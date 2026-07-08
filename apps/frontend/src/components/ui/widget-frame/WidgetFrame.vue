@@ -3,15 +3,17 @@ import { computed } from 'vue';
 import DecorativeCap from './DecorativeCap.vue';
 
 interface Props {
-  variant?: 'cyan' | 'purple' | 'red' | 'amber' | 'blue';
+  variant?: 'cyan' | 'purple' | 'red' | 'amber' | 'blue' | 'rose';
   positionY?: string;
   positionX?: string;
+  isShadow?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   variant: 'blue',
   positionY: '150',
   positionX: '60',
+  isShadow: true,
 });
 
 const themeColors: Record<NonNullable<Props['variant']>, string> = {
@@ -20,6 +22,7 @@ const themeColors: Record<NonNullable<Props['variant']>, string> = {
   red: 'var(--twitch-red)',
   amber: 'var(--twitch-amber)',
   blue: 'var(--twitch-blue)',
+  rose: 'var(--twitch-rose)',
 };
 
 const frameColor = computed(() => themeColors[props.variant] || themeColors.blue);
@@ -53,7 +56,7 @@ const boltPositions = [
     :style="{ '--widget-color': frameColor }"
   >
     <div
-      class="animate-pulse-soft bg-bg/90 absolute inset-0 rounded-2xl border-2"
+      :class="[isShadow && 'animate-pulse-soft', 'bg-bg/90 absolute inset-0 rounded-2xl border-2']"
       style="
         border-color: var(--widget-color);
         box-shadow:
@@ -61,7 +64,12 @@ const boltPositions = [
           inset 0 0 10px var(--color-card, 0.6);
       "
     />
-    <div class="border-bg/70 absolute inset-1 z-10 w-[calc(100%-8px)] rounded-2xl border-6" />
+    <div
+      :class="[
+        isShadow ? 'bg-(--widget-color)/1' : 'bg-(--widget-color)/10',
+        'border-bg/70 absolute inset-1 z-10 w-[calc(100%-8px)] rounded-2xl border-6',
+      ]"
+    />
 
     <div
       v-for="cap in capsConfig"
@@ -92,13 +100,13 @@ const boltPositions = [
 @keyframes pulseGlow {
   0%,
   100% {
-    filter: drop-shadow(0 0 1px var(--widget-color));
+    filter: drop-shadow(0 0 3px var(--widget-color));
   }
   50% {
-    filter: drop-shadow(0 0 6px var(--widget-color));
+    filter: drop-shadow(0 0 12px var(--widget-color));
   }
 }
 .animate-pulse-soft {
-  animation: pulseGlow 3.5s infinite ease-in-out;
+  animation: pulseGlow 3s infinite ease-in-out;
 }
 </style>

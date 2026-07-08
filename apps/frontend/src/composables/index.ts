@@ -1,1 +1,1 @@
-export * from './useLotterySocket';
+export * from './useSound';

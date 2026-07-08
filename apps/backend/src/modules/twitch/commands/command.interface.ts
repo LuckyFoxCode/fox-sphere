@@ -10,6 +10,7 @@ export interface CommandContext {
   user: string;
   text: string;
   msg: ChatMessage;
+  args: string[];
 }
 
 export interface TwitchCommand {
