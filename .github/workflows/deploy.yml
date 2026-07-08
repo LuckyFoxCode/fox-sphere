@@ -42,7 +42,7 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           target: ${{ matrix.target }}
-          platforms: linux/arm64
+          platforms: linux/amd64,linux/arm64
           push: true
           # web overlay is same-origin (Option B) -> empty base URL.
           build-args: |
@@ -66,8 +66,7 @@ jobs:
           script: |
             set -e
             cd ~/foxsphere
-            docker compose -f docker-compose.prod.yml pull
-            # Run migrations before swapping the app (one-shot container).
-            docker compose -f docker-compose.prod.yml run --rm backend pnpm --filter backend migrate:deploy
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose pull
+            docker compose run --rm backend pnpm --filter backend migrate:deploy
+            docker compose up -d
             docker image prune -f
