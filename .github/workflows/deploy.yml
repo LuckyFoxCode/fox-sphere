@@ -65,13 +65,11 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -e
+            # ~/foxsphere holds the deploy repo's compose.yaml + a real .env (never committed).
+            # compose auto-detects compose.yaml and auto-loads .env for ${...} interpolation.
             cd ~/foxsphere
-            # --env-file so top-level ${POSTGRES_*}/DATABASE_URL interpolation resolves.
-            # (compose's env_file: only injects into the container, not YAML interpolation —
-            # without this, postgres starts blank-credentialed and never becomes healthy.)
-            DC="docker compose --env-file .env.prod -f docker-compose.prod.yml"
-            $DC pull
+            docker compose pull
             # Run migrations before swapping the app (one-shot container).
-            $DC run --rm backend pnpm --filter backend migrate:deploy
-            $DC up -d
+            docker compose run --rm backend pnpm --filter backend migrate:deploy
+            docker compose up -d
             docker image prune -f
