@@ -1,5 +1,5 @@
 import { ApiClient } from "@twurple/api";
-import { Logger } from "../../../../shared/services";
+import { globalEventBus, Logger } from "../../../../shared/services";
 import { UserService } from "../../../user";
 import { ChatbotService } from "../../chatbot.service";
 import { BOT_MESSAGES, COOLDOWNS } from "../../twitch.constants";
@@ -35,6 +35,7 @@ export class RemoveVipCommand implements TwitchCommand {
     if (!targetUsername) {
       const message = BOT_MESSAGES.COMMANDS.REMOVE_VIP_WARNING(ctx.user);
       await this.chatbotService.sendMessage(ctx.channel, message);
+      return;
     }
 
     try {
@@ -44,7 +45,8 @@ export class RemoveVipCommand implements TwitchCommand {
         await this.apiClient.users.getUserByName(targetUsername);
 
       if (!userResponse) {
-        const message = BOT_MESSAGES.COMMANDS.REMOVE_VIP_NOTFOUND(ctx.user);
+        const message =
+          BOT_MESSAGES.COMMANDS.REMOVE_VIP_NOTFOUND(targetUsername);
         await this.chatbotService.sendMessage(ctx.channel, message);
         return;
       }
@@ -57,6 +59,10 @@ export class RemoveVipCommand implements TwitchCommand {
       });
 
       await this.userService.removeVipFromDb(targetTwitchId, cleanUsername);
+      globalEventBus.emit("twitch:remove-vip", {
+        twitchId: targetTwitchId,
+        username: cleanUsername,
+      });
 
       const message = BOT_MESSAGES.COMMANDS.REMOVE_VIP(
         ctx.channel,

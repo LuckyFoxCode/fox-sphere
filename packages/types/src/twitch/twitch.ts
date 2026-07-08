@@ -1,4 +1,11 @@
 // Данные событий (Payloads)
+export interface TwitchAddVipPaylod {
+  twitchId: string;
+  username: string;
+}
+
+export type TwitchRemoveVipPaylod = TwitchAddVipPaylod;
+
 export interface TwitchFollowPayload {
   userId: string;
   username: string;
@@ -17,6 +24,7 @@ export interface TwitchRewardPayload {
 }
 
 export interface TwitchServerToClientEvents {
+  "twitch:add-vip": (data: TwitchAddVipPaylod) => void;
   "twitch:follow": (data: TwitchFollowPayload) => void;
   "twitch:raid": (data: TwitchRaidPayload) => void;
   "twitch:reward-redeem": (data: TwitchRewardPayload) => void;

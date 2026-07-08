@@ -1,5 +1,5 @@
 import { ApiClient } from "@twurple/api";
-import { Logger } from "../../../../shared/services";
+import { globalEventBus, Logger } from "../../../../shared/services";
 import { UserService } from "../../../user";
 import { ChatbotService } from "../../chatbot.service";
 import { BOT_MESSAGES, COOLDOWNS } from "../../twitch.constants";
@@ -35,6 +35,7 @@ export class AddVipCommand implements TwitchCommand {
     if (!targetUsername) {
       const message = BOT_MESSAGES.COMMANDS.ADD_VIP_WARNING(ctx.user);
       await this.chatbotService.sendMessage(ctx.channel, message);
+      return;
     }
 
     try {
@@ -44,7 +45,7 @@ export class AddVipCommand implements TwitchCommand {
         await this.apiClient.users.getUserByName(targetUsername);
 
       if (!userResponse) {
-        const message = BOT_MESSAGES.COMMANDS.ADD_VIP_NOTFOUND(ctx.user);
+        const message = BOT_MESSAGES.COMMANDS.ADD_VIP_NOTFOUND(targetUsername);
         await this.chatbotService.sendMessage(ctx.channel, message);
         return;
       }
@@ -57,6 +58,10 @@ export class AddVipCommand implements TwitchCommand {
       });
 
       await this.userService.addVipToDb(targetTwitchId, cleanUsername);
+      globalEventBus.emit("twitch:add-vip", {
+        twitchId: targetTwitchId,
+        username: cleanUsername,
+      });
 
       const message = BOT_MESSAGES.COMMANDS.ADD_VIP(ctx.user, cleanUsername);
       await this.chatbotService.sendMessage(ctx.channel, message);
