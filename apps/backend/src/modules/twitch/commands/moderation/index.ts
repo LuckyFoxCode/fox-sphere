@@ -1,2 +1,2 @@
 export * from "./addvip.command";
-export * from "./remove.command";
+export * from "./removevip.command";
