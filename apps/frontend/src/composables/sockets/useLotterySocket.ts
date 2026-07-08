@@ -1,9 +1,11 @@
+import { SOUNDS } from '@/constants';
 import {
   type LotteryTicketEarnedPayload,
   type LotteryUserDto,
   type LotteryWinnerDrawnPayload,
 } from '@fox-sphere/types';
 import { ref } from 'vue';
+import { useSound } from '../useSound';
 import type { LotteryStatus, WidgetSocket } from './types';
 import { useWidgetTimer } from './useWidgetTimer';
 
@@ -13,6 +15,7 @@ export function useLotterySocket(socketInstance: WidgetSocket) {
     setStatusWithTimeout,
     clearActiveTimer,
   } = useWidgetTimer<LotteryStatus>('idle');
+  const { playSound } = useSound();
 
   const ticket = ref<LotteryTicketEarnedPayload | null>(null);
   const winners = ref<LotteryUserDto[]>([]);
@@ -21,6 +24,7 @@ export function useLotterySocket(socketInstance: WidgetSocket) {
   socketInstance.on('lottery:ticket-earned', (data) => {
     ticket.value = data;
     currentLotteryStatus.value = 'ticket';
+    playSound(SOUNDS.ticket);
     setStatusWithTimeout('ticket', 5000);
   });
 
