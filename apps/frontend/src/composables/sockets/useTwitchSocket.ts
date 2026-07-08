@@ -1,5 +1,6 @@
 import { SOUNDS } from '@/constants/sound';
 import {
+  type TwitchAddVipPaylod,
   type TwitchFollowPayload,
   type TwitchRaidPayload,
   type TwitchRewardPayload,
@@ -18,9 +19,17 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
     setStatusWithTimeout,
   } = useWidgetTimer<TwitchEventType>('idle');
 
+  const addVip = ref<TwitchAddVipPaylod | null>(null);
   const follow = ref<TwitchFollowPayload | null>(null);
   const raid = ref<TwitchRaidPayload | null>(null);
   const reward = ref<TwitchRewardPayload | null>(null);
+
+  socketInstance.on('twitch:add-vip', (data) => {
+    addVip.value = data;
+    currentEventType.value = 'add-vip';
+    playSound(SOUNDS.addVip);
+    setStatusWithTimeout('add-vip', 5000);
+  });
 
   socketInstance.on('twitch:follow', (data) => {
     follow.value = data;
@@ -44,6 +53,7 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
   });
 
   return {
+    addVip,
     currentEventType,
     follow,
     raid,
