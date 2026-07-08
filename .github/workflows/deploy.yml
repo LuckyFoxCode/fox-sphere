@@ -42,7 +42,7 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           target: ${{ matrix.target }}
-          platforms: linux/arm64
+          platforms: linux/amd64,linux/arm64
           push: true
           # web overlay is same-origin (Option B) -> empty base URL.
           build-args: |
