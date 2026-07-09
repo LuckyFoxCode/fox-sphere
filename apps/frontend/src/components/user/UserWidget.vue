@@ -1,16 +1,10 @@
 <script setup lang="ts">
 import { useUserSocker, type UserEventType } from '@/composables/sockets';
-import type { ClientToServerEvents, ServerToClientEvents } from '@fox-sphere/types';
-import { io, Socket } from 'socket.io-client';
-import { computed, onUnmounted, type Component } from 'vue';
+import { socket } from '@/services';
+import { computed, type Component } from 'vue';
 import { UserLevelUp } from './widgets';
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-const socket: Socket<ServerToClientEvents, ClientToServerEvents> = apiBaseUrl
-  ? io(apiBaseUrl)
-  : io();
-
-const { currentEventType, levelUp, disconnect } = useUserSocker(socket);
+const { currentEventType, levelUp } = useUserSocker(socket);
 
 interface WidgetMapValue {
   component: Component;
@@ -27,10 +21,6 @@ const widgetConfig = computed(() => {
   };
 
   return map[currentEventType.value as ActiveLotteryEvent] || null;
-});
-
-onUnmounted(() => {
-  disconnect();
 });
 </script>
 

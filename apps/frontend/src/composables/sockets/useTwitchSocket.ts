@@ -6,7 +6,7 @@ import {
   type TwitchRewardPayload,
   type TwitchTimerPayload,
 } from '@fox-sphere/types';
-import { ref } from 'vue';
+import { onUnmounted, ref } from 'vue';
 import { useSound } from '../useSound';
 import type { TwitchEventType, WidgetSocket } from './types';
 import { useWidgetTimer } from './useWidgetTimer';
@@ -26,40 +26,56 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
   const reward = ref<TwitchRewardPayload | null>(null);
   const timer = ref<TwitchTimerPayload | null>(null);
 
-  socketInstance.on('twitch:add-vip', (data) => {
+  const handleAddVip = (data: TwitchAddVipPaylod) => {
     addVip.value = data;
     currentEventType.value = 'add-vip';
     playSound(SOUNDS.addVip);
     setStatusWithTimeout('add-vip', 5000);
-  });
+  };
 
-  socketInstance.on('twitch:follow', (data) => {
+  const handleFollow = (data: TwitchFollowPayload) => {
     follow.value = data;
     currentEventType.value = 'follow';
     playSound(SOUNDS.follow);
     setStatusWithTimeout('follow', 5000);
-  });
+  };
 
-  socketInstance.on('twitch:raid', (data) => {
+  const handleRaid = (data: TwitchRaidPayload) => {
     raid.value = data;
     currentEventType.value = 'raid';
     playSound(SOUNDS.raid);
     setStatusWithTimeout('raid', 5000);
-  });
+  };
 
-  socketInstance.on('twitch:reward-redeem', (data) => {
+  const handleReward = (data: TwitchRewardPayload) => {
     reward.value = data;
     currentEventType.value = 'reward';
     playSound(SOUNDS.reward);
     setStatusWithTimeout('reward', 5000);
-  });
+  };
 
-  socketInstance.on('twitch:timer', (data) => {
+  const handleTimer = (data: TwitchTimerPayload) => {
     timer.value = data;
     currentEventType.value = 'timer';
     playSound(SOUNDS.reward);
-    const convertMinutesToSeconds = data.time * 60 * 1000;
-    setStatusWithTimeout('timer', convertMinutesToSeconds);
+    const convertToMs = data.time * 60 * 1000;
+    setStatusWithTimeout('timer', convertToMs);
+  };
+
+  socketInstance.on('twitch:add-vip', handleAddVip);
+  socketInstance.on('twitch:follow', handleFollow);
+  socketInstance.on('twitch:raid', handleRaid);
+  socketInstance.on('twitch:reward-redeem', handleReward);
+  socketInstance.on('twitch:timer', handleTimer);
+
+  onUnmounted(() => {
+    clearActiveTimer();
+
+    socketInstance.off('twitch:add-vip', handleAddVip);
+    socketInstance.off('twitch:follow', handleFollow);
+    socketInstance.off('twitch:raid', handleRaid);
+    socketInstance.off('twitch:reward-redeem', handleReward);
+    socketInstance.off('twitch:timer', handleTimer);
   });
 
   return {
@@ -69,9 +85,5 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
     raid,
     reward,
     timer,
-    disconnect: () => {
-      clearActiveTimer();
-      socketInstance.disconnect();
-    },
   };
 }
