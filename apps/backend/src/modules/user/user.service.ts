@@ -233,12 +233,11 @@ export class UserService {
     });
   }
 
-  public async getTopUsers(limit = 5) {
+  public async getTopUsers() {
     return prisma.user.findMany({
       orderBy: {
         xp: "desc",
       },
-      take: limit,
     });
   }
 
