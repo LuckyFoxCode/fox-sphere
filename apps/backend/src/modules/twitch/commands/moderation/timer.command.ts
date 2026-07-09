@@ -1,3 +1,4 @@
+import { WIDGET_VARIANTS, WidgetVariant } from "@fox-sphere/types";
 import { globalEventBus } from "../../../../shared/services";
 import { ChatbotService } from "../../chatbot.service";
 import { BOT_MESSAGES, COOLDOWNS } from "../../twitch.constants";
@@ -32,7 +33,15 @@ export class TimerCommand implements TwitchCommand {
       return;
     }
 
-    const color = ctx.args[1] ?? "blue";
+    function isValidWidgetVariant(value: string): value is WidgetVariant {
+      return WIDGET_VARIANTS.includes(value as WidgetVariant);
+    }
+
+    const colorInput = ctx.args[1];
+
+    const color: WidgetVariant =
+      colorInput && isValidWidgetVariant(colorInput) ? colorInput : "blue";
+
     const title = ctx.args.slice(2).join(" ") || "Timer";
 
     globalEventBus.emit("twitch:timer", { time, color, title });

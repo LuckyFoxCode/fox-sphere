@@ -4,6 +4,7 @@ import {
   type TwitchFollowPayload,
   type TwitchRaidPayload,
   type TwitchRewardPayload,
+  type TwitchTimerPayload,
 } from '@fox-sphere/types';
 import { ref } from 'vue';
 import { useSound } from '../useSound';
@@ -23,6 +24,7 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
   const follow = ref<TwitchFollowPayload | null>(null);
   const raid = ref<TwitchRaidPayload | null>(null);
   const reward = ref<TwitchRewardPayload | null>(null);
+  const timer = ref<TwitchTimerPayload | null>(null);
 
   socketInstance.on('twitch:add-vip', (data) => {
     addVip.value = data;
@@ -52,12 +54,21 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
     setStatusWithTimeout('reward', 5000);
   });
 
+  socketInstance.on('twitch:timer', (data) => {
+    timer.value = data;
+    currentEventType.value = 'timer';
+    playSound(SOUNDS.reward);
+    const convertMinutesToSeconds = data.time * 60 * 1000;
+    setStatusWithTimeout('timer', convertMinutesToSeconds);
+  });
+
   return {
     addVip,
     currentEventType,
     follow,
     raid,
     reward,
+    timer,
     disconnect: () => {
       clearActiveTimer();
       socketInstance.disconnect();

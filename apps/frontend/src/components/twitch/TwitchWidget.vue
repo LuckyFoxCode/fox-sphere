@@ -3,14 +3,15 @@ import { useTwitchSocket, type TwitchEventType } from '@/composables/sockets';
 import type { ClientToServerEvents, ServerToClientEvents } from '@fox-sphere/types';
 import { io, Socket } from 'socket.io-client';
 import { computed, onUnmounted, type Component } from 'vue';
-import { TwitchAddVip, TwitchFollow, TwitchRaid, TwitchRewardRedeem } from './widgets';
+import { TwitchAddVip, TwitchFollow, TwitchRaid, TwitchRewardRedeem, TwitchTimer } from './widgets';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const socket: Socket<ServerToClientEvents, ClientToServerEvents> = apiBaseUrl
   ? io(apiBaseUrl)
   : io();
 
-const { addVip, currentEventType, follow, raid, reward, disconnect } = useTwitchSocket(socket);
+const { addVip, currentEventType, follow, raid, reward, timer, disconnect } =
+  useTwitchSocket(socket);
 
 interface WidgetMapValue {
   component: Component;
@@ -27,6 +28,7 @@ const widgetConfig = computed(() => {
     reward: { component: TwitchRewardRedeem, props: { reward: reward.value } },
     raid: { component: TwitchRaid, props: { raid: raid.value } },
     follow: { component: TwitchFollow, props: { follow: follow.value } },
+    timer: { component: TwitchTimer, props: { timer: timer.value } },
   };
 
   return map[currentEventType.value as ActiveTwitchEvents] || null;

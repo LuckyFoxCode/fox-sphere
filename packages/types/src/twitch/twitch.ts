@@ -1,3 +1,5 @@
+import { WidgetVariant } from "./variants.js";
+
 // Данные событий (Payloads)
 export interface TwitchAddVipPaylod {
   twitchId: string;
@@ -25,7 +27,7 @@ export interface TwitchRewardPayload {
 
 export interface TwitchTimerPayload {
   time: number;
-  color: string;
+  color: WidgetVariant;
   title: string;
 }
 
