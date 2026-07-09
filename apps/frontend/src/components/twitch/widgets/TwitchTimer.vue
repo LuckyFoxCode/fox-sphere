@@ -5,10 +5,12 @@ defineProps<{ timer: TwitchTimerPayload }>();
 </script>
 
 <template>
-  <WidgetFrame
-    :variant="timer.color"
-    :is-shadow="false"
-  >
-    {{ timer }}
-  </WidgetFrame>
+  <div>
+    <WidgetFrame
+      :variant="timer.color"
+      :is-shadow="false"
+    >
+      {{ timer }}
+    </WidgetFrame>
+  </div>
 </template>
