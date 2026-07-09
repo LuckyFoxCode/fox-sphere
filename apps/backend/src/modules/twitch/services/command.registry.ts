@@ -16,6 +16,7 @@ import {
   TelegramCommand,
 } from "../commands/general";
 import { AddVipCommand, RemoveVipCommand } from "../commands/moderation";
+import { TimerCommand } from "../commands/moderation/timer.command";
 
 export class CommandRegisry {
   private commands = new Map<string, TwitchCommand>();
@@ -40,6 +41,7 @@ export class CommandRegisry {
       new ProjectCommand(this.chatbotService),
       new StackCommand(this.chatbotService),
       new TelegramCommand(this.chatbotService),
+      new TimerCommand(this.chatbotService),
       new AddVipCommand(this.chatbotService, this.userService, this.apiClient),
       new RemoveVipCommand(
         this.chatbotService,

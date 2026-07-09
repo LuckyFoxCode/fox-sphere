@@ -23,10 +23,17 @@ export interface TwitchRewardPayload {
   rewardTitle: string;
 }
 
+export interface TwitchTimerPayload {
+  time: number;
+  color: string;
+  title: string;
+}
+
 export interface TwitchServerToClientEvents {
   "twitch:add-vip": (data: TwitchAddVipPaylod) => void;
   "twitch:follow": (data: TwitchFollowPayload) => void;
   "twitch:raid": (data: TwitchRaidPayload) => void;
   "twitch:reward-redeem": (data: TwitchRewardPayload) => void;
+  "twitch:timer": (data: TwitchTimerPayload) => void;
 }
 export interface TwitchClientToServerEvents {}
