@@ -1,4 +1,5 @@
 import { User } from "../../generated/prisma/client";
+import { config } from "../../shared/config";
 import { AppError } from "../../shared/errors";
 import { prisma } from "../../shared/lib";
 import { globalEventBus, Logger } from "../../shared/services";
@@ -127,6 +128,9 @@ export class UserService {
     twitchId: string,
     xpAmount: number,
   ): Promise<void> {
+    if (twitchId === config.twitch.botId || twitchId === config.twitch.userId)
+      return;
+
     const now = Date.now();
 
     try {
@@ -229,12 +233,11 @@ export class UserService {
     });
   }
 
-  public async getTopUsers(limit = 5) {
+  public async getTopUsers() {
     return prisma.user.findMany({
       orderBy: {
         xp: "desc",
       },
-      take: limit,
     });
   }
 

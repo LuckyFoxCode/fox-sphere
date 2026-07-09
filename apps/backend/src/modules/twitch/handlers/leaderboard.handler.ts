@@ -21,15 +21,16 @@ export class LeaderboardHandler implements RewardHandler {
 
   async execute(ctx: RewardContext): Promise<void> {
     try {
-      const topUsers = await this.userService.getTopUsers(LEADERBOARD_LIMIT);
+      const allUsers = await this.userService.getTopUsers();
 
-      if (topUsers.length === 0) {
+      if (allUsers.length === 0) {
         await this.chatbotService.sendMessage(
           this.twitchConfig.channelName,
           "📋 Leaderboard is currently empty.",
         );
         return;
       }
+      const topUsers = allUsers.slice(0, LEADERBOARD_LIMIT);
 
       const topList = topUsers
         .map((user, index) => {
@@ -38,7 +39,21 @@ export class LeaderboardHandler implements RewardHandler {
         })
         .join("   |   ");
 
-      const message = BOT_MESSAGES.REWARDS.LEADERBOARD(ctx.username, topList);
+      let message = BOT_MESSAGES.REWARDS.LEADERBOARD(ctx.username, topList);
+
+      const callerUsernameLower = ctx.username.toLowerCase();
+      const callerIndex = allUsers.findIndex(
+        (user) => user.username.toLowerCase() === callerUsernameLower,
+      );
+
+      if (callerIndex >= 0) {
+        const callerUser = allUsers[callerIndex];
+        const userRank = callerIndex + 1;
+        const totalUsers = allUsers.length;
+
+        message += `   |   ❖❖❖ 🏃 Your place: #${userRank} @${callerUser.username} (Lvl ${callerUser.lvl}, ${callerUser.xp} XP) out of ${totalUsers} 🎯`;
+      }
+
       await this.chatbotService.sendAnnouncement(message, "purple");
 
       Logger.debug(

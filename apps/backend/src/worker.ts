@@ -127,7 +127,7 @@ export async function bootstrap() {
       "Bootstrap",
       `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding twitch:raid to overlay from: ${data.raiderName}`,
     );
-    await forwardEventToBackend("twitch:twitch:raid", data);
+    await forwardEventToBackend("twitch:raid", data);
   });
 
   globalEventBus.on("twitch:reward-redeem", async (data) => {
