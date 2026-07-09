@@ -1,4 +1,5 @@
 import { ApiClient } from "@twurple/api";
+import { config } from "../../../shared/config";
 import { Logger } from "../../../shared/services";
 import { COOLDOWNS } from "../twitch.constants";
 import { AnnouncementColor, TwitchConfig } from "../twitch.types";
@@ -44,6 +45,13 @@ export class AnnouncementService {
 
       if (current) {
         try {
+          if (config.nodeEnv === "development") {
+            Logger.debug(
+              "AnnouncementService",
+              `🔞[DEV-MODE] Имитация отправки анонса: "${current.message.substring(0, 50)}..."`,
+            );
+            continue;
+          }
           await this.apiClient.asUser(this.twitchConfig.botId, async (ctx) => {
             await ctx.chat.sendAnnouncement(this.twitchConfig.userId, {
               message: current.message,
@@ -67,11 +75,11 @@ export class AnnouncementService {
           );
         }
       }
-      this.isProcessingQueue = false;
-      Logger.debug(
-        "AnnouncementService",
-        "Announcement queue is empty. Processor stopped.",
-      );
     }
+    this.isProcessingQueue = false;
+    Logger.debug(
+      "AnnouncementService",
+      "Announcement queue is empty. Processor stopped.",
+    );
   }
 }

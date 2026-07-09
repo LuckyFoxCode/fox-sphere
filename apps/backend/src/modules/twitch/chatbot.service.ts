@@ -270,10 +270,9 @@ export class ChatbotService {
       try {
         const message = BOT_MESSAGES.ALERTS.RAID(data.raiderName, data.viewers);
         await this.sendAnnouncement(message, "purple");
-        await this.apiClient.chat.shoutoutUser(
-          config.twitch.userId,
-          data.raiderId,
-        );
+        await this.apiClient.asUser(config.twitch.botId, async (ctx) => {
+          await ctx.chat.shoutoutUser(config.twitch.userId, data.raiderId);
+        });
       } catch (error) {
         Logger.error(
           "ChatbotService",
