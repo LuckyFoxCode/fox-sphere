@@ -1,23 +1,17 @@
 <script setup lang="ts">
 import { useTwitchSocket, type TwitchEventType } from '@/composables/sockets';
-import type { ClientToServerEvents, ServerToClientEvents } from '@fox-sphere/types';
-import { io, Socket } from 'socket.io-client';
-import { computed, onUnmounted, type Component } from 'vue';
+import { socket } from '@/services';
+import { computed, type Component } from 'vue';
 import { TwitchAddVip, TwitchFollow, TwitchRaid, TwitchRewardRedeem } from './widgets';
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-const socket: Socket<ServerToClientEvents, ClientToServerEvents> = apiBaseUrl
-  ? io(apiBaseUrl)
-  : io();
-
-const { addVip, currentEventType, follow, raid, reward, disconnect } = useTwitchSocket(socket);
+const { addVip, currentEventType, follow, raid, reward } = useTwitchSocket(socket);
 
 interface WidgetMapValue {
   component: Component;
   props: Record<string, unknown>;
 }
 
-type ActiveTwitchEvents = Exclude<TwitchEventType, 'idle'>;
+type ActiveTwitchEvents = Exclude<TwitchEventType, 'idle' | 'timer'>;
 
 const widgetConfig = computed(() => {
   if (currentEventType.value === 'idle') return null;
@@ -30,10 +24,6 @@ const widgetConfig = computed(() => {
   };
 
   return map[currentEventType.value as ActiveTwitchEvents] || null;
-});
-
-onUnmounted(() => {
-  disconnect();
 });
 </script>
 

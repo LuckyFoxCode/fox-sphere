@@ -1,6 +1,6 @@
 import { SOUNDS } from '@/constants';
 import type { UserLevelUpPayload } from '@fox-sphere/types';
-import { ref } from 'vue';
+import { onUnmounted, ref } from 'vue';
 import { useSound } from '../useSound';
 import type { UserEventType, WidgetSocket } from './types';
 import { useWidgetTimer } from './useWidgetTimer';
@@ -15,19 +15,23 @@ export function useUserSocker(socketInstance: WidgetSocket) {
 
   const levelUp = ref<UserLevelUpPayload | null>(null);
 
-  socketInstance.on('user:level-up', (data) => {
+  const handleLevelUp = (data: UserLevelUpPayload) => {
     levelUp.value = data;
     currentEventType.value = 'level-up';
     playSound(SOUNDS.levelUp);
     setStatusWithTimeout('level-up', 5000);
+  };
+
+  socketInstance.on('user:level-up', handleLevelUp);
+
+  onUnmounted(() => {
+    clearActiveTimer();
+
+    socketInstance.off('user:level-up', handleLevelUp);
   });
 
   return {
     currentEventType,
     levelUp,
-    disconnect: () => {
-      clearActiveTimer();
-      socketInstance.disconnect();
-    },
   };
 }

@@ -46,12 +46,12 @@ export class LeaderboardHandler implements RewardHandler {
         (user) => user.username.toLowerCase() === callerUsernameLower,
       );
 
-      if (callerIndex >= 0) {
+      if (callerIndex >= LEADERBOARD_LIMIT) {
         const callerUser = allUsers[callerIndex];
         const userRank = callerIndex + 1;
         const totalUsers = allUsers.length;
 
-        message += `   |   ❖❖❖ 🏃 Your place: #${userRank} @${callerUser.username} (Lvl ${callerUser.lvl}, ${callerUser.xp} XP) out of ${totalUsers} 🎯`;
+        message += `   |   ❖❖❖ 🏃 Your rank: #${userRank}/${totalUsers} (Lvl ${callerUser.lvl}, ${callerUser.xp} XP) 🎯`;
       }
 
       await this.chatbotService.sendAnnouncement(message, "purple");

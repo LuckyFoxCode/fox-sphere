@@ -48,24 +48,25 @@ export const BOT_MESSAGES = {
     PROJECT: `🛠️ Current Project • FoxSphere: A custom Full-Stack Twitch interactive & gamification platform built from scratch (Vue 3 / Express / Postgres / Docker) to level up my dev skills live! 🦊🔮`,
     HELP: `🔮 FoxSphere • Commands: !coins | Info: !gh • !tg • !stack • !project ➔ Type any command for details! 🚀`,
     POINTS: `🪙 Economy • Channel Points automatically integrate with FoxSphere rewards. Earn Coins by watching and save them to unlock custom interactive features in the future! 🔮`,
+    DENIED: (username: string) =>
+      `@${username}, you don't have permission to use this command!`,
     ADD_VIP: (moderator: string, username: string) =>
       `🎉 NEW VIP ALERT! 🎉 @${moderator} has just made @${username} a VIP! Drop some hype in the chat! 💎✨`,
     ADD_VIP_WARNING: (username: string) =>
       `@${username}, please specify a username: !addvip <username>`,
-    ADD_VIP_DENIED: (username: string) =>
-      `@${username}, you don't have permission to use this command!`,
     ADD_VIP_NOTFOUND: (username: string) =>
       `User @${username} not found on Twitch.`,
     REMOVE_VIP: (moderator: string, username: string) =>
       `✨ VIP status removed: @${moderator} has updated @${username}'s permissions.`,
     REMOVE_VIP_WARNING: (username: string) =>
       `@${username}, please specify a username: !removevip <username>`,
-    REMOVE_VIP_DENIED: (username: string) =>
-      `@${username}, you don't have permission to use this command!`,
     REMOVE_VIP_NOTFOUND: (username: string) =>
       `User @${username} not found on Twitch.`,
+    TIMER_SUCCESS: (username: string, time: number, title: string) =>
+      `@${username}, timer "${title || "Timer"}" started for ${time} minutes! ⏳`,
+    TIMER_WARNING: (username: string) =>
+      `@${username}, time must be a number! Example: !timer 60 cyan My cool timer`,
   },
-
   // Награды за баллы канала (Channel Points)
   REWARDS: {
     COIN_EXCHANGE: (username: string, amount: number) =>
