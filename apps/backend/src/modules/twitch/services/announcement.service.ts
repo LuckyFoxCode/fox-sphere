@@ -48,21 +48,25 @@ export class AnnouncementService {
           if (config.nodeEnv === "development") {
             Logger.debug(
               "AnnouncementService",
-              `🔞[DEV-MODE] Имитация отправки анонса: "${current.message.substring(0, 50)}..."`,
+              `💤[DEV-MODE] Successfully sent announcement: "${current.message.substring(0, 50)}..."`,
             );
-            continue;
-          }
-          await this.apiClient.asUser(this.twitchConfig.botId, async (ctx) => {
-            await ctx.chat.sendAnnouncement(this.twitchConfig.userId, {
-              message: current.message,
-              color: current.color,
-            });
-          });
+            await new Promise((resolve) => setTimeout(resolve, 200));
+          } else {
+            await this.apiClient.asUser(
+              this.twitchConfig.botId,
+              async (ctx) => {
+                await ctx.chat.sendAnnouncement(this.twitchConfig.userId, {
+                  message: current.message,
+                  color: current.color,
+                });
+              },
+            );
 
-          Logger.debug(
-            "AnnouncementService",
-            `Successfully sent ${current.color} announcement: "${current.message.substring(0, 50)}..."`,
-          );
+            Logger.debug(
+              "AnnouncementService",
+              `Successfully sent ${current.color} announcement: "${current.message.substring(0, 50)}..."`,
+            );
+          }
         } catch (error) {
           Logger.error(
             "AnnouncementService",

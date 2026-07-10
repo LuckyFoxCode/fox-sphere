@@ -1,7 +1,6 @@
 import { globalEventBus } from "../../../../shared/services";
 import { LOTTERY_CONFIG, LOTTERY_DELAYS } from "../../../lottery";
 import { COOLDOWNS, UserService } from "../../../user";
-import { ChatbotService } from "../../chatbot.service";
 import {
   CommandContext,
   CooldownConfig,
@@ -17,10 +16,7 @@ export class LotteryCommand implements TwitchCommand {
     type: "user" as const,
   };
 
-  constructor(
-    private chatbotService: ChatbotService,
-    private userService: UserService,
-  ) {}
+  constructor(private userService: UserService) {}
 
   async execute(ctx: CommandContext): Promise<void> {
     const broadcaster = ctx.msg.userInfo.isBroadcaster;

@@ -3,7 +3,7 @@ import { FlipDigit } from '@/components/ui';
 import { WidgetFrame } from '@/components/ui/widget-frame';
 import type { TwitchTimerPayload } from '@fox-sphere/types';
 
-const props = defineProps<{ timer: TwitchTimerPayload; timeDigits: string[] }>();
+defineProps<{ timer: TwitchTimerPayload; timeDigits: string[] }>();
 </script>
 
 <template>

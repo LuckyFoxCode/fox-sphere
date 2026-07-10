@@ -36,7 +36,7 @@ export class CommandRegisry {
       new CoinsCommand(this.chatbotService, this.userService),
       new GitHubCommand(this.chatbotService),
       new HelpCommand(this.chatbotService),
-      new LotteryCommand(this.chatbotService, this.userService),
+      new LotteryCommand(this.userService),
       new PointsCommand(this.chatbotService),
       new ProjectCommand(this.chatbotService),
       new StackCommand(this.chatbotService),
