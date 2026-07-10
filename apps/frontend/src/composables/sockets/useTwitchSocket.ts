@@ -17,7 +17,7 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
     currentStatus: currentEventType,
     clearActiveTimer,
     setStatusWithTimeout,
-  } = useWidgetTimer<TwitchEventType>('idle');
+  } = useWidgetTimer<TwitchEventType>('timer');
   const { playSound } = useSound();
   const { timeDigits, timeLeft, startTimer, stopTimer } = useTimer();
 
@@ -25,7 +25,7 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
   const follow = ref<TwitchFollowPayload | null>(null);
   const raid = ref<TwitchRaidPayload | null>(null);
   const reward = ref<TwitchRewardPayload | null>(null);
-  const timer = ref<TwitchTimerPayload | null>(null);
+  const timer = ref<TwitchTimerPayload | null>({ color: 'rose', time: 2, title: 'Title' });
 
   const handleAddVip = (data: TwitchAddVipPaylod) => {
     addVip.value = data;

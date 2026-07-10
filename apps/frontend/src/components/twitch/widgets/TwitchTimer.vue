@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { FlipDigit } from '@/components/ui';
 import { WidgetFrame } from '@/components/ui/widget-frame';
 import type { TwitchTimerPayload } from '@fox-sphere/types';
 
@@ -13,22 +14,21 @@ const props = defineProps<{ timer: TwitchTimerPayload; timeDigits: string[] }>()
     >
       <div class="flex h-full w-full flex-col items-center">
         <h4 class="text-xs capitalize">{{ timer.title }}</h4>
-        <div class="flex w-3/4 flex-1 items-center justify-center text-5xl">
+        <div class="flex w-3/4 flex-1 items-center justify-center gap-x-2">
           <template
             v-for="(char, index) in timeDigits"
             :key="index"
           >
             <span
               v-if="char === ':'"
-              class="mx-1 animate-pulse"
+              class="mx-1 animate-pulse text-5xl"
               >:</span
             >
-            <div
+            <FlipDigit
               v-else
-              class="rounded border border-purple-500/30 bg-[#1a1126] px-3 py-2 text-white"
-            >
-              {{ char }}
-            </div>
+              :char="char"
+              :color="timer.color"
+            />
           </template>
         </div>
       </div>
