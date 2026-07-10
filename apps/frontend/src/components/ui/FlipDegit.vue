@@ -23,12 +23,12 @@ watch(
 
 const colorClasses = computed(() => {
   const mapping: Record<WidgetVariant, string> = {
-    red: 'border-event-red/40 bg-event-red/5',
-    cyan: 'border-event-cyan/40 bg-event-cyan/5',
-    purple: 'border-event-purple/40 bg-event-purple/5',
-    amber: 'border-event-amber/40 bg-event-amber/5',
-    rose: 'border-event-rose/40 bg-event-rose/5',
-    blue: 'border-event-blue/40 bg-event-rose/5',
+    amber: 'border-event-amber/15',
+    blue: 'border-event-blue/15',
+    cyan: 'border-event-cyan/15',
+    purple: 'border-event-purple/15',
+    red: 'border-event-red/15',
+    rose: 'border-event-rose/15',
   };
 
   return mapping[props.color] || 'border-purple-500/40 bg-purple-500/5';
@@ -39,28 +39,23 @@ const onAnimationEnd = () => (isFlipping.value = false);
 
 <template>
   <div
-    class="relative inline-flex h-16 w-11 flex-col text-5xl leading-none perspective-near"
+    class="relative inline-flex h-18.75 w-11 flex-col text-5xl leading-none select-none perspective-near"
     :class="{ 'is-flipping': isFlipping }"
     @animationend="onAnimationEnd"
   >
     <div
-      :class="[
-        `border-event-${color}/40 bg-event-${color}/5 relative flex h-1/2 w-full justify-center overflow-hidden rounded-t-lg border-x-2 border-t`,
-        colorClasses,
-      ]"
-    >
-      <span class="absolute -top-0.5 left-1/2 flex h-16 -translate-x-1/2 items-center">
+      class="bg-bg absolute inset-0 rounded-lg border-2"
+      :class="colorClasses"
+    />
+
+    <div class="relative flex h-1/2 w-full justify-center overflow-hidden">
+      <span class="absolute top-0 left-1/2 flex h-18.75 -translate-x-1/2 items-center">
         {{ displayChar }}
       </span>
     </div>
 
-    <div
-      :class="[
-        `border-event-${color}/40 bg-event-${color}/5 relative flex h-1/2 w-full justify-center overflow-hidden rounded-b-md border-x-2 border-t border-b border-t-purple-500/10`,
-        colorClasses,
-      ]"
-    >
-      <span class="absolute -bottom-px left-1/2 flex h-16 -translate-x-1/2 items-center">
+    <div class="relative flex h-1/2 w-full justify-center overflow-hidden">
+      <span class="absolute bottom-0 left-1/2 flex h-18.75 -translate-x-1/2 items-center">
         {{ displayChar }}
       </span>
     </div>
