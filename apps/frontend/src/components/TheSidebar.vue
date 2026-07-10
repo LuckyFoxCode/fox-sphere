@@ -3,7 +3,7 @@ import { useTwitchSocket } from '@/composables/sockets';
 import { socket } from '@/services';
 import { TwitchTimer } from './twitch/widgets';
 
-const { timer, currentEventType } = useTwitchSocket(socket);
+const { timer, timeDigits, currentEventType } = useTwitchSocket(socket);
 </script>
 
 <template>
@@ -16,6 +16,7 @@ const { timer, currentEventType } = useTwitchSocket(socket);
         <TwitchTimer
           v-if="currentEventType === 'timer' && timer"
           :timer="timer"
+          :time-digits="timeDigits"
         />
       </Transition>
     </div>

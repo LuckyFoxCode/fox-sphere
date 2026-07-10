@@ -53,7 +53,7 @@ const boltPositions = [
 
 <template>
   <div
-    class="relative flex min-h-32 min-w-72 items-center justify-center p-8 transition-all duration-300 ease-out"
+    class="relative flex min-h-32 min-w-72 px-5 py-4 transition-all duration-300 ease-out"
     :style="{ '--widget-color': frameColor }"
   >
     <div
@@ -91,7 +91,7 @@ const boltPositions = [
       :class="position"
     />
 
-    <div class="text-text-main relative z-10">
+    <div class="text-text-main relative z-10 w-full">
       <slot></slot>
     </div>
   </div>

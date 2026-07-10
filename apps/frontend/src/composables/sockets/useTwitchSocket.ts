@@ -6,12 +6,11 @@ import {
   type TwitchRewardPayload,
   type TwitchTimerPayload,
 } from '@fox-sphere/types';
-import { onUnmounted, ref } from 'vue';
+import { onUnmounted, ref, watch } from 'vue';
 import { useSound } from '../useSound';
+import { useTimer } from '../useTimer';
 import type { TwitchEventType, WidgetSocket } from './types';
 import { useWidgetTimer } from './useWidgetTimer';
-
-const { playSound } = useSound();
 
 export function useTwitchSocket(socketInstance: WidgetSocket) {
   const {
@@ -19,6 +18,8 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
     clearActiveTimer,
     setStatusWithTimeout,
   } = useWidgetTimer<TwitchEventType>('idle');
+  const { playSound } = useSound();
+  const { timeDigits, timeLeft, startTimer, stopTimer } = useTimer();
 
   const addVip = ref<TwitchAddVipPaylod | null>(null);
   const follow = ref<TwitchFollowPayload | null>(null);
@@ -58,9 +59,14 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
     timer.value = data;
     currentEventType.value = 'timer';
     playSound(SOUNDS.reward);
-    const convertToMs = data.time * 60 * 1000;
-    setStatusWithTimeout('timer', convertToMs);
+    startTimer(data.time);
   };
+
+  watch(timeLeft, (newTimeLeft) => {
+    if (newTimeLeft === 0 && currentEventType.value == 'timer') {
+      currentEventType.value = 'idle';
+    }
+  });
 
   socketInstance.on('twitch:add-vip', handleAddVip);
   socketInstance.on('twitch:follow', handleFollow);
@@ -70,6 +76,7 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
 
   onUnmounted(() => {
     clearActiveTimer();
+    stopTimer();
 
     socketInstance.off('twitch:add-vip', handleAddVip);
     socketInstance.off('twitch:follow', handleFollow);
@@ -85,5 +92,6 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
     raid,
     reward,
     timer,
+    timeDigits,
   };
 }
