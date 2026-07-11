@@ -145,7 +145,7 @@ export async function bootstrap() {
 
   globalEventBus.on("twitch:timer-stop", async () => {
     Logger.info("Bootstrap", `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding timer to overlay`);
-    await forwardEventToBackend("twitch:timer-stop", {});
+    await forwardEventToBackend("twitch:timer-stop");
   });
 
   globalEventBus.on("user:level-up", async (data) => {
