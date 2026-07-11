@@ -137,9 +137,15 @@ export async function bootstrap() {
     );
     await forwardEventToBackend("twitch:reward-redeem", data);
   });
+
   globalEventBus.on("twitch:timer", async (data) => {
     Logger.info("Bootstrap", `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding timer to overlay`);
     await forwardEventToBackend("twitch:timer", data);
+  });
+
+  globalEventBus.on("twitch:timer-stop", async () => {
+    Logger.info("Bootstrap", `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding timer to overlay`);
+    await forwardEventToBackend("twitch:timer-stop", {});
   });
 
   globalEventBus.on("user:level-up", async (data) => {

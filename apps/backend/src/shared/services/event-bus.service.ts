@@ -33,6 +33,7 @@ interface AppEvents {
   "twitch:remove-vip": TwitchRemoveVipPaylod;
   "twitch:reward-redeem": TwitchRewardPayload;
   "twitch:timer": TwitchTimerPayload;
+  "twitch:timer-stop": {};
   "user:created": UserCreatePayload;
   "user:level-up": UserLevelUpPayload;
 }
