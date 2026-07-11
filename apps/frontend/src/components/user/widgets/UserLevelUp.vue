@@ -7,7 +7,7 @@ defineProps<{ levelUp: UserLevelUpPayload }>();
 
 <template>
   <WidgetFrame variant="amber">
-    <div class="flex flex-col items-center gap-y-5">
+    <div class="flex flex-col items-center gap-y-5 py-2">
       <p class="text-xl">
         ⚡
         <span class="text-event-amber text-2xl font-semibold">{{ levelUp.username }}</span> leveled

@@ -10,6 +10,7 @@ import {
   TwitchRaidPayload,
   TwitchRemoveVipPaylod,
   TwitchRewardPayload,
+  TwitchTimerPayload,
   UserCreatePayload,
   UserLevelUpPayload,
 } from "@fox-sphere/types";
@@ -31,6 +32,8 @@ interface AppEvents {
   "twitch:raid": TwitchRaidPayload;
   "twitch:remove-vip": TwitchRemoveVipPaylod;
   "twitch:reward-redeem": TwitchRewardPayload;
+  "twitch:timer": TwitchTimerPayload;
+  "twitch:timer-stop": Record<string, never>;
   "user:created": UserCreatePayload;
   "user:level-up": UserLevelUpPayload;
 }

@@ -1,7 +1,10 @@
 import { config } from "../config";
 import { Logger } from "./logger.service";
 
-export async function forwardEventToBackend(event: string, data: unknown) {
+export async function forwardEventToBackend(
+  event: string,
+  data: Record<string, unknown> | unknown = {},
+) {
   try {
     const response = await fetch(
       `http://localhost:${config.port}/api/internal/events`,

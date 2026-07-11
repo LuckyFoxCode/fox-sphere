@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { useLotterySocket, type LotteryStatus } from '@/composables/sockets';
-import type { ClientToServerEvents, ServerToClientEvents } from '@fox-sphere/types';
-import type { Socket } from 'socket.io-client';
-import { io } from 'socket.io-client';
-import { computed, onUnmounted, type Component } from 'vue';
+import { socket } from '@/services';
+import { computed, type Component } from 'vue';
 import {
   LotteryAnnouncePanel,
   LotteryFinalSummary,
@@ -11,12 +9,7 @@ import {
   LotteryWinnerReveal,
 } from './widgets';
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-const socket: Socket<ServerToClientEvents, ClientToServerEvents> = apiBaseUrl
-  ? io(apiBaseUrl)
-  : io();
-
-const { ticket, winner, winners, currentLotteryStatus, disconnect } = useLotterySocket(socket);
+const { ticket, winner, winners, currentLotteryStatus } = useLotterySocket(socket);
 
 interface WidgetMapValue {
   component: Component;
@@ -36,10 +29,6 @@ const widgetConfig = computed(() => {
   };
 
   return map[currentLotteryStatus.value as ActiveLotteryEvent] || null;
-});
-
-onUnmounted(() => {
-  disconnect();
 });
 </script>
 

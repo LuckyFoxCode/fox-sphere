@@ -24,7 +24,7 @@ const getFirstLetter = (username: string) => username.charAt(0).toUpperCase();
 
 <template>
   <WidgetFrame position-x="170">
-    <div class="relative flex w-96 flex-col overflow-hidden rounded-2xl">
+    <div class="relative flex w-96 flex-col overflow-hidden rounded-2xl px-2 py-4">
       <div class="mb-10 flex flex-col items-center">
         <span class="text-lime text-xs font-semibold tracking-[0.4em] uppercase">
           Weekly Event

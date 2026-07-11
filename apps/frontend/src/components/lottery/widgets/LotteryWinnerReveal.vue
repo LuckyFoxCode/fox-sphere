@@ -15,8 +15,8 @@ const firstLetter = computed(() => props.winner.username.charAt(0).toUpperCase()
     position-x="85"
     position-y="200"
   >
-    <div class="min-w-100">
-      <div class="border-line/20 mb-2 flex w-full items-center justify-between border-b">
+    <div class="min-w-100 px-2 py-4">
+      <div class="border-line/20 mb-4 flex w-full items-center justify-between border-b">
         <div class="flex items-center gap-x-2">
           <span class="relative flex size-2">
             <span

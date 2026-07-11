@@ -25,7 +25,7 @@ export class AddVipCommand implements TwitchCommand {
 
   async execute(ctx: CommandContext): Promise<void> {
     if (!ctx.msg.userInfo.isBroadcaster && !ctx.msg.userInfo.isMod) {
-      const message = BOT_MESSAGES.COMMANDS.ADD_VIP_DENIED(ctx.user);
+      const message = BOT_MESSAGES.COMMANDS.DENIED(ctx.user);
       await this.chatbotService.sendMessage(ctx.channel, message);
       return;
     }

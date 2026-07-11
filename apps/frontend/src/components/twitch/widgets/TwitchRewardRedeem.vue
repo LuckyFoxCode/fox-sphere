@@ -7,7 +7,9 @@ defineProps<{ reward: TwitchRewardPayload }>();
 
 <template>
   <WidgetFrame variant="purple">
-    <p class="text-text-main flex flex-wrap items-center justify-center gap-2 text-lg antialiased">
+    <div
+      class="text-text-main flex h-full flex-wrap items-center justify-center gap-2 text-lg antialiased"
+    >
       <span class="text-event-purple text-2xl font-bold">{{ reward.username }}</span>
 
       <span>activated</span>
@@ -17,6 +19,6 @@ defineProps<{ reward: TwitchRewardPayload }>();
           {{ reward.rewardTitle }}
         </span>
       </span>
-    </p>
+    </div>
   </WidgetFrame>
 </template>

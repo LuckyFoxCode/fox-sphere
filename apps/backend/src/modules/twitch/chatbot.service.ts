@@ -107,6 +107,8 @@ export class ChatbotService {
 
   private setupGlobalEventListers(): void {
     globalEventBus.on("lottery:ticket-earned", async (data) => {
+      if (config.nodeEnv === "development") return;
+
       try {
         const message = LOTTERY_MESSAGES.TICKET_EARNED(data.username);
         await this.sendMessage(this.twitchConfig.channelName, message);
@@ -238,6 +240,14 @@ export class ChatbotService {
     });
 
     globalEventBus.on("user:level-up", async (data) => {
+      if (config.nodeEnv === "development") {
+        Logger.debug(
+          "ChatbotService",
+          `💤[DEV] Скипнули авто-левел-ап для ${data.username}`,
+        );
+        return;
+      }
+
       try {
         const message = BOT_MESSAGES.ALERTS.LEVEL_UP(
           data.username,
@@ -254,6 +264,14 @@ export class ChatbotService {
     });
 
     globalEventBus.on("twitch:follow", async (data) => {
+      if (config.nodeEnv === "development") {
+        Logger.debug(
+          "ChatbotService",
+          `💤[DEV] Скипнули авто-оповещение о фоллове для @${data.username}`,
+        );
+        return;
+      }
+
       try {
         const message = BOT_MESSAGES.ALERTS.FOLLOW(data.username);
         await this.sendMessage(this.twitchConfig.channelName, message);
