@@ -8,8 +8,8 @@ import {
 } from "../command.interface";
 
 export class TimerStopCommand implements TwitchCommand {
-  readonly name = "timer-stop";
-  readonly alliases = ["timer-remove", "timer-r", "таймер-стоп"];
+  readonly name = "stoptimer";
+  readonly alliases = ["timer-remove", "timer-stop", "таймер-стоп"];
   readonly cooldown: CooldownConfig = {
     time: COOLDOWNS.GENERAL_COMMAND,
     type: "global" as const,
