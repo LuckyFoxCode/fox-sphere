@@ -14,7 +14,7 @@ interface WidgetMapValue {
 type ActiveTwitchEvents = Exclude<TwitchEventType, 'idle' | 'timer'>;
 
 const widgetConfig = computed(() => {
-  if (currentEventType.value === 'idle') return null;
+  if (currentEventType.value === 'idle' || currentEventType.value === 'timer') return null;
 
   const map: Record<ActiveTwitchEvents, WidgetMapValue> = {
     'add-vip': { component: TwitchAddVip, props: { addVip: addVip.value } },

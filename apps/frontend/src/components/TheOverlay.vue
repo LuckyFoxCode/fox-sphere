@@ -8,6 +8,7 @@ import { UserWidget } from './user';
 
 onUnmounted(() => {
   socket.disconnect();
+  socket.removeAllListeners();
 });
 </script>
 
