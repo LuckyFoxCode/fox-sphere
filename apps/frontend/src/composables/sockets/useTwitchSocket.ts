@@ -15,7 +15,7 @@ import { useWidgetTimer } from './useWidgetTimer';
 const { currentStatus: currentEventType, setStatusWithTimeout } =
   useWidgetTimer<TwitchEventType>('idle');
 const { playSound } = useSound();
-const { timeDigits, timeLeft, startTimer } = useTimer();
+const { timeDigits, timeLeft, startTimer, resetTimer } = useTimer();
 
 const isTimerActive = ref(false);
 
@@ -62,12 +62,18 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
     startTimer(data.time);
   };
 
+  const handleTimerStop = () => {
+    timer.value = null;
+    resetTimer();
+  };
+
   if (!isSocketInitialized) {
     socketInstance.on('twitch:add-vip', handleAddVip);
     socketInstance.on('twitch:follow', handleFollow);
     socketInstance.on('twitch:raid', handleRaid);
     socketInstance.on('twitch:reward-redeem', handleReward);
     socketInstance.on('twitch:timer', handleTimer);
+    socketInstance.on('twitch:timer-stop', handleTimerStop);
 
     watch(timeLeft, (newTimeLeft) => {
       if (newTimeLeft === 0 && isTimerActive.value) {

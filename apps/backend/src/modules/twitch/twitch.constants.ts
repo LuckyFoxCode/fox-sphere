@@ -66,6 +66,7 @@ export const BOT_MESSAGES = {
       `@${username}, timer "${title || "Timer"}" started for ${time} minutes! ⏳`,
     TIMER_WARNING: (username: string) =>
       `@${username}, time must be a number! Example: !timer 60 cyan My cool timer`,
+    TIMER_STOP: (username: string) => `@${username}, timer stopped. ⏹️`,
   },
   // Награды за баллы канала (Channel Points)
   REWARDS: {

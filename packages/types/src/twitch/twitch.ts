@@ -37,5 +37,6 @@ export interface TwitchServerToClientEvents {
   "twitch:raid": (data: TwitchRaidPayload) => void;
   "twitch:reward-redeem": (data: TwitchRewardPayload) => void;
   "twitch:timer": (data: TwitchTimerPayload) => void;
+  "twitch:timer-stop": () => void;
 }
 export interface TwitchClientToServerEvents {}
