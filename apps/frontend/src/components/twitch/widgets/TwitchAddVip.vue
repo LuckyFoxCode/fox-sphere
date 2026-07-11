@@ -7,7 +7,7 @@ defineProps<{ addVip: TwitchAddVipPaylod }>();
 
 <template>
   <WidgetFrame variant="rose">
-    <p class="flex items-center gap-x-1">
+    <div class="flex h-full items-center gap-x-1">
       👑
       <span class="text-text-main/70 text-xl">
         <span class="font-medium text-amber-600">Level Up: </span>
@@ -17,6 +17,6 @@ defineProps<{ addVip: TwitchAddVipPaylod }>();
         Elite presence activated.
       </span>
       💎
-    </p>
+    </div>
   </WidgetFrame>
 </template>

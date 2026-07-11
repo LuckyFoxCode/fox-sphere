@@ -5,7 +5,7 @@ import { WidgetFrame } from '../../ui/widget-frame/';
 
 <template>
   <WidgetFrame position-x="150">
-    <div class="flex flex-col items-center">
+    <div class="flex flex-col items-center px-1.5 py-5">
       <div class="mb-5 flex items-center justify-center gap-x-2">
         <span class="relative flex size-2">
           <span

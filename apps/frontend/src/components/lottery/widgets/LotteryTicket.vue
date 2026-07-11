@@ -7,9 +7,9 @@ defineProps<{ ticket: LotteryTicketEarnedPayload }>();
 
 <template>
   <WidgetFrame>
-    <p class="text-lg">
+    <div class="flex h-full items-center gap-x-1 px-1 text-lg">
       🎉 <span class="text-event-blue text-2xl font-bold">{{ ticket.username }}</span> earned enough
       weekly XP and received a Lottery Ticket! Good luck! 🎫✨
-    </p>
+    </div>
   </WidgetFrame>
 </template>

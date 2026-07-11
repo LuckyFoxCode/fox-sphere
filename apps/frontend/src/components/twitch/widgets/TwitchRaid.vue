@@ -7,11 +7,11 @@ defineProps<{ raid: TwitchRaidPayload }>();
 
 <template>
   <WidgetFrame variant="amber">
-    <p class="text-xl">
+    <div class="flex h-full items-center gap-x-1 text-xl">
       ⚡<span class="text-event-amber text-2xl font-bold">{{ raid.raiderName }}</span> just raided
       with
       <span class="text-event-amber/80 font-medium">{{ raid.viewers }} viewers!</span>
       Welcome to the Sphere! 🦊🌐✨
-    </p>
+    </div>
   </WidgetFrame>
 </template>

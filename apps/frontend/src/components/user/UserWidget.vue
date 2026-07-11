@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { useUserSocker, type UserEventType } from '@/composables/sockets';
+import { useUserSocket, type UserEventType } from '@/composables/sockets';
 import { socket } from '@/services';
 import { computed, type Component } from 'vue';
 import { UserLevelUp } from './widgets';
 
-const { currentEventType, levelUp } = useUserSocker(socket);
+const { currentEventType, levelUp } = useUserSocket(socket);
 
 interface WidgetMapValue {
   component: Component;

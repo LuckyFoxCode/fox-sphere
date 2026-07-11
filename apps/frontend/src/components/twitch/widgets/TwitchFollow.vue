@@ -7,10 +7,10 @@ defineProps<{ follow: TwitchFollowPayload }>();
 
 <template>
   <WidgetFrame variant="red">
-    <p class="flex items-center gap-x-1 text-xl">
+    <div class="flex h-full items-center gap-x-1 text-xl">
       🎉 Thanks for the follow,
       <span class="text-event-red text-3xl font-bold">{{ follow.username }}!</span> Welcome to the
       Foxsphere family! 🚀
-    </p>
+    </div>
   </WidgetFrame>
 </template>
