@@ -34,6 +34,12 @@ export const LOTTERY_MESSAGES = {
     "✨ All VIP statuses successfully distributed! See you next week! ✨",
 
   // Если за неделю никто не набрал XP на билет
-  NO_PARTICIPANTS: () =>
-    `⚠ No one managed to get a Lottery Ticket this week. The lottery is postponed! 💪`,
+  LOTTERY_POSTPONED_NO_PARTICIPANTS:
+    "⚠ No one managed to get a Lottery Ticket this week. The lottery is postponed! 💪",
+
+  NO_PARTICIPANTS_YET:
+    "⚠ No one has earned a Lottery Ticket yet this week. Be the first! 💪",
+
+  TOTAL_PARTICIPANTS: (count: number) =>
+    `📊 Total VIP ticket holders this week: ${count} users.`,
 } as const;

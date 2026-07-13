@@ -126,7 +126,7 @@ export class ChatbotService {
         await this.removeVipFromUsers(data.oldWinners);
         await this.sendMessage(
           this.twitchConfig.channelName,
-          LOTTERY_MESSAGES.NO_PARTICIPANTS(),
+          LOTTERY_MESSAGES.LOTTERY_POSTPONED_NO_PARTICIPANTS,
         );
       } catch (error) {
         Logger.error(
