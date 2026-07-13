@@ -42,4 +42,6 @@ export const LOTTERY_MESSAGES = {
 
   TOTAL_PARTICIPANTS: (count: number) =>
     `📊 Total VIP ticket holders this week: ${count} users.`,
+  ALL_PARTICIPANTS: (usernames: string, count: number) =>
+    `🎟️ VIP lottery participants: ${count} people: ${usernames}. ✨ Earn 100 XP before the end of the week!`,
 } as const;

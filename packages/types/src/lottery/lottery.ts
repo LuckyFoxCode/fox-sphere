@@ -22,6 +22,8 @@ export interface LotteryTicketEarnedPayload {
   username: string;
 }
 
+export type LotteryParticipantsPayload = LotteryTicketEarnedPayload;
+
 export interface LotteryWinnersPayload {
   oldWinners: LotteryUserDto[];
   newWinners: LotteryUserDto[];
@@ -36,6 +38,7 @@ export interface LotteryServerToClientEvents {
   "lottery:started": (data: LotteryStartedPayload) => void;
   "lottery:winner-drawn": (data: LotteryWinnerDrawnPayload) => void;
   "lottery:finished": (data: LotteryFinishedPayload) => void;
+  "lottery:participants": (data: LotteryParticipantsPayload) => void;
 }
 
 export interface LotteryClientToServerEvents {}
