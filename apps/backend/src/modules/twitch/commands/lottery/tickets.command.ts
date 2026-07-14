@@ -41,9 +41,7 @@ export class TicketsCommands implements TwitchCommand {
       }));
 
       if (participants.length > 10) {
-        globalEventBus.emit("lottery:participants", {
-          tickets: participantsData,
-        });
+        globalEventBus.emit("lottery:participants", participantsData);
 
         const message = LOTTERY_MESSAGES.TOTAL_PARTICIPANTS(
           participants.length,

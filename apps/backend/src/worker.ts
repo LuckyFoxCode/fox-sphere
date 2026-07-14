@@ -72,7 +72,7 @@ export async function bootstrap() {
   globalEventBus.on("lottery:participants", async (data) => {
     Logger.info(
       "Bootstrap",
-      `.𖥔 ݁ ˖ִ🛸༄˖°. Lottery participants loaded: ${data.tickets?.length ?? 0}`,
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Lottery participants loaded: ${data?.length ?? 0}`,
     );
     await forwardEventToBackend("lottery:participants", data);
   });

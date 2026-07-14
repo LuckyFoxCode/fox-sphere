@@ -22,7 +22,7 @@ export interface LotteryTicketEarnedPayload {
   username: string;
 }
 
-export type LotteryParticipantsPayload = LotteryTicketEarnedPayload;
+export type LotteryParticipantsPayload = LotteryTicketEarnedPayload[];
 
 export interface LotteryWinnersPayload {
   oldWinners: LotteryUserDto[];

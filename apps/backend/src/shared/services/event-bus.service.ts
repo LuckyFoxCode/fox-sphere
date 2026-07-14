@@ -19,7 +19,7 @@ import EventEmitter from "events";
 
 interface AppEvents {
   "lottery:started": LotteryStartedPayload;
-  "lottery:participants": { tickets: LotteryParticipantsPayload[] };
+  "lottery:participants": LotteryParticipantsPayload;
   "lottery:no-participants": LotteryNoParticipantsPayload;
   "lottery:ticket-earned": LotteryTicketEarnedPayload;
   "lottery:winners": {
