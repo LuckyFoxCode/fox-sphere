@@ -1,6 +1,7 @@
 import { SOUNDS } from '@/constants';
 import {
   type LotteryFinishedPayload,
+  type LotteryParticipantsPayload,
   type LotteryTicketEarnedPayload,
   type LotteryUserDto,
   type LotteryWinnerDrawnPayload,
@@ -16,6 +17,7 @@ const { currentStatus: currentLotteryStatus, setStatusWithTimeout } =
 const ticket = ref<LotteryTicketEarnedPayload | null>(null);
 const winners = ref<LotteryUserDto[]>([]);
 const winner = ref<LotteryWinnerDrawnPayload | null>(null);
+const participants = ref<LotteryParticipantsPayload>([]);
 
 let isSocketInitialized = false;
 
@@ -46,11 +48,18 @@ export function useLotterySocket(socketInstance: WidgetSocket) {
     setStatusWithTimeout('finished', 5000);
   };
 
+  const handleParticipants = (data: LotteryParticipantsPayload) => {
+    participants.value = data;
+    currentLotteryStatus.value = 'participants';
+    setStatusWithTimeout('participants', 7000);
+  };
+
   if (!isSocketInitialized) {
     socketInstance.on('lottery:ticket-earned', handleTicketEarned);
     socketInstance.on('lottery:started', handleStarted);
     socketInstance.on('lottery:winner-drawn', handleWinnerDrawn);
     socketInstance.on('lottery:finished', handleFinished);
+    socketInstance.on('lottery:participants', handleParticipants);
 
     isSocketInitialized = true;
   }
@@ -59,6 +68,7 @@ export function useLotterySocket(socketInstance: WidgetSocket) {
     ticket,
     winner,
     winners,
+    participants,
     currentLotteryStatus,
   };
 }
