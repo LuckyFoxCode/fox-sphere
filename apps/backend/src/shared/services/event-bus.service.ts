@@ -1,6 +1,7 @@
 import {
   LotteryFinishedPayload,
   LotteryNoParticipantsPayload,
+  LotteryParticipantsPayload,
   LotteryStartedPayload,
   LotteryTicketEarnedPayload,
   LotteryUserDto,
@@ -18,6 +19,7 @@ import EventEmitter from "events";
 
 interface AppEvents {
   "lottery:started": LotteryStartedPayload;
+  "lottery:participants": LotteryParticipantsPayload;
   "lottery:no-participants": LotteryNoParticipantsPayload;
   "lottery:ticket-earned": LotteryTicketEarnedPayload;
   "lottery:winners": {
