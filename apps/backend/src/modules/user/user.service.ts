@@ -3,7 +3,9 @@ import { config } from "../../shared/config";
 import { AppError } from "../../shared/errors";
 import { prisma } from "../../shared/lib";
 import { globalEventBus, Logger } from "../../shared/services";
+import { getXpThresholdForLevel } from "../../shared/utils";
 import { LotteryService } from "../lottery";
+import { StreamService } from "../stream";
 import { COOLDOWNS, XP_REWARDS } from "./user.constants";
 
 export class UserService {
@@ -12,7 +14,10 @@ export class UserService {
   private lotteryCooldownCache = new Map<string, number>();
   private coinsCache = new Map<string, { coins: number; createdAt: number }>();
 
-  constructor(private lotteryService: LotteryService) {}
+  constructor(
+    private lotteryService: LotteryService,
+    private streamService: StreamService,
+  ) {}
 
   public async findOrCreateUser(twitchId: string, username: string) {
     try {
@@ -177,6 +182,7 @@ export class UserService {
 
       this.xpCooldownCache.set(twitchId, now);
       await this.checkAndUpgradeLevel(updatedUser);
+      await this.streamService.addStreamXp(finalXpAmount);
     } catch (error) {
       Logger.error(
         "UserService",
@@ -194,21 +200,11 @@ export class UserService {
     let currentLvl = user.lvl;
     let hasLeveledUp = false;
 
-    const getXpThresholdForLevel = (lvl: number): number => {
-      let totalXpNeeded = 0;
-
-      for (let i = 1; i <= lvl; i++) {
-        totalXpNeeded += i * 100;
-      }
-
-      return totalXpNeeded;
-    };
-
-    let nextLevelThreshold = getXpThresholdForLevel(currentLvl);
+    let nextLevelThreshold = getXpThresholdForLevel(currentLvl, 100);
 
     while (user.xp >= nextLevelThreshold) {
       currentLvl++;
-      nextLevelThreshold = getXpThresholdForLevel(currentLvl);
+      nextLevelThreshold = getXpThresholdForLevel(currentLvl, 100);
       hasLeveledUp = true;
     }
 
