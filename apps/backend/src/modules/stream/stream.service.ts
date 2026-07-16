@@ -3,8 +3,6 @@ import { getXpThresholdForLevel } from "../../shared/utils";
 import { XP_CONFIG } from "./stream.constants";
 
 export class StreamService {
-  private verifiedUsersCache = new Set<string>();
-
   public async getOrCreateState() {
     return await prisma.systemState.upsert({
       where: { id: XP_CONFIG.STREAM_STATE_ID },

@@ -1,5 +1,6 @@
 import { pathToFileURL } from "url";
 import { LotteryService } from "./modules/lottery";
+import { StreamService } from "./modules/stream";
 import { ChatbotService } from "./modules/twitch/chatbot.service";
 import { TwitchEventSubClient } from "./modules/twitch/eventsub.client";
 import { TokenService } from "./modules/twitch/token.service";
@@ -19,9 +20,10 @@ export async function bootstrap() {
 
   const twitchConfig: TwitchConfig = config.twitch;
 
+  const streamService = new StreamService();
   const tokenService = new TokenService();
   const lotteryService = new LotteryService(twitchConfig);
-  const userService = new UserService(lotteryService);
+  const userService = new UserService(lotteryService, streamService);
 
   // Создаем авторизацию через фабрику
   const authProvider = await TwitchAuthFactory.create(tokenService);
