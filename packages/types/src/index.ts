@@ -3,6 +3,10 @@ import {
   LotteryServerToClientEvents,
 } from "./lottery/lottery.js";
 import {
+  StreamClientToServerEvents,
+  StreamServerToClientEvents,
+} from "./stream/stream.js";
+import {
   TwitchClientToServerEvents,
   TwitchServerToClientEvents,
 } from "./twitch/twitch.js";
@@ -12,6 +16,7 @@ import {
 } from "./user/user.js";
 
 export * from "./lottery/index.js";
+export * from "./stream/index.js";
 export * from "./twitch/index.js";
 export * from "./user/index.js";
 
@@ -24,11 +29,13 @@ type IntersectionFromTuple<T extends readonly unknown[]> = T extends readonly [
 
 type AllServerEvents = [
   LotteryServerToClientEvents,
+  StreamServerToClientEvents,
   TwitchServerToClientEvents,
   UserServerToClientEvents,
 ];
 type AllClientEvents = [
   LotteryClientToServerEvents,
+  StreamClientToServerEvents,
   TwitchClientToServerEvents,
   UserClientToServerEvents,
 ];

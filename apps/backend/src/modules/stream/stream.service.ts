@@ -1,4 +1,5 @@
 import { prisma } from "../../shared/lib";
+import { globalEventBus } from "../../shared/services";
 import { getXpThresholdForLevel } from "../../shared/utils";
 import { XP_CONFIG } from "./stream.constants";
 
@@ -15,7 +16,7 @@ export class StreamService {
     });
   }
 
-  public async addStreamXp(xpAmount: number): Promise<void> {
+  public async updateStreamXp(xpAmount: number): Promise<void> {
     const state = await this.getOrCreateState();
 
     const newXp = state.streamCurrentXp + xpAmount;
@@ -26,7 +27,7 @@ export class StreamService {
       currentLvl,
       XP_CONFIG.BASE_STREAM_STEP,
     );
-
+    //					5							1000
     while (newXp >= nextLevelThreshold) {
       currentLvl++;
       nextLevelThreshold = getXpThresholdForLevel(
@@ -43,9 +44,14 @@ export class StreamService {
         streamLevel: currentLvl,
       },
     });
+    globalEventBus.emit("stream:xp-updated", {
+      newXp,
+      lvl: currentLvl,
+      maxXp: nextLevelThreshold,
+    });
 
     if (hasLeveledUp) {
-      // TODO: globalEventBus.emit("", {data...})
+      globalEventBus.emit("stream:level-up", { lvl: currentLvl });
     }
   }
 }

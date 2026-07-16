@@ -182,7 +182,7 @@ export class UserService {
 
       this.xpCooldownCache.set(twitchId, now);
       await this.checkAndUpgradeLevel(updatedUser);
-      await this.streamService.addStreamXp(finalXpAmount);
+      await this.streamService.updateStreamXp(finalXpAmount);
     } catch (error) {
       Logger.error(
         "UserService",

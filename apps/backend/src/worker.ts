@@ -116,6 +116,22 @@ export async function bootstrap() {
     await forwardEventToBackend("lottery:finished", data);
   });
 
+  globalEventBus.on("stream:level-up", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding stream level-up to overlay |  New Level: ${data.lvl}`,
+    );
+    await forwardEventToBackend("stream:level-up", data);
+  });
+
+  globalEventBus.on("stream:xp-updated", async (data) => {
+    Logger.debug(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding stream newXp to overlay |  New exp: ${data.newXp} / ${data.maxXp}`,
+    );
+    await forwardEventToBackend("stream:xp-updated", data);
+  });
+
   globalEventBus.on("twitch:add-vip", async (data) => {
     Logger.info(
       "Bootstrap",
