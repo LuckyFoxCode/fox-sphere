@@ -28,8 +28,10 @@ export const COOLDOWNS = {
 export const BOT_MESSAGES = {
   // Системные события (стрим-алерты)
   ALERTS: {
-    LEVEL_UP: (username: string, newLevel: number) =>
+    LEVEL_UP_USER: (username: string, newLevel: number) =>
       `⚡ @${username} leveled up to Level ${newLevel}! 🚀 GG!`,
+    LEVEL_UP_STREAM: (newLevel: number) =>
+      `⚡ STREAM LEVEL UP! We are now Level ${newLevel}! Keep spamming those messages! 🚀`,
 
     FOLLOW: (username: string) =>
       `🎉 Thanks for the follow, @${username}! Welcome to the Foxsphere family! 🚀`,

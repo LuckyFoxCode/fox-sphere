@@ -239,6 +239,19 @@ export class ChatbotService {
       }
     });
 
+    globalEventBus.on("stream:level-up", async (data) => {
+      try {
+        const message = BOT_MESSAGES.ALERTS.LEVEL_UP_STREAM(data.lvl);
+        await this.sendMessage(this.twitchConfig.channelName, message);
+      } catch (error) {
+        Logger.error(
+          "ChatbotService",
+          `Failed to send level-up message to chat`,
+          error,
+        );
+      }
+    });
+
     globalEventBus.on("user:level-up", async (data) => {
       if (config.nodeEnv === "development") {
         Logger.debug(
@@ -249,7 +262,7 @@ export class ChatbotService {
       }
 
       try {
-        const message = BOT_MESSAGES.ALERTS.LEVEL_UP(
+        const message = BOT_MESSAGES.ALERTS.LEVEL_UP_USER(
           data.username,
           data.newLevel,
         );

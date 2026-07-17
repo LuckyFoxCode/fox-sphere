@@ -50,6 +50,13 @@ model CoinHistory {
   @@index([userId])
 }
 
+model SystemState {
+  id              Int      @id @default(1)
+  streamLevel     Int      @default(1)
+  streamCurrentXp Int      @default(0)
+  updatedAt       DateTime @updatedAt
+}
+
 model TwitchToken {
   id                  String
   twitchUserId        String   @unique

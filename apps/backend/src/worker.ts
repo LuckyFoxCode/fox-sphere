@@ -1,5 +1,6 @@
 import { pathToFileURL } from "url";
 import { LotteryService } from "./modules/lottery";
+import { StreamService } from "./modules/stream";
 import { ChatbotService } from "./modules/twitch/chatbot.service";
 import { TwitchEventSubClient } from "./modules/twitch/eventsub.client";
 import { TokenService } from "./modules/twitch/token.service";
@@ -19,9 +20,10 @@ export async function bootstrap() {
 
   const twitchConfig: TwitchConfig = config.twitch;
 
+  const streamService = new StreamService();
   const tokenService = new TokenService();
   const lotteryService = new LotteryService(twitchConfig);
-  const userService = new UserService(lotteryService);
+  const userService = new UserService(lotteryService, streamService);
 
   // Создаем авторизацию через фабрику
   const authProvider = await TwitchAuthFactory.create(tokenService);
@@ -112,6 +114,22 @@ export async function bootstrap() {
       ".𖥔 ݁ ˖ִ🛸༄˖°. Lottery finished event captured, forwarding to Socket.io via Backend!",
     );
     await forwardEventToBackend("lottery:finished", data);
+  });
+
+  globalEventBus.on("stream:level-up", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding stream level-up to overlay |  New Level: ${data.lvl}`,
+    );
+    await forwardEventToBackend("stream:level-up", data);
+  });
+
+  globalEventBus.on("stream:xp-updated", async (data) => {
+    Logger.debug(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding stream newXp to overlay |  New exp: ${data.newXp} / ${data.maxXp}`,
+    );
+    await forwardEventToBackend("stream:xp-updated", data);
   });
 
   globalEventBus.on("twitch:add-vip", async (data) => {

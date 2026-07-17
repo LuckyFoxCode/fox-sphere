@@ -1,0 +1,5 @@
+export const XP_CONFIG = {
+  STREAM_STATE_ID: 1,
+  BASE_USER_STEP: 100,
+  BASE_STREAM_STEP: 1000,
+};

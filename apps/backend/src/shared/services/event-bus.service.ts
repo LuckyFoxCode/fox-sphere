@@ -6,6 +6,8 @@ import {
   LotteryTicketEarnedPayload,
   LotteryUserDto,
   LotteryWinnerDrawnPayload,
+  StreamLevelUpPayload,
+  StreamXpUpdatePayload,
   TwitchAddVipPaylod,
   TwitchFollowPayload,
   TwitchRaidPayload,
@@ -29,6 +31,8 @@ interface AppEvents {
   };
   "lottery:winner-drawn": LotteryWinnerDrawnPayload;
   "lottery:finished": LotteryFinishedPayload;
+  "stream:xp-updated": StreamXpUpdatePayload;
+  "stream:level-up": StreamLevelUpPayload;
   "twitch:add-vip": TwitchAddVipPaylod;
   "twitch:follow": TwitchFollowPayload;
   "twitch:raid": TwitchRaidPayload;
