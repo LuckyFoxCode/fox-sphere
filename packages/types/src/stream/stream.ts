@@ -5,6 +5,10 @@ export interface StreamXpUpdatePayload {
   maxXp: number;
 }
 
+export type StreamSystemStateResponse = StreamXpUpdatePayload;
+
+export type StreamGetSystemStatePayload = Record<string, never>;
+
 export type StreamLevelUpPayload = Pick<StreamXpUpdatePayload, "lvl">;
 
 export interface StreamServerToClientEvents {
@@ -12,4 +16,9 @@ export interface StreamServerToClientEvents {
   "stream:level-up": (data: StreamLevelUpPayload) => void;
 }
 
-export interface StreamClientToServerEvents {}
+export interface StreamClientToServerEvents {
+  "stream:get-system-state": (
+    _data: StreamGetSystemStatePayload,
+    callback: (response: StreamSystemStateResponse) => void,
+  ) => void;
+}

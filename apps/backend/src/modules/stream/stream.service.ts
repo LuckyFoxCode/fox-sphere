@@ -27,7 +27,6 @@ export class StreamService {
       currentLvl,
       XP_CONFIG.BASE_STREAM_STEP,
     );
-    //					5							1000
     while (newXp >= nextLevelThreshold) {
       currentLvl++;
       nextLevelThreshold = getXpThresholdForLevel(
