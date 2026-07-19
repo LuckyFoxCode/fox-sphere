@@ -3,7 +3,7 @@ import { StreamWidget } from './stream';
 </script>
 
 <template>
-  <header class="bg-card/30 flex h-8 w-full justify-center">
+  <header class="bg-card/70 flex h-12.5 w-full justify-center backdrop-blur-md">
     <StreamWidget />
   </header>
 </template>

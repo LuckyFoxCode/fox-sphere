@@ -17,19 +17,17 @@ const progressPercentage = computed(() => {
 <template>
   <div
     v-if="!isLoading"
-    class="flex w-100 items-center gap-x-2"
+    class="my-auto flex w-100 items-center"
   >
-    <div class="border-text-second/50 flex size-7 items-center justify-center rounded-full border">
-      <span>{{ level }}</span>
+    <div
+      class="border-event-blue/70 text-event-blue/75 flex size-12 flex-col items-center justify-center rounded-md border-3"
+    >
+      <span class="text-lg">15</span>
     </div>
-    <div class="flex flex-1 flex-col items-center text-xs">
-      <span>{{ newXp }} / {{ maxXp }}</span>
-      <div class="bg-event-cyan/10 h-3.5 w-full rounded-lg">
-        <div
-          :style="{ width: `${progressPercentage}%` }"
-          class="from-event-cyan/20 to-event-cyan/80 h-full rounded-lg bg-linear-to-r transition-[width] duration-500 ease-in-out"
-        />
-      </div>
+    <div class="border-event-blue/20 h-7 w-full rounded-r-lg border-3 border-l-transparent">
+      <div
+        class="border-event-blue/40 h-full w-full rounded-r-md border-2 border-l-transparent"
+      ></div>
     </div>
   </div>
 </template>
