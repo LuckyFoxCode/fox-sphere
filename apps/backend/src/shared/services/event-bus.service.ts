@@ -6,7 +6,9 @@ import {
   LotteryTicketEarnedPayload,
   LotteryUserDto,
   LotteryWinnerDrawnPayload,
+  StreamGetSystemStatePayload,
   StreamLevelUpPayload,
+  StreamSystemStateResponse,
   StreamXpUpdatePayload,
   TwitchAddVipPaylod,
   TwitchFollowPayload,
@@ -33,6 +35,10 @@ interface AppEvents {
   "lottery:finished": LotteryFinishedPayload;
   "stream:xp-updated": StreamXpUpdatePayload;
   "stream:level-up": StreamLevelUpPayload;
+  "stream:get-system-state": {
+    data: StreamGetSystemStatePayload;
+    callback: (response: StreamSystemStateResponse) => void;
+  };
   "twitch:add-vip": TwitchAddVipPaylod;
   "twitch:follow": TwitchFollowPayload;
   "twitch:raid": TwitchRaidPayload;

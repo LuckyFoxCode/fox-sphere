@@ -5,7 +5,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { config } from "./shared/config";
 import { errorHandler } from "./shared/middleware/error-handler";
-import { Logger } from "./shared/services";
+import { getStreamStatePrepared, Logger } from "./shared/services";
 
 const app = express();
 const httpServer = createServer(app);
@@ -40,6 +40,11 @@ app.post("/api/internal/events", (req, res) => {
 
 io.on("connection", (socket) => {
   Logger.info("Socket", `Client connected: ${socket.id}`);
+
+  socket.on("stream:get-system-state", async (_, socketCallback) => {
+    const state = await getStreamStatePrepared();
+    socketCallback(state);
+  });
 
   socket.on("disconnect", () => {
     Logger.info("Socket", `Client disconnected: ${socket.id}`);
