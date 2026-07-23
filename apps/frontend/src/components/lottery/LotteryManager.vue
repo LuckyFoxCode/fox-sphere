@@ -5,11 +5,12 @@ import { computed, type Component } from 'vue';
 import {
   LotteryAnnouncePanel,
   LotteryFinalSummary,
+  LotteryParticipants,
   LotteryTicket,
   LotteryWinnerReveal,
 } from './widgets';
 
-const { ticket, winner, winners, currentLotteryStatus } = useLotterySocket(socket);
+const { ticket, winner, winners, currentLotteryStatus, participants } = useLotterySocket(socket);
 
 interface WidgetMapValue {
   component: Component;
@@ -26,6 +27,7 @@ const widgetConfig = computed(() => {
     started: { component: LotteryAnnouncePanel },
     drawer: { component: LotteryWinnerReveal, props: { winner: winner.value } },
     finished: { component: LotteryFinalSummary, props: { winners: winners.value } },
+    participants: { component: LotteryParticipants, props: { participants: participants.value } },
   };
 
   return map[currentLotteryStatus.value as ActiveLotteryEvent] || null;

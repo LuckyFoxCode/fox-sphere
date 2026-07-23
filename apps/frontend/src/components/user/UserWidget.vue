@@ -25,7 +25,7 @@ const widgetConfig = computed(() => {
 </script>
 
 <template>
-  <div class="fixed top-[20%]">
+  <div class="fixed top-[20%] left-1/2 -translate-1/2">
     <Transition
       name="zoom-in"
       mode="out-in"

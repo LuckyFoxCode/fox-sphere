@@ -1,10 +1,15 @@
 import {
   LotteryFinishedPayload,
   LotteryNoParticipantsPayload,
+  LotteryParticipantsPayload,
   LotteryStartedPayload,
   LotteryTicketEarnedPayload,
   LotteryUserDto,
   LotteryWinnerDrawnPayload,
+  StreamGetSystemStatePayload,
+  StreamLevelUpPayload,
+  StreamSystemStateResponse,
+  StreamXpUpdatePayload,
   TwitchAddVipPaylod,
   TwitchFollowPayload,
   TwitchRaidPayload,
@@ -18,6 +23,7 @@ import EventEmitter from "events";
 
 interface AppEvents {
   "lottery:started": LotteryStartedPayload;
+  "lottery:participants": LotteryParticipantsPayload;
   "lottery:no-participants": LotteryNoParticipantsPayload;
   "lottery:ticket-earned": LotteryTicketEarnedPayload;
   "lottery:winners": {
@@ -27,6 +33,12 @@ interface AppEvents {
   };
   "lottery:winner-drawn": LotteryWinnerDrawnPayload;
   "lottery:finished": LotteryFinishedPayload;
+  "stream:xp-updated": StreamXpUpdatePayload;
+  "stream:level-up": StreamLevelUpPayload;
+  "stream:get-system-state": {
+    data: StreamGetSystemStatePayload;
+    callback: (response: StreamSystemStateResponse) => void;
+  };
   "twitch:add-vip": TwitchAddVipPaylod;
   "twitch:follow": TwitchFollowPayload;
   "twitch:raid": TwitchRaidPayload;
