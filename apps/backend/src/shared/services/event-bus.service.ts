@@ -11,6 +11,7 @@ import {
   StreamSystemStateResponse,
   StreamXpUpdatePayload,
   TwitchAddVipPaylod,
+  TwitchChatMessagePayload,
   TwitchFollowPayload,
   TwitchRaidPayload,
   TwitchRemoveVipPaylod,
@@ -22,6 +23,7 @@ import {
 import EventEmitter from "events";
 
 interface AppEvents {
+  "chat:message": TwitchChatMessagePayload;
   "lottery:started": LotteryStartedPayload;
   "lottery:participants": LotteryParticipantsPayload;
   "lottery:no-participants": LotteryNoParticipantsPayload;
