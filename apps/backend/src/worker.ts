@@ -71,6 +71,14 @@ export async function bootstrap() {
     });
   });
 
+  globalEventBus.on("chat:message", async (data) => {
+    Logger.debug(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding chat message to overlay | User: ${data.displayName}`,
+    );
+    await forwardEventToBackend("chat:message", data);
+  });
+
   globalEventBus.on("lottery:participants", async (data) => {
     Logger.info(
       "Bootstrap",

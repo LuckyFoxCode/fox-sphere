@@ -39,7 +39,7 @@ export interface TwitchChatMessagePayload {
   displayName: string;
   color: string;
   text: string;
-  badges: string[];
+  badges: Record<string, string>;
   emotes: Record<string, string[]>;
   timestamp: number;
 }

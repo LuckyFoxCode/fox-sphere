@@ -1,4 +1,4 @@
-import { LotteryUserDto } from "@fox-sphere/types";
+import { LotteryUserDto, TwitchChatMessagePayload } from "@fox-sphere/types";
 import { ApiClient } from "@twurple/api";
 import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
@@ -392,6 +392,28 @@ export class ChatbotService {
 
       await this.activityService.trackActivity(user, msg);
       await this.commandRegistry.execute(channel, user, text, msg);
+
+      const emotes: Record<string, string[]> = Object.fromEntries(
+        msg.emoteOffsets,
+      );
+      const rawBadges: Record<string, string> = Object.fromEntries(
+        msg.userInfo.badges,
+      );
+
+      const chatMessagePayload: TwitchChatMessagePayload = {
+        id: msg.id,
+        userId: msg.userInfo.userId,
+        username: user,
+        displayName: msg.userInfo.displayName,
+        color: msg.userInfo.color || "#9146FF",
+        text,
+        badges: rawBadges,
+        emotes,
+        timestamp: msg.date.getTime(),
+      };
+
+      console.log(chatMessagePayload);
+      globalEventBus.emit("chat:message", chatMessagePayload);
     });
   }
 
