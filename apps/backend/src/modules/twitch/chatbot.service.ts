@@ -1,4 +1,4 @@
-import { LotteryUserDto } from "@fox-sphere/types";
+import { LotteryUserDto, TwitchChatMessagePayload } from "@fox-sphere/types";
 import { ApiClient } from "@twurple/api";
 import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
@@ -18,6 +18,7 @@ import {
   AnnouncementService,
   CommandRegisry,
   TwitchActivityService,
+  TwitchBadgeService,
 } from "./services";
 import { BOT_MESSAGES } from "./twitch.constants";
 import { AnnouncementColor, TwitchConfig } from "./twitch.types";
@@ -26,6 +27,7 @@ export class ChatbotService {
   private chatClient!: ChatClient;
   private apiClient!: ApiClient;
   private activityService: TwitchActivityService;
+  private badgeService!: TwitchBadgeService;
   private commandRegistry: CommandRegisry;
   private announcementService: AnnouncementService;
 
@@ -51,12 +53,18 @@ export class ChatbotService {
       this.apiClient,
       this.twitchConfig,
     );
+    this.badgeService = new TwitchBadgeService(
+      this.apiClient,
+      twitchConfig.userId,
+    );
   }
 
   public async start(): Promise<void> {
     this.registerRewardHandler();
 
     try {
+      await this.badgeService.init();
+
       this.chatClient = new ChatClient({
         authProvider: this.authProvider,
         channels: [this.twitchConfig.channelName],
@@ -388,10 +396,38 @@ export class ChatbotService {
 
   private setupChatClientListeners(): void {
     this.chatClient.onMessage(async (channel, user, text, msg) => {
-      Logger.debug("ChatbotService", `[${channel}] ${user}: ${text}`);
+      try {
+        Logger.debug("ChatbotService", `[${channel}] ${user}: ${text}`);
 
-      await this.activityService.trackActivity(user, msg);
-      await this.commandRegistry.execute(channel, user, text, msg);
+        await this.activityService.trackActivity(user, msg);
+        await this.commandRegistry.execute(channel, user, text, msg);
+
+        const emotes: Record<string, string[]> = Object.fromEntries(
+          msg.emoteOffsets,
+        );
+        const rawBadges: Record<string, string> = Object.fromEntries(
+          msg.userInfo.badges,
+        );
+
+        const badgeUrls = this.badgeService.getBadgeUrls(rawBadges);
+
+        const chatMessagePayload: TwitchChatMessagePayload = {
+          id: msg.id,
+          userId: msg.userInfo.userId,
+          username: user,
+          displayName: msg.userInfo.displayName,
+          color: msg.userInfo.color || "#9146FF",
+          text,
+          badges: badgeUrls,
+          emotes,
+          timestamp: msg.date.getTime(),
+        };
+
+        console.log(chatMessagePayload);
+        globalEventBus.emit("chat:message", chatMessagePayload);
+      } catch (error) {
+        Logger.error("ChatbotService", "Error processing chat message", error);
+      }
     });
   }
 
