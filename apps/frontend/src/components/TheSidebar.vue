@@ -4,7 +4,7 @@ import { socket } from '@/services';
 import { TwitchTimer } from './twitch/widgets';
 import { ChatWidget } from './twitch/widgets/chat';
 
-const { isTimerActive, timer, timeDigits } = useTwitchSocket(socket);
+const { isTimerActive, timer, timeDigits, messages } = useTwitchSocket(socket);
 </script>
 
 <template>
@@ -21,6 +21,6 @@ const { isTimerActive, timer, timeDigits } = useTwitchSocket(socket);
         />
       </Transition>
     </div>
-    <ChatWidget />
+    <ChatWidget :messages="messages" />
   </aside>
 </template>
