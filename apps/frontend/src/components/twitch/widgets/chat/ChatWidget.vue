@@ -5,7 +5,7 @@ defineProps<{ messages: TwitchChatMessagePayload[] }>();
 </script>
 
 <template>
-  <div class="h-[70%]">
+  <div class="h-[70%] overflow-hidden">
     <ChatMessageList :messages="messages" />
   </div>
 </template>

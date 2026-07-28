@@ -7,7 +7,7 @@ defineProps<{
 </script>
 
 <template>
-  <li class="bg-text-main/70 relative rounded-xl px-1.5 pt-4">
+  <li class="bg-text-main/70 relative rounded-xl px-1.5 pt-4 backdrop-blur-lg">
     <div
       class="bg-bg/90 absolute -top-3 left-1.5 flex items-center gap-x-0.5 rounded-xl border-2 px-1.5 py-0.5 text-sm"
       :style="{ borderColor: message.color }"
