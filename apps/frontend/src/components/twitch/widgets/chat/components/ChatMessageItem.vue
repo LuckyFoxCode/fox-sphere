@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import type { TwitchChatMessagePayload } from '@fox-sphere/types';
+import { computed } from 'vue';
+import { parseTwitchEmotes } from '../utils';
+import TwitchEmote from './TwitchEmote.vue';
 
-defineProps<{
+const props = defineProps<{
   message: TwitchChatMessagePayload;
 }>();
+
+const tokens = computed(() => parseTwitchEmotes(props.message.text, props.message.emotes));
 </script>
 
 <template>
   <li
     class="bg-card/80 border-text-second/10 relative flex flex-col gap-1 rounded-r-xl border-2 border-l-4 p-2 text-sm shadow-sm backdrop-blur-md"
-    :style="{ borderLeftColor: message.color || '#FF7F50' }"
+    :style="{ borderLeftColor: message.color }"
   >
     <div class="flex items-center gap-1.5 font-semibold">
       <div
@@ -26,7 +31,7 @@ defineProps<{
       </div>
 
       <span
-        :style="{ color: message.color || '#FF7F50' }"
+        :style="{ color: message.color }"
         class="truncate"
       >
         {{ message.displayName }}
@@ -34,7 +39,17 @@ defineProps<{
     </div>
 
     <p class="text-text-main leading-snug wrap-break-word">
-      {{ message.text }}
+      <template
+        v-for="(token, index) in tokens"
+        :key="index"
+      >
+        <span v-if="token.type === 'text'">{{ token.content }}</span>
+        <TwitchEmote
+          v-else
+          :url="token.url"
+          :name="token.name"
+        />
+      </template>
     </p>
   </li>
 </template>
