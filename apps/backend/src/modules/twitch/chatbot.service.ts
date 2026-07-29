@@ -423,7 +423,6 @@ export class ChatbotService {
           timestamp: msg.date.getTime(),
         };
 
-        console.log(chatMessagePayload);
         globalEventBus.emit("chat:message", chatMessagePayload);
       } catch (error) {
         Logger.error("ChatbotService", "Error processing chat message", error);
