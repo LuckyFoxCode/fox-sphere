@@ -1,6 +1,7 @@
 import { SOUNDS } from '@/constants/sound';
 import {
   type TwitchAddVipPaylod,
+  type TwitchChatMessagePayload,
   type TwitchFollowPayload,
   type TwitchRaidPayload,
   type TwitchRewardPayload,
@@ -24,10 +25,33 @@ const follow = ref<TwitchFollowPayload | null>(null);
 const raid = ref<TwitchRaidPayload | null>(null);
 const reward = ref<TwitchRewardPayload | null>(null);
 const timer = ref<TwitchTimerPayload | null>(null);
+const messages = ref<TwitchChatMessagePayload[]>([]);
+const MAX_MESSAGES = 8;
+const MESSAGE_TTL = 18000;
 
 let isSocketInitialized = false;
 
 export function useTwitchSocket(socketInstance: WidgetSocket) {
+  const handleChatMessage = (data: TwitchChatMessagePayload) => {
+    messages.value.push(data);
+
+    if (messages.value.length > MAX_MESSAGES) {
+      messages.value.shift();
+    }
+
+    setTimeout(() => {
+      removeMessage(data.id);
+    }, MESSAGE_TTL);
+  };
+
+  const removeMessage = (id: string) => {
+    const index = messages.value.findIndex((msg) => msg.id === id);
+
+    if (index !== -1) {
+      messages.value.splice(index, 1);
+    }
+  };
+
   const handleAddVip = (data: TwitchAddVipPaylod) => {
     addVip.value = data;
     currentEventType.value = 'add-vip';
@@ -68,6 +92,7 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
   };
 
   if (!isSocketInitialized) {
+    socketInstance.on('chat:message', handleChatMessage);
     socketInstance.on('twitch:add-vip', handleAddVip);
     socketInstance.on('twitch:follow', handleFollow);
     socketInstance.on('twitch:raid', handleRaid);
@@ -90,6 +115,7 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
     currentEventType,
     isTimerActive,
     follow,
+    messages,
     raid,
     reward,
     timer,

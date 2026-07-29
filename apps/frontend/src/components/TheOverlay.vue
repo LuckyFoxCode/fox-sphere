@@ -14,7 +14,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="relative flex h-270 w-480 flex-col">
+  <div class="relative flex h-screen w-screen flex-col overflow-hidden">
     <TheHeader />
     <main class="flex w-full flex-1 justify-end">
       <LotteryManager />
