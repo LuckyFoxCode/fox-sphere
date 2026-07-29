@@ -26,8 +26,8 @@ const raid = ref<TwitchRaidPayload | null>(null);
 const reward = ref<TwitchRewardPayload | null>(null);
 const timer = ref<TwitchTimerPayload | null>(null);
 const messages = ref<TwitchChatMessagePayload[]>([]);
-const MAX_MESSAGES = 20;
-const MESSAGE_TTL = 10000;
+const MAX_MESSAGES = 8;
+const MESSAGE_TTL = 18000;
 
 let isSocketInitialized = false;
 
