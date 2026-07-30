@@ -1,0 +1,17 @@
+export const BASE_POKEMON_POOL = [
+  "bulbasaur",
+  "charmander",
+  "squirtle",
+  "pichu",
+  "oddish",
+  "poliwag",
+  "mareep",
+  "ralts",
+  "pidgey",
+  "caterpie",
+  "nidoran-f",
+  "abra",
+  "machop",
+  "gastly",
+  "aron",
+];
