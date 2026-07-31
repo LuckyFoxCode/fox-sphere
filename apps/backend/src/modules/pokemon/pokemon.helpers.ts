@@ -1,7 +1,8 @@
+import { PokemonPoolItem } from "@fox-sphere/types";
 import { BASE_POKEMON_POOL } from "./pokemon.constants";
 
 export async function fetchPokemonPoolData() {
-  const poolData = await Promise.all(
+  const poolData: PokemonPoolItem[] = await Promise.all(
     BASE_POKEMON_POOL.map(async (name) => {
       const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
       const data = await res.json();

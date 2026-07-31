@@ -14,4 +14,4 @@ export const BASE_POKEMON_POOL = [
   "machop",
   "gastly",
   "aron",
-];
+] as const;
