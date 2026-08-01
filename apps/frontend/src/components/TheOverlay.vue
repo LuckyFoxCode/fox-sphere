@@ -2,6 +2,7 @@
 import { socket } from '@/services';
 import { onUnmounted } from 'vue';
 import { LotteryManager } from './lottery';
+import { PokemonWidget } from './pokemon';
 import TheHeader from './TheHeader.vue';
 import TheSidebar from './TheSidebar.vue';
 import { TwitchWidget } from './twitch';
@@ -18,6 +19,7 @@ onUnmounted(() => {
     <TheHeader />
     <main class="flex w-full flex-1 justify-end">
       <LotteryManager />
+      <PokemonWidget />
       <TwitchWidget />
       <UserWidget />
       <TheSidebar />

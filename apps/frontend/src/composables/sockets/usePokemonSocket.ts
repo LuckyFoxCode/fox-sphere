@@ -14,7 +14,7 @@ export function usePokemonSocket(socketInstance: WidgetSocket) {
   const handleAssigned = (data: PokemonAssignedPayload) => {
     newUserWithPokemon.value = data;
     currentEventType.value = 'assigned';
-    setStatusWithTimeout('assigned', 5000);
+    setStatusWithTimeout('assigned', 10000);
   };
 
   if (!isSocketInitialized) {
@@ -23,5 +23,5 @@ export function usePokemonSocket(socketInstance: WidgetSocket) {
     isSocketInitialized = true;
   }
 
-  return { newUserWithPokemon };
+  return { currentEventType, newUserWithPokemon };
 }
