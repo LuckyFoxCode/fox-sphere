@@ -402,6 +402,10 @@ export class ChatbotService {
         await this.activityService.trackActivity(user, msg);
         await this.commandRegistry.execute(channel, user, text, msg);
 
+        const userPokemon = await this.userService.getUserWithPokemon(
+          msg.userInfo.userId,
+        );
+
         const emotes: Record<string, string[]> = Object.fromEntries(
           msg.emoteOffsets,
         );
@@ -421,6 +425,7 @@ export class ChatbotService {
           badges: badgeUrls,
           emotes,
           timestamp: msg.date.getTime(),
+          pokemon: userPokemon,
         };
 
         globalEventBus.emit("chat:message", chatMessagePayload);

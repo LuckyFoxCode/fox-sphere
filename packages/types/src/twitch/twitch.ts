@@ -43,7 +43,7 @@ export interface TwitchChatMessagePayload {
   badges: string[];
   emotes: Record<string, string[]>;
   timestamp: number;
-  pokemon: PokemonPoolItem;
+  pokemon?: PokemonPoolItem;
 }
 
 export interface TwitchServerToClientEvents {
