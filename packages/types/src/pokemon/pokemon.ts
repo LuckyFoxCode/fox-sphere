@@ -1,17 +1,14 @@
 // Сущность (Data Transfer Object)
 export interface PokemonPoolItem {
-  id: number;
-  name: string;
+  pokemonId: number;
+  speciesName: string;
   spriteUrl: string;
 }
 
 // Данные событий (Payloads)
-export interface PokemonAssignedPayload {
+export interface PokemonAssignedPayload extends PokemonPoolItem {
   userId: number;
   username: string;
-  pokemonId: number;
-  speciesName: string;
-  spriteUrl: string;
 }
 
 // Контракты событий Socket.io

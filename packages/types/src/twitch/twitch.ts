@@ -1,3 +1,4 @@
+import { PokemonPoolItem } from "../pokemon/pokemon.js";
 import { WidgetVariant } from "./variants.js";
 
 // Данные событий (Payloads)
@@ -42,6 +43,7 @@ export interface TwitchChatMessagePayload {
   badges: string[];
   emotes: Record<string, string[]>;
   timestamp: number;
+  pokemon: PokemonPoolItem;
 }
 
 export interface TwitchServerToClientEvents {
