@@ -3,6 +3,7 @@ import { socket } from '@/services';
 import { onUnmounted } from 'vue';
 import { LotteryManager } from './lottery';
 import { PokemonWidget } from './pokemon';
+import TheFooter from './TheFooter.vue';
 import TheHeader from './TheHeader.vue';
 import TheSidebar from './TheSidebar.vue';
 import { TwitchWidget } from './twitch';
@@ -24,5 +25,6 @@ onUnmounted(() => {
       <UserWidget />
       <TheSidebar />
     </main>
+    <TheFooter />
   </div>
 </template>
