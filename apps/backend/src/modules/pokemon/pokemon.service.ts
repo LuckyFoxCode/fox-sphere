@@ -13,6 +13,8 @@ export class PokemonService {
         "PokemonService",
         `Loaded ${this.pokemonPool.length} base pokemons into memory pool.`,
       );
+
+      this.setupEventListeners();
     } catch (error) {
       Logger.error(
         "PokemonService",
