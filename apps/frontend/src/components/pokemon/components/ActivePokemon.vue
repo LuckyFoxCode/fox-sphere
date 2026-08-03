@@ -18,7 +18,7 @@ defineProps<{ activePokemon: ActivePokemon }>();
     <img
       :src="activePokemon.spriteUrl"
       :alt="activePokemon.speciesName"
-      class="size-12 transition-transform duration-300"
+      class="h-12 w-auto object-contain"
       :class="{ 'scale-x-[-1]': activePokemon.isFlipped }"
     />
   </div>
