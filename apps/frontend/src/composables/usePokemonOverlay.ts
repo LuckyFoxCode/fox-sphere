@@ -1,3 +1,4 @@
+import { calculateNextStep, getRandomInt } from '@/components/pokemon/utils';
 import type { PokemonAssignedPayload, TwitchChatMessagePayload } from '@fox-sphere/types';
 import { ref } from 'vue';
 
@@ -8,7 +9,7 @@ export interface ActivePokemon extends Omit<PokemonAssignedPayload, 'pokemonId'>
   moveDuration: number;
   isWalking: boolean;
   timeoutId: ReturnType<typeof setTimeout>;
-  walkTimeoutId?: ReturnType<typeof setInterval>;
+  walkTimeoutId?: ReturnType<typeof setTimeout>;
 }
 
 const POKEMON_TTL = 5 * 60 * 1000;
@@ -34,30 +35,16 @@ function startRandomWalking(userId: string) {
     const shouldWalk = Math.random() > 0.5;
 
     if (shouldWalk) {
-      if (currentPokemon.currentX >= 95) {
-        currentPokemon.direction = -1; // left
-      } else if (currentPokemon.currentX <= 1) {
-        currentPokemon.direction = 1; // right
-      }
+      const step = calculateNextStep(currentPokemon.currentX, currentPokemon.direction);
 
-      const stepDistance = Math.floor(Math.random() * 18) + 8;
-
-      let potentialX = currentPokemon.currentX + stepDistance * currentPokemon.direction;
-
-      const newX = Math.min(Math.max(potentialX, 1), 95);
-
-      const actualDistance = Math.abs(newX - currentPokemon.currentX);
-
-      if (actualDistance > 0) {
-        const speedFactor = 0.45;
-        const moveDuration = Math.max(1.5, Number((actualDistance * speedFactor).toFixed(1)));
-
-        currentPokemon.isFlipped = currentPokemon.direction === 1;
-        currentPokemon.moveDuration = moveDuration;
-        currentPokemon.currentX = newX;
+      if (step) {
+        currentPokemon.direction = step.newDirection;
+        currentPokemon.isFlipped = step.newDirection === 1;
+        currentPokemon.moveDuration = step.moveDuration;
+        currentPokemon.currentX = step.newX;
         currentPokemon.isWalking = true;
 
-        const totalWait = moveDuration * 1000 + (Math.floor(Math.random() * 800) + 400);
+        const totalWait = step.moveDuration * 1000 + getRandomInt(400, 1200);
 
         currentPokemon.walkTimeoutId = setTimeout(() => {
           if (activePokemons.value.has(userId)) {
@@ -70,14 +57,12 @@ function startRandomWalking(userId: string) {
     }
 
     currentPokemon.isWalking = false;
-    const pauseDuration = Math.floor(Math.random() * 4500) + 3500;
+    const pauseDuration = getRandomInt(3500, 8000);
 
-    currentPokemon.walkTimeoutId = setTimeout(() => {
-      scheduleNextAction();
-    }, pauseDuration);
+    currentPokemon.walkTimeoutId = setTimeout(scheduleNextAction, pauseDuration);
   };
 
-  const initialDelay = Math.floor(Math.random() * 2000) + 1000;
+  const initialDelay = getRandomInt(1000, 3000);
   pokemon.walkTimeoutId = setTimeout(scheduleNextAction, initialDelay);
 }
 
@@ -99,9 +84,9 @@ export function usePokemonOverlay() {
       return;
     }
 
-    const initialX = Math.floor(Math.random() * 70) + 10;
+    const initialX = getRandomInt(10, 80);
     const timeoutId = setTimeout(() => removePokemon(userId), POKEMON_TTL);
-    const initialDirection = Math.random() > 0.5 ? 1 : -1;
+    const initialDirection: 1 | -1 = Math.random() > 0.5 ? 1 : -1;
 
     const newPokemon: ActivePokemon = {
       userId: Number(userId),
