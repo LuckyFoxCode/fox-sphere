@@ -14,7 +14,7 @@ const { activePokemons } = useTwitchSocket(socket);
         :key="userId"
         :style="{
           left: `${pokemon.currentX}vw`,
-          transition: `left ${pokemon.moveDuration}s ease-in-out`,
+          transition: pokemon.isWalking ? `left ${pokemon.moveDuration}s linear` : 'none',
         }"
       >
         <span class="bg-bg/70 mb-1 rounded-full px-2 py-0.5 text-[10px] whitespace-nowrap">
