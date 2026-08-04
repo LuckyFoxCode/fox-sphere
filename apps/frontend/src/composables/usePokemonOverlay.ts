@@ -16,6 +16,7 @@ export interface ActivePokemon extends Omit<PokemonAssignedPayload, 'pokemonId'>
   isMod?: boolean;
   isVip?: boolean;
   isFollower?: boolean;
+  isFounder?: boolean;
   isSubscriber?: boolean;
 }
 

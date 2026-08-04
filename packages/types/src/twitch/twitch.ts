@@ -2,7 +2,6 @@ import { PokemonPoolItem } from "../pokemon/pokemon.js";
 import { WidgetVariant } from "./variants.js";
 
 // Данные событий (Payloads)
-
 export interface TwitchAddVipPaylod {
   twitchId: string;
   username: string;
@@ -44,7 +43,6 @@ export interface TwitchChatMessagePayload {
   emotes: Record<string, string[]>;
   timestamp: number;
   pokemon?: PokemonPoolItem;
-
   userLvl: number;
   isMod: boolean;
   isFollower: boolean;
