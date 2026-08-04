@@ -3,7 +3,7 @@ import { PokemonArena } from './pokemon';
 </script>
 
 <template>
-  <footer class="bg-card/70 h-19 w-full backdrop-blur-md">
+  <footer class="bg-card/70 h-24 w-full backdrop-blur-md">
     <PokemonArena />
   </footer>
 </template>

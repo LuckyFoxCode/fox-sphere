@@ -7,7 +7,7 @@ const { activePokemons } = useTwitchSocket(socket);
 </script>
 
 <template>
-  <div class="pointer-events-none fixed right-0 bottom-0 left-0 h-full overflow-hidden">
+  <div class="pointer-events-none fixed right-0 bottom-0 left-0 h-full">
     <TransitionGroup name="zoom-in">
       <ActivePokemon
         v-for="[userId, pokemon] in activePokemons"
