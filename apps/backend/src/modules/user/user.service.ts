@@ -278,32 +278,52 @@ export class UserService {
   }
 
   public async getUserWithPokemon(twitchId: string) {
-    if (this.pokemonCache.has(twitchId)) {
-      return this.pokemonCache.get(twitchId) ?? undefined;
+    let pokemonData: PokemonPoolItem | null | undefined;
+
+    const hasPokemonInCache = this.pokemonCache.has(twitchId);
+
+    if (hasPokemonInCache) {
+      pokemonData = this.pokemonCache.get(twitchId);
     }
 
     const userWithPokemon = await prisma.user.findUnique({
       where: { twitchId },
       select: {
-        pokemon: {
-          select: {
-            pokemonId: true,
-            speciesName: true,
-            spriteUrl: true,
-          },
-        },
+        lvl: true,
+        isPermanentVip: true,
+        isFounder: true,
+        pokemon: !hasPokemonInCache
+          ? {
+              select: {
+                pokemonId: true,
+                speciesName: true,
+                spriteUrl: true,
+              },
+            }
+          : false,
       },
     });
 
-    const pokemonData = userWithPokemon?.pokemon
-      ? {
-          pokemonId: userWithPokemon.pokemon.pokemonId,
-          speciesName: userWithPokemon.pokemon.speciesName,
-          spriteUrl: userWithPokemon.pokemon.spriteUrl,
-        }
-      : null;
+    if (!userWithPokemon) return null;
 
-    return pokemonData ?? undefined;
+    if (!hasPokemonInCache) {
+      pokemonData = userWithPokemon.pokemon
+        ? {
+            pokemonId: userWithPokemon.pokemon.pokemonId,
+            speciesName: userWithPokemon.pokemon.speciesName,
+            spriteUrl: userWithPokemon.pokemon.spriteUrl,
+          }
+        : null;
+
+      this.pokemonCache.set(twitchId, pokemonData);
+    }
+
+    return {
+      lvl: userWithPokemon.lvl,
+      isPermanentVip: userWithPokemon.isPermanentVip,
+      isFounder: userWithPokemon.isFounder,
+      pokemon: pokemonData ?? undefined,
+    };
   }
 
   public clearCache(): void {

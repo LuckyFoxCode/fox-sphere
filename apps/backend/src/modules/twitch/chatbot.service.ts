@@ -398,13 +398,15 @@ export class ChatbotService {
     this.chatClient.onMessage(async (channel, user, text, msg) => {
       try {
         Logger.debug("ChatbotService", `[${channel}] ${user}: ${text}`);
+        const twitchId = msg.userInfo.userId;
 
         await this.activityService.trackActivity(user, msg);
         await this.commandRegistry.execute(channel, user, text, msg);
 
-        const userPokemon = await this.userService.getUserWithPokemon(
+        const userData = await this.userService.getUserWithPokemon(
           msg.userInfo.userId,
         );
+        const isFollower = this.activityService.isFollower(twitchId);
 
         const emotes: Record<string, string[]> = Object.fromEntries(
           msg.emoteOffsets,
@@ -425,7 +427,14 @@ export class ChatbotService {
           badges: badgeUrls,
           emotes,
           timestamp: msg.date.getTime(),
-          pokemon: userPokemon,
+          userLvl: userData?.lvl ?? 1,
+          isPermanentVip: userData?.isPermanentVip ?? false,
+          isFounder: userData?.isFounder ?? false,
+          isFollower,
+          pokemon: userData?.pokemon,
+          isMod: msg.userInfo.isMod,
+          isSubscriber: msg.userInfo.isSubscriber,
+          isVip: msg.userInfo.isVip,
         };
 
         globalEventBus.emit("chat:message", chatMessagePayload);

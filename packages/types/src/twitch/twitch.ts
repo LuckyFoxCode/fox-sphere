@@ -44,6 +44,14 @@ export interface TwitchChatMessagePayload {
   emotes: Record<string, string[]>;
   timestamp: number;
   pokemon?: PokemonPoolItem;
+
+  userLvl: number;
+  isMod: boolean;
+  isFollower: boolean;
+  isFounder: boolean;
+  isSubscriber: boolean;
+  isVip: boolean;
+  isPermanentVip: boolean;
 }
 
 export interface TwitchServerToClientEvents {

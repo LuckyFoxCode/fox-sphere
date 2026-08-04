@@ -63,4 +63,8 @@ export class TwitchActivityService {
       );
     }
   }
+
+  public isFollower(twitchId: string): boolean {
+    return this.followersCache.has(twitchId);
+  }
 }

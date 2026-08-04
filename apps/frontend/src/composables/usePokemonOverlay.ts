@@ -10,6 +10,13 @@ export interface ActivePokemon extends Omit<PokemonAssignedPayload, 'pokemonId'>
   isWalking: boolean;
   timeoutId: ReturnType<typeof setTimeout>;
   walkTimeoutId?: ReturnType<typeof setTimeout>;
+  userLvl?: number;
+  userColor?: string;
+  userDisplayName?: string;
+  isMod?: boolean;
+  isVip?: boolean;
+  isFollower?: boolean;
+  isSubscriber?: boolean;
 }
 
 const POKEMON_TTL = 5 * 60 * 1000;
@@ -91,6 +98,13 @@ export function usePokemonOverlay() {
     const newPokemon: ActivePokemon = {
       userId: Number(userId),
       username,
+      userDisplayName: data.displayName,
+      userLvl: data.userLvl,
+      userColor: data.color,
+      isMod: data.isMod,
+      isFollower: data.isFollower,
+      isSubscriber: data.isSubscriber,
+      isVip: data.isVip || data.isPermanentVip,
       speciesName: pokemon.speciesName,
       spriteUrl: pokemon.spriteUrl,
       currentX: initialX,

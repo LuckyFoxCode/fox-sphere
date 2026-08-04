@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import type { ActivePokemon } from '@/composables';
 
-defineProps<{ activePokemon: ActivePokemon }>();
+const props = defineProps<{ activePokemon: ActivePokemon }>();
+
+console.log(props.activePokemon);
 </script>
 
 <template>
