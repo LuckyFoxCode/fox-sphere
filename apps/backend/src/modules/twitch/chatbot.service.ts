@@ -428,13 +428,14 @@ export class ChatbotService {
           emotes,
           timestamp: msg.date.getTime(),
           userLvl: userData?.lvl ?? 1,
-          isPermanentVip: userData?.isPermanentVip ?? false,
-          isFounder: userData?.isFounder ?? false,
           isFollower,
           pokemon: userData?.pokemon,
           isMod: msg.userInfo.isMod,
           isSubscriber: msg.userInfo.isSubscriber,
           isVip: msg.userInfo.isVip,
+          isBroadcaster: msg.userInfo.isBroadcaster,
+          isPermanentVip: userData?.isPermanentVip ?? false,
+          isFounder: userData?.isFounder ?? false,
         };
 
         globalEventBus.emit("chat:message", chatMessagePayload);

@@ -50,6 +50,7 @@ export interface TwitchChatMessagePayload {
   isSubscriber: boolean;
   isVip: boolean;
   isPermanentVip: boolean;
+  isBroadcaster: boolean;
 }
 
 export interface TwitchServerToClientEvents {

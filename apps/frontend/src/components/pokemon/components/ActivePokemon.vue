@@ -5,7 +5,9 @@ import { computed } from 'vue';
 const props = defineProps<{ activePokemon: ActivePokemon }>();
 
 const ROLE_CONFIG = [
+  { check: (p: ActivePokemon) => p.isBroadcaster, color: 'var(--color-event-amber)' },
   { check: (p: ActivePokemon) => p.isSubscriber, color: 'var(--color-error)' },
+  { check: (p: ActivePokemon) => p.isFounder, color: 'var(--color-error)' },
   { check: (p: ActivePokemon) => p.isVip, color: 'var(--color-event-rose)' },
   { check: (p: ActivePokemon) => p.isMod, color: 'var(--color-success)' },
   { check: (p: ActivePokemon) => p.isFollower, color: 'var(--color-event-purple)' },
@@ -39,7 +41,7 @@ const roleBorderClass = computed(() => {
         class="text-sm whitespace-nowrap"
         :style="{ color: activePokemon.userColor }"
       >
-        {{ activePokemon.username }}
+        {{ activePokemon.userDisplayName }}
       </span>
     </div>
     <img
