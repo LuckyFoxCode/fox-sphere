@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { IconRank } from '@/assets/icons';
 import type { ActivePokemon } from '@/composables';
 import { computed } from 'vue';
 
@@ -23,26 +24,34 @@ const roleBorderClass = computed(() => {
 
 <template>
   <div
-    class="absolute bottom-0 flex flex-col items-center gap-y-1"
+    class="absolute bottom-0 flex h-full flex-col items-center justify-between"
     :style="{
       left: `${activePokemon.currentX}vw`,
       transition: activePokemon.isWalking ? `left ${activePokemon.moveDuration}s linear` : 'none',
     }"
   >
     <div
-      class="bg-line mb-1 flex gap-x-1 rounded-md border-l-4 px-2 py-1"
+      class="bg-line/60 flex gap-x-1 rounded-md border-b-2 py-0.5 pr-2 pl-0.5"
       :style="{ borderColor: `${roleBorderClass}` }"
     >
-      <span
-        class="bg-text-second/40 text-text-main flex size-5 items-center justify-center rounded-full text-xs"
-        >{{ activePokemon.userLvl }}</span
-      >
-      <span
-        class="text-sm whitespace-nowrap"
-        :style="{ color: activePokemon.userColor }"
-      >
-        {{ activePokemon.userDisplayName }}
-      </span>
+      <div class="relative flex size-10 items-center justify-center">
+        <IconRank class="size-9" />
+        <span class="text-text-main absolute top-1/2 left-1/2 -translate-1/2 text-sm font-medium">
+          {{ activePokemon.userLvl }}
+        </span>
+      </div>
+      <div class="flex flex-col items-center leading-none">
+        <span
+          class="text-base font-medium tracking-wide whitespace-nowrap"
+          :style="{ color: activePokemon.userColor }"
+        >
+          {{ activePokemon.userDisplayName }}
+        </span>
+        <span
+          class="bg-linear-to-r from-amber-400 to-yellow-400 bg-clip-text text-xs font-medium tracking-wider text-transparent uppercase"
+          >newbie</span
+        >
+      </div>
     </div>
     <img
       :src="activePokemon.spriteUrl"
