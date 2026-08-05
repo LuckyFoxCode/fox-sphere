@@ -2,6 +2,7 @@
 import { IconRank } from '@/assets/icons';
 import type { ActivePokemon } from '@/composables';
 import { computed } from 'vue';
+import { getRankConfigByLevel } from '../constants';
 
 const props = defineProps<{ activePokemon: ActivePokemon }>();
 
@@ -20,6 +21,10 @@ const roleBorderClass = computed(() => {
 
   return `${borderColor}`;
 });
+
+const currentRank = computed(() =>
+  getRankConfigByLevel(props.activePokemon.userLvl, props.activePokemon.isBroadcaster),
+);
 </script>
 
 <template>
@@ -31,26 +36,28 @@ const roleBorderClass = computed(() => {
     }"
   >
     <div
-      class="bg-line/60 flex gap-x-1 rounded-md border-b-2 py-0.5 pr-2 pl-0.5"
+      class="bg-line/25 flex items-center gap-x-1 rounded-md border-x-2 pr-2 pl-1"
       :style="{ borderColor: `${roleBorderClass}` }"
     >
-      <div class="relative flex size-10 items-center justify-center">
+      <div class="relative flex items-center justify-center">
         <IconRank class="size-9" />
         <span class="text-text-main absolute top-1/2 left-1/2 -translate-1/2 text-sm font-medium">
           {{ activePokemon.userLvl }}
         </span>
       </div>
-      <div class="flex flex-col items-center leading-none">
+      <div class="flex h-full flex-col items-center justify-around leading-none">
         <span
-          class="text-base font-medium tracking-wide whitespace-nowrap"
+          class="text-[16px] font-medium tracking-wide whitespace-nowrap"
           :style="{ color: activePokemon.userColor }"
         >
           {{ activePokemon.userDisplayName }}
         </span>
         <span
-          class="bg-linear-to-r from-amber-400 to-yellow-400 bg-clip-text text-xs font-medium tracking-wider text-transparent uppercase"
-          >newbie</span
+          class="bg-linear-to-r from-[#FF8D28] via-[#B48155] to-[#FFCC00] bg-clip-text text-[14px] font-medium tracking-wide text-transparent uppercase"
+          :style="{ backgroundImage: currentRank?.gradient }"
         >
+          {{ currentRank?.rankTitle }}
+        </span>
       </div>
     </div>
     <img
