@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { TwitchEmote } from '@/components/ui';
+import { parseTwitchEmotes } from '@/utils/twitch';
 import type { TwitchChatMessagePayload } from '@fox-sphere/types';
 import { computed } from 'vue';
-import { parseTwitchEmotes } from '../utils';
-import TwitchEmote from './TwitchEmote.vue';
 
 const props = defineProps<{
   message: TwitchChatMessagePayload;
@@ -48,6 +48,7 @@ const tokens = computed(() => parseTwitchEmotes(props.message.text, props.messag
           v-else
           :url="token.url"
           :name="token.name"
+          :size="32"
         />
       </template>
     </p>

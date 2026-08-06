@@ -20,9 +20,27 @@ export interface ActivePokemon extends Omit<PokemonAssignedPayload, 'pokemonId'>
   isSubscriber?: boolean;
   isBroadcaster?: boolean;
   isBot?: boolean;
+  message?: string;
+  messageEmotes?: TwitchChatMessagePayload['emotes'];
+  messageTimeoutId?: ReturnType<typeof setTimeout>;
 }
 
 const POKEMON_TTL = 5 * 60 * 1000;
+const MESSAGE_TTL = 8000;
+
+function setMessage(pokemon: ActivePokemon, data: TwitchChatMessagePayload) {
+  pokemon.message = data.text;
+  pokemon.messageEmotes = data.emotes;
+
+  if (pokemon.messageTimeoutId) {
+    clearTimeout(pokemon.messageTimeoutId);
+  }
+
+  pokemon.messageTimeoutId = setTimeout(() => {
+    pokemon.message = undefined;
+    pokemon.messageEmotes = undefined;
+  }, MESSAGE_TTL);
+}
 
 const activePokemons = ref(new Map<string, ActivePokemon>());
 
@@ -96,6 +114,7 @@ export function usePokemonOverlay() {
       existing.isFollower = data.isFollower;
       existing.isFounder = data.isFounder;
       existing.timeoutId = setTimeout(() => removePokemon(userId), POKEMON_TTL);
+      setMessage(existing, data);
       return;
     }
 
@@ -127,6 +146,7 @@ export function usePokemonOverlay() {
 
     activePokemons.value.set(userId, newPokemon);
 
+    setMessage(activePokemons.value.get(userId)!, data);
     startRandomWalking(userId);
   };
 
@@ -135,6 +155,9 @@ export function usePokemonOverlay() {
 
     if (existing) {
       clearTimeout(existing.timeoutId);
+      if (existing.messageTimeoutId) {
+        clearTimeout(existing.messageTimeoutId);
+      }
       if (existing.walkTimeoutId) {
         clearInterval(existing.walkTimeoutId);
       }
