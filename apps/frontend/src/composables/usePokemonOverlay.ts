@@ -85,12 +85,17 @@ export function usePokemonOverlay() {
 
     if (existing) {
       clearTimeout(existing.timeoutId);
-
-      const newTimeoutId = setTimeout(() => {
-        removePokemon(userId);
-      }, POKEMON_TTL);
-
-      existing.timeoutId = newTimeoutId;
+      existing.userLvl = data.userLvl;
+      existing.userDisplayName = data.displayName;
+      existing.userColor = data.color;
+      existing.isMod = data.isMod;
+      existing.isSubscriber = data.isSubscriber;
+      existing.isVip = data.isVip || data.isPermanentVip;
+      existing.isBroadcaster = data.isBroadcaster;
+      existing.isBot = data.isBot;
+      existing.isFollower = data.isFollower;
+      existing.isFounder = data.isFounder;
+      existing.timeoutId = setTimeout(() => removePokemon(userId), POKEMON_TTL);
       return;
     }
 

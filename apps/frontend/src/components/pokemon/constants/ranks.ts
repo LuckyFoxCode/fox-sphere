@@ -60,11 +60,7 @@ export const SPECIAL_RANKS = {
   },
 } as const satisfies Record<string, Omit<RankConfig, 'minLvl' | 'maxLvl'>>;
 
-export const getRankConfigByLevel = (
-  level?: number,
-  isBroadcaster?: boolean,
-  isBot?: boolean,
-) => {
+export const getRankConfigByLevel = (level?: number, isBroadcaster?: boolean, isBot?: boolean) => {
   if (isBroadcaster) {
     return SPECIAL_RANKS.BROADCASTER;
   }

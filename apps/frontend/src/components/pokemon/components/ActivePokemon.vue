@@ -40,11 +40,11 @@ const currentRank = computed(() =>
     }"
   >
     <div
-      class="bg-line/25 flex items-center gap-x-1 rounded-md border-x-2 pr-2 pl-1"
+      class="bg-line/15 flex items-center gap-x-1 rounded-md border-x-2 pr-2 pl-1"
       :style="{ borderColor: `${roleBorderClass}` }"
     >
-      <div class="relative flex items-center justify-center">
-        <IconRank class="size-9" />
+      <div class="relative flex size-9 items-center justify-center">
+        <IconRank class="size-8" />
         <span class="text-text-main absolute top-1/2 left-1/2 -translate-1/2 text-sm font-medium">
           <IconStar
             v-if="activePokemon.isBroadcaster"
@@ -60,7 +60,7 @@ const currentRank = computed(() =>
       </div>
       <div class="flex h-full flex-col items-center justify-around leading-none">
         <span
-          class="text-[16px] font-medium tracking-wide whitespace-nowrap"
+          class="text-[16px] font-semibold tracking-wide whitespace-nowrap"
           :style="{ color: activePokemon.userColor }"
         >
           {{ activePokemon.userDisplayName }}
