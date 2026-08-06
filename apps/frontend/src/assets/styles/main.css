@@ -79,17 +79,45 @@
   .zoom-in-enter-active,
   .zoom-in-leave-active {
     transition:
-      opacity 0.7s,
-      transform 0.7s ease-in-out;
+      opacity 0.7s ease,
+      transform 0.7s ease;
   }
-  .zoom-in-enter-from,
-  .zoom-in-leave-to {
+
+  .zoom-in-enter-from {
     opacity: 0;
-    transform: scale(0.8);
+    transform: scale(0.85);
   }
+
   .zoom-in-enter-to,
   .zoom-in-leave-from {
     opacity: 1;
     transform: scale(1);
+  }
+
+  .zoom-in-leave-to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.95);
+  }
+
+  .bubble-fade-enter-active {
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .bubble-fade-leave-active {
+    transition:
+      opacity 0.4s ease,
+      transform 0.4s ease;
+  }
+
+  .bubble-fade-enter-from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.9);
+  }
+
+  .bubble-fade-leave-to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.95);
   }
 }

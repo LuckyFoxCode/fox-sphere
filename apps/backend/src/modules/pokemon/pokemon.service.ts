@@ -67,8 +67,8 @@ export class PokemonService {
     const newPokemon = await prisma.userPokemon.create({
       data: {
         userId,
-        pokemonId: randomTemplate.id,
-        speciesName: randomTemplate.name,
+        pokemonId: randomTemplate.pokemonId,
+        speciesName: randomTemplate.speciesName,
         spriteUrl: randomTemplate.spriteUrl,
         lvl: 1,
         xp: 0,
