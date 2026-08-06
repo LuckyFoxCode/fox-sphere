@@ -1,5 +1,6 @@
 import { pathToFileURL } from "url";
 import { LotteryService } from "./modules/lottery";
+import { PokemonService } from "./modules/pokemon";
 import { StreamService } from "./modules/stream";
 import { ChatbotService } from "./modules/twitch/chatbot.service";
 import { TwitchEventSubClient } from "./modules/twitch/eventsub.client";
@@ -20,6 +21,7 @@ export async function bootstrap() {
 
   const twitchConfig: TwitchConfig = config.twitch;
 
+  const pokemonService = new PokemonService();
   const streamService = new StreamService();
   const tokenService = new TokenService();
   const lotteryService = new LotteryService(twitchConfig);
@@ -70,6 +72,9 @@ export async function bootstrap() {
       rewardTitle: data.rewardTitle,
     });
   });
+
+  await pokemonService.init();
+  await pokemonService.asignPokemonToExistingUsersWithoutOne();
 
   globalEventBus.on("chat:message", async (data) => {
     Logger.debug(
@@ -122,6 +127,14 @@ export async function bootstrap() {
       ".𖥔 ݁ ˖ִ🛸༄˖°. Lottery finished event captured, forwarding to Socket.io via Backend!",
     );
     await forwardEventToBackend("lottery:finished", data);
+  });
+
+  globalEventBus.on("pokemon:assigned", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding pokemon:assigned to overlay for: ${data.username}`,
+    );
+    await forwardEventToBackend("pokemon:assigned", data);
   });
 
   globalEventBus.on("stream:level-up", async (data) => {

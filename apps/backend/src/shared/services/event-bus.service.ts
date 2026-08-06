@@ -6,6 +6,7 @@ import {
   LotteryTicketEarnedPayload,
   LotteryUserDto,
   LotteryWinnerDrawnPayload,
+  PokemonAssignedPayload,
   StreamGetSystemStatePayload,
   StreamLevelUpPayload,
   StreamSystemStateResponse,
@@ -35,6 +36,7 @@ interface AppEvents {
   };
   "lottery:winner-drawn": LotteryWinnerDrawnPayload;
   "lottery:finished": LotteryFinishedPayload;
+  "pokemon:assigned": PokemonAssignedPayload;
   "stream:xp-updated": StreamXpUpdatePayload;
   "stream:level-up": StreamLevelUpPayload;
   "stream:get-system-state": {

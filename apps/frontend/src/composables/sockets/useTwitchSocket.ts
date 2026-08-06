@@ -8,6 +8,7 @@ import {
   type TwitchTimerPayload,
 } from '@fox-sphere/types';
 import { ref, watch } from 'vue';
+import { usePokemonOverlay } from '../usePokemonOverlay';
 import { useSound } from '../useSound';
 import { useTimer } from '../useTimer';
 import type { TwitchEventType, WidgetSocket } from './types';
@@ -17,6 +18,7 @@ const { currentStatus: currentEventType, setStatusWithTimeout } =
   useWidgetTimer<TwitchEventType>('idle');
 const { playSound } = useSound();
 const { timeDigits, timeLeft, startTimer, resetTimer } = useTimer();
+const { activePokemons, handlePokemonMessage } = usePokemonOverlay();
 
 const isTimerActive = ref(false);
 
@@ -92,7 +94,10 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
   };
 
   if (!isSocketInitialized) {
-    socketInstance.on('chat:message', handleChatMessage);
+    socketInstance.on('chat:message', (data) => {
+      handleChatMessage(data);
+      handlePokemonMessage(data);
+    });
     socketInstance.on('twitch:add-vip', handleAddVip);
     socketInstance.on('twitch:follow', handleFollow);
     socketInstance.on('twitch:raid', handleRaid);
@@ -112,6 +117,7 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
 
   return {
     addVip,
+    activePokemons,
     currentEventType,
     isTimerActive,
     follow,

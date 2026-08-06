@@ -1,3 +1,4 @@
+import { PokemonPoolItem } from "@fox-sphere/types";
 import { User } from "../../generated/prisma/client";
 import { config } from "../../shared/config";
 import { AppError } from "../../shared/errors";
@@ -13,6 +14,7 @@ export class UserService {
   private xpCooldownCache = new Map<string, number>();
   private lotteryCooldownCache = new Map<string, number>();
   private coinsCache = new Map<string, { coins: number; createdAt: number }>();
+  private pokemonCache = new Map<string, PokemonPoolItem | null>();
 
   constructor(
     private lotteryService: LotteryService,
@@ -275,8 +277,58 @@ export class UserService {
     return currentCoins;
   }
 
+  public async getUserWithPokemon(twitchId: string) {
+    let pokemonData: PokemonPoolItem | null | undefined;
+
+    const hasPokemonInCache = this.pokemonCache.has(twitchId);
+
+    if (hasPokemonInCache) {
+      pokemonData = this.pokemonCache.get(twitchId);
+    }
+
+    const userWithPokemon = await prisma.user.findUnique({
+      where: { twitchId },
+      select: {
+        lvl: true,
+        isPermanentVip: true,
+        isFounder: true,
+        pokemon: !hasPokemonInCache
+          ? {
+              select: {
+                pokemonId: true,
+                speciesName: true,
+                spriteUrl: true,
+              },
+            }
+          : false,
+      },
+    });
+
+    if (!userWithPokemon) return null;
+
+    if (!hasPokemonInCache) {
+      pokemonData = userWithPokemon.pokemon
+        ? {
+            pokemonId: userWithPokemon.pokemon.pokemonId,
+            speciesName: userWithPokemon.pokemon.speciesName,
+            spriteUrl: userWithPokemon.pokemon.spriteUrl,
+          }
+        : null;
+
+      this.pokemonCache.set(twitchId, pokemonData);
+    }
+
+    return {
+      lvl: userWithPokemon.lvl,
+      isPermanentVip: userWithPokemon.isPermanentVip,
+      isFounder: userWithPokemon.isFounder,
+      pokemon: pokemonData ?? undefined,
+    };
+  }
+
   public clearCache(): void {
     this.verifiedUsersCache.clear();
+    this.pokemonCache.clear();
     Logger.info("UserService", "User cache cleared successfully🧹");
   }
 }
