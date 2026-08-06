@@ -5,11 +5,12 @@ import { computed } from 'vue';
 import LevelBadge from './LevelBadge.vue';
 import XpProgressBar from './XpProgressBar.vue';
 
-const { level, maxXp, newXp, isLoading } = useStreamSocket(socket);
+const { level, maxXp, newXp, startXp, isLoading } = useStreamSocket(socket);
 
 const progressPercentage = computed(() => {
-  if (!maxXp.value || maxXp.value === 0) return 0;
-  const percentage = (newXp.value / maxXp.value) * 100;
+  const levelRange = maxXp.value - startXp.value;
+  if (!levelRange) return 0;
+  const percentage = ((newXp.value - startXp.value) / levelRange) * 100;
   return Math.min(Math.max(percentage, 0), 100);
 });
 </script>

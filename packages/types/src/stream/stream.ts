@@ -3,6 +3,7 @@ export interface StreamXpUpdatePayload {
   lvl: number;
   newXp: number;
   maxXp: number;
+  startXp: number;
 }
 
 export type StreamSystemStateResponse = StreamXpUpdatePayload;

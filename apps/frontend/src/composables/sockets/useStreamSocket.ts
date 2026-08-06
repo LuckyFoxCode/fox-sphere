@@ -8,6 +8,7 @@ const { currentStatus: currentEventType } = useWidgetTimer<StreamEventType>('idl
 const level = ref(1);
 const newXp = ref(0);
 const maxXp = ref(0);
+const startXp = ref(0);
 const isLoading = ref(true);
 
 let isSocketInitialized = false;
@@ -17,6 +18,7 @@ export function useStreamSocket(socketInstance: WidgetSocket) {
     level.value = data.lvl;
     newXp.value = data.newXp;
     maxXp.value = data.maxXp;
+    startXp.value = data.startXp;
     currentEventType.value = 'xp-update';
   };
 
@@ -25,6 +27,7 @@ export function useStreamSocket(socketInstance: WidgetSocket) {
       level.value = response.lvl;
       newXp.value = response.newXp;
       maxXp.value = response.maxXp;
+      startXp.value = response.startXp;
       isLoading.value = false;
     });
   };
@@ -45,6 +48,7 @@ export function useStreamSocket(socketInstance: WidgetSocket) {
     level,
     newXp,
     maxXp,
+    startXp,
     isLoading,
   };
 }

@@ -16,6 +16,10 @@ export async function getStreamStatePrepared() {
       lvl: currentLvl,
       newXp: state?.streamCurrentXp || 0,
       maxXp: nextLevelThreshold,
+      startXp: getXpThresholdForLevel(
+        currentLvl - 1,
+        XP_CONFIG.BASE_STREAM_STEP,
+      ),
     };
   } catch (error) {
     Logger.error(
@@ -27,6 +31,7 @@ export async function getStreamStatePrepared() {
       lvl: 1,
       newXp: 0,
       maxXp: XP_CONFIG.BASE_STREAM_STEP,
+      startXp: 0,
     };
   }
 }

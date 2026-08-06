@@ -47,6 +47,10 @@ export class StreamService {
       newXp,
       lvl: currentLvl,
       maxXp: nextLevelThreshold,
+      startXp: getXpThresholdForLevel(
+        currentLvl - 1,
+        XP_CONFIG.BASE_STREAM_STEP,
+      ),
     });
 
     if (hasLeveledUp) {
