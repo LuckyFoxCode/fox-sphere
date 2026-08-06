@@ -49,14 +49,28 @@ export const TITLE_CONFIG: readonly RankConfig[] = RAW_TITLE_CONFIG.map((item) =
   gradient: RANK_TIERS[item.tier].gradient,
 }));
 
-export const BROADCASTER_RANK: Omit<RankConfig, 'minLvl' | 'maxLvl'> = {
-  rankTitle: 'GAME MASTER',
-  gradient: 'linear-gradient(to right, #DC2626, #FEF08A, #DC2626)',
-};
+export const SPECIAL_RANKS = {
+  BROADCASTER: {
+    rankTitle: 'GAME MASTER',
+    gradient: 'linear-gradient(to right, #DC2626, #FEF08A, #DC2626)',
+  },
+  BOT: {
+    rankTitle: 'SYSTEM BOT',
+    gradient: 'linear-gradient(to right, #94A3B8, #475569, #94A3B8)',
+  },
+} as const satisfies Record<string, Omit<RankConfig, 'minLvl' | 'maxLvl'>>;
 
-export const getRankConfigByLevel = (level?: number, isBroadcaster?: boolean) => {
+export const getRankConfigByLevel = (
+  level?: number,
+  isBroadcaster?: boolean,
+  isBot?: boolean,
+) => {
   if (isBroadcaster) {
-    return BROADCASTER_RANK;
+    return SPECIAL_RANKS.BROADCASTER;
+  }
+
+  if (isBot) {
+    return SPECIAL_RANKS.BOT;
   }
 
   const currentLevel = level ?? 1;

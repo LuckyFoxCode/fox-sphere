@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconRank } from '@/assets/icons';
+import { IconBot, IconRank, IconStar } from '@/assets/icons';
 import type { ActivePokemon } from '@/composables';
 import { computed } from 'vue';
 import { getRankConfigByLevel } from '../constants';
@@ -23,7 +23,11 @@ const roleBorderClass = computed(() => {
 });
 
 const currentRank = computed(() =>
-  getRankConfigByLevel(props.activePokemon.userLvl, props.activePokemon.isBroadcaster),
+  getRankConfigByLevel(
+    props.activePokemon.userLvl,
+    props.activePokemon.isBroadcaster,
+    props.activePokemon.isBot,
+  ),
 );
 </script>
 
@@ -42,7 +46,16 @@ const currentRank = computed(() =>
       <div class="relative flex items-center justify-center">
         <IconRank class="size-9" />
         <span class="text-text-main absolute top-1/2 left-1/2 -translate-1/2 text-sm font-medium">
-          {{ activePokemon.userLvl }}
+          <IconStar
+            v-if="activePokemon.isBroadcaster"
+            class="size-5"
+            :style="{ color: activePokemon.userColor }"
+          />
+          <IconBot
+            v-else-if="activePokemon.isBot"
+            class="text-event-purple size-5"
+          />
+          <span v-else>{{ activePokemon.userLvl }}</span>
         </span>
       </div>
       <div class="flex h-full flex-col items-center justify-around leading-none">

@@ -19,6 +19,7 @@ export interface ActivePokemon extends Omit<PokemonAssignedPayload, 'pokemonId'>
   isFounder?: boolean;
   isSubscriber?: boolean;
   isBroadcaster?: boolean;
+  isBot?: boolean;
 }
 
 const POKEMON_TTL = 5 * 60 * 1000;
@@ -108,6 +109,7 @@ export function usePokemonOverlay() {
       isSubscriber: data.isSubscriber,
       isVip: data.isVip || data.isPermanentVip,
       isBroadcaster: data.isBroadcaster,
+      isBot: data.isBot,
       speciesName: pokemon.speciesName,
       spriteUrl: pokemon.spriteUrl,
       currentX: initialX,

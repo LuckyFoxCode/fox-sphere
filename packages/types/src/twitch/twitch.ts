@@ -51,6 +51,7 @@ export interface TwitchChatMessagePayload {
   isVip: boolean;
   isPermanentVip: boolean;
   isBroadcaster: boolean;
+  isBot: boolean;
 }
 
 export interface TwitchServerToClientEvents {

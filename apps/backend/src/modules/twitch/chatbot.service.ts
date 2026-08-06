@@ -434,6 +434,7 @@ export class ChatbotService {
           isSubscriber: msg.userInfo.isSubscriber,
           isVip: msg.userInfo.isVip,
           isBroadcaster: msg.userInfo.isBroadcaster,
+          isBot: msg.userInfo.userId === config.twitch.botId,
           isPermanentVip: userData?.isPermanentVip ?? false,
           isFounder: userData?.isFounder ?? false,
         };
