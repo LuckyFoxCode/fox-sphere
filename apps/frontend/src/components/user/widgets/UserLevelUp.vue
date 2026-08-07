@@ -1,24 +1,60 @@
 <script setup lang="ts">
-import { WidgetFrame } from '@/components/ui/widget-frame';
+import { IconDna, IconLightning, IconPokeball, IconUser } from '@/assets/icons';
+import { PokemonCard } from '@/components/ui/pokemon-card';
 import type { UserLevelUpPayload } from '@fox-sphere/types';
 
 defineProps<{ levelUp: UserLevelUpPayload }>();
 </script>
 
 <template>
-  <WidgetFrame variant="amber">
-    <div class="flex flex-col items-center gap-y-5 py-2">
-      <p class="text-xl">
-        ⚡
-        <span class="text-event-amber text-2xl font-semibold">{{ levelUp.username }}</span> leveled
-        up to
-        <span
-          class="bg-event-purple/20 border-event-purple text-event-amber/85 rounded-md border-2 px-2 py-1 font-medium"
-          >Level {{ levelUp.newLevel }}!</span
+  <PokemonCard
+    variants="rose"
+    :sprite-url="levelUp.pokemon!.spriteUrl"
+    :species-name="levelUp.pokemon!.speciesName"
+  >
+    <div class="ml-8 flex w-62.5 flex-col gap-y-2">
+      <div class="flex flex-col">
+        <div class="text-text-second flex items-center gap-x-1.5 text-sm">
+          <IconUser class="text-event-blue size-4 shrink-0" />
+          <span class="capitalize">trainer:</span>
+          <span
+            class="text-event-amber text-base font-bold tracking-wide drop-shadow-[0_0_6px_var(--color-event-amber)]/30"
+          >
+            {{ levelUp.username }} - [ lvl: {{ levelUp.newLevel }} ]
+          </span>
+        </div>
+      </div>
+      <div class="flex flex-col">
+        <div class="text-text-second flex items-center gap-x-1.5 text-sm">
+          <IconPokeball class="text-event-blue size-4 shrink-0" />
+          <span class="capitalize">pokemon:</span>
+          <span
+            class="text-event-amber text-base font-bold tracking-wide uppercase drop-shadow-[0_0_6px_var(--color-event-amber)]/30"
+          >
+            {{ levelUp.pokemon?.speciesName }}
+          </span>
+        </div>
+
+        <div class="flex items-center gap-x-1.5 text-sm">
+          <IconLightning class="text-event-blue size-4 shrink-0" />
+          <span class="truncate font-semibold">
+            LVL: {{ levelUp.pokemon?.lvl }} [ XP: {{ levelUp.pokemon?.xp }} ]
+          </span>
+        </div>
+
+        <div
+          v-if="!levelUp.pokemon?.isReadyToEvolve"
+          class="flex items-center gap-x-1.5 text-sm"
         >
-        ⚡
-      </p>
+          <IconDna class="text-event-blue size-4 shrink-0" />
+          <span class="text-text-second truncate font-semibold uppercase"> status: </span>
+          <span
+            class="bg-event-blue/20 border-event-blue text-lime inline-flex rounded-md border-2 px-1 py-1.5 font-medium capitalize"
+            >evolve ready</span
+          >
+        </div>
+      </div>
       <span class="text-text-main/75 text-lg">Look who's getting powerful! 🚀</span>
     </div>
-  </WidgetFrame>
+  </PokemonCard>
 </template>
