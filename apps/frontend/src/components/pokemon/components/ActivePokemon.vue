@@ -48,7 +48,7 @@ const bubbleTokens = computed(() => {
 
 <template>
   <div
-    class="fixed bottom-0 flex h-full flex-col items-center justify-between"
+    class="fixed bottom-0 flex h-full -translate-x-1/2 flex-col items-center justify-between"
     :style="{
       left: `${activePokemon.currentX}vw`,
       transition: activePokemon.isWalking ? `left ${activePokemon.moveDuration}s linear` : 'none',

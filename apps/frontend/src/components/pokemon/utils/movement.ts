@@ -5,7 +5,7 @@ export interface MovementTarget {
   actualDistance: number;
 }
 
-const MIN_X = 1;
+const MIN_X = 5;
 const MAX_X = 95;
 const SPEED_FACTOR = 0.45;
 
