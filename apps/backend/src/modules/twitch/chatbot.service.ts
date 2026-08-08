@@ -2,6 +2,7 @@ import { LotteryUserDto, TwitchChatMessagePayload } from "@fox-sphere/types";
 import { ApiClient } from "@twurple/api";
 import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
+import { randomUUID } from "node:crypto";
 import { config } from "../../shared/config";
 import { prisma } from "../../shared/lib";
 import { globalEventBus } from "../../shared/services/event-bus.service";
@@ -30,6 +31,11 @@ export class ChatbotService {
   private badgeService!: TwitchBadgeService;
   private commandRegistry: CommandRegisry;
   private announcementService: AnnouncementService;
+  private botUsername = "";
+  private botDisplayName = "";
+  private botColor = "#94A3B8";
+  private isBotMod = false;
+  private botBadges: string[] = [];
 
   private rewardHandlers = new Map<string, RewardHandler>();
 
@@ -64,6 +70,7 @@ export class ChatbotService {
 
     try {
       await this.badgeService.init();
+      await this.initBotIdentity();
 
       this.chatClient = new ChatClient({
         authProvider: this.authProvider,
@@ -96,6 +103,60 @@ export class ChatbotService {
   public async stop(): Promise<void> {
     if (this.chatClient) {
       await this.chatClient.quit();
+    }
+  }
+
+  private async initBotIdentity(): Promise<void> {
+    try {
+      const botUser = await this.apiClient.asUser(config.twitch.botId, (ctx) =>
+        ctx.users.getUserById(config.twitch.botId),
+      );
+
+      if (!botUser) {
+        Logger.error("ChatbotService", "Bot user not found on Twitch");
+        return;
+      }
+
+      this.botUsername = botUser.name;
+      this.botDisplayName = botUser.displayName;
+
+      await this.userService.findOrCreateUser(
+        config.twitch.botId,
+        this.botUsername,
+      );
+
+      try {
+        this.botColor =
+          (await this.apiClient.chat.getColorForUser(config.twitch.botId)) ??
+          "#94A3B8";
+
+        const moderators = await this.apiClient.moderation.getModerators(
+          this.twitchConfig.userId,
+          { userId: config.twitch.botId },
+        );
+        this.isBotMod = moderators.data.length > 0;
+
+        const rawBadges: Record<string, string> = {};
+        if (this.isBotMod) rawBadges.moderator = "1";
+        this.botBadges = this.badgeService.getBadgeUrls(rawBadges);
+      } catch (error) {
+        Logger.error(
+          "ChatbotService",
+          "Failed to fetch bot chat identity details, using defaults",
+          error,
+        );
+      }
+
+      Logger.info(
+        "ChatbotService",
+        `Bot identity ready: ${this.botDisplayName}`,
+      );
+    } catch (error) {
+      Logger.error(
+        "ChatbotService",
+        "Failed to initialize bot identity",
+        error,
+      );
     }
   }
 
@@ -449,6 +510,45 @@ export class ChatbotService {
   public async sendMessage(channel: string, message: string): Promise<void> {
     if (this.chatClient) {
       await this.chatClient.say(channel, message);
+      await this.emitBotMessage(message);
+    }
+  }
+
+  private async emitBotMessage(message: string): Promise<void> {
+    try {
+      const userData = await this.userService.getUserWithPokemon(
+        config.twitch.botId,
+      );
+
+      const payload: TwitchChatMessagePayload = {
+        id: randomUUID(),
+        userId: config.twitch.botId,
+        username: this.botUsername,
+        displayName: this.botDisplayName || this.botUsername,
+        color: this.botColor,
+        text: message,
+        badges: this.botBadges,
+        emotes: {},
+        timestamp: Date.now(),
+        pokemon: userData?.pokemon,
+        userLvl: userData?.lvl ?? 1,
+        isMod: this.isBotMod,
+        isFollower: false,
+        isFounder: false,
+        isSubscriber: false,
+        isVip: false,
+        isPermanentVip: false,
+        isBroadcaster: false,
+        isBot: true,
+      };
+
+      globalEventBus.emit("chat:message", payload);
+    } catch (error) {
+      Logger.error(
+        "ChatbotService",
+        "Failed to emit bot message to overlay",
+        error,
+      );
     }
   }
 
