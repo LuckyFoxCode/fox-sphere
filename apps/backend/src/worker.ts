@@ -47,6 +47,10 @@ export async function bootstrap() {
 
   // Запуск сервисов
   await chatbotService.start();
+
+  // Бот регистрируется в БД внутри start() — даём ему покемона.
+  await pokemonService.asignPokemonToExistingUsersWithoutOne();
+
   await eventSubClient.start();
 
   // Подписки на события

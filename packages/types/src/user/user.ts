@@ -8,6 +8,15 @@ export interface UserLevelUpPayload {
   userId: string;
   username: string;
   newLevel: number;
+  pokemon?: UserPokemonPayload;
+}
+
+export interface UserPokemonPayload {
+  speciesName: string;
+  spriteUrl: string;
+  lvl: number;
+  xp: number;
+  isReadyToEvolve: boolean;
 }
 
 export interface UserServerToClientEvents {

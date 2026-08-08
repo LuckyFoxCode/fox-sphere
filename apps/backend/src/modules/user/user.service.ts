@@ -216,11 +216,27 @@ export class UserService {
         data: {
           lvl: currentLvl,
         },
+        select: {
+          twitchId: true,
+          username: true,
+
+          pokemon: {
+            select: {
+              speciesName: true,
+              spriteUrl: true,
+              lvl: true,
+              xp: true,
+              isReadyToEvolve: true,
+            },
+          },
+        },
       });
+
       globalEventBus.emit("user:level-up", {
         userId: freshUserData.twitchId,
         username: freshUserData.username,
         newLevel: currentLvl,
+        pokemon: freshUserData.pokemon ?? undefined,
       });
     }
   }
