@@ -1,1 +1,1 @@
-export { default as TwitchWidgetEventsHub } from './TwitchWidgetEventsHub.vue';
+export { default as WidgetEventsHub } from './WidgetEventsHub.vue';
