@@ -54,6 +54,7 @@ export interface TwitchChatMessagePayload {
   isPermanentVip: boolean;
   isBroadcaster: boolean;
   isBot: boolean;
+  isHighlight: boolean;
   isAnnouncement?: boolean;
   announceColor?: TwitchAnnouncementColor;
 }

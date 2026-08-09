@@ -507,6 +507,7 @@ export class ChatbotService {
           isBot: msg.userInfo.userId === config.twitch.botId,
           isPermanentVip: userData?.isPermanentVip ?? false,
           isFounder: userData?.isFounder ?? false,
+          isHighlight: msg.isHighlight,
         };
 
         globalEventBus.emit("chat:message", chatMessagePayload);
@@ -557,6 +558,7 @@ export class ChatbotService {
         isBot: true,
         isAnnouncement: announce?.isAnnouncement,
         announceColor: announce?.announceColor,
+        isHighlight: false,
       };
 
       globalEventBus.emit("chat:message", payload);

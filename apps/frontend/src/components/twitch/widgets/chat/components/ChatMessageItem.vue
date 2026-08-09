@@ -21,7 +21,9 @@ const announceStyle = computed(() =>
     :style="
       announceStyle
         ? { borderColor: announceStyle.borderColor, backgroundColor: announceStyle.backgroundColor }
-        : { borderLeftColor: message.color }
+        : message.isHighlight
+          ? { borderColor: message.color, borderLeftColor: message.color }
+          : { borderLeftColor: message.color }
     "
   >
     <div class="flex items-center gap-1.5 font-semibold">
