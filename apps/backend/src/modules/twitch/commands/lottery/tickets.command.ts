@@ -9,7 +9,7 @@ import {
   TwitchCommand,
 } from "../command.interface";
 
-export class TicketsCommands implements TwitchCommand {
+export class TicketsCommand implements TwitchCommand {
   readonly name = "tickets";
   readonly alliases = ["розыгрыш"];
 
@@ -61,7 +61,7 @@ export class TicketsCommands implements TwitchCommand {
       await this.chatbotService.sendMessage(ctx.channel, message);
     } catch (error) {
       Logger.error(
-        "TicketsCommands",
+        "TicketsCommand",
         `💥 Failed to fetch lottery tickets or send message in channel ${ctx.channel}`,
         error,
       );

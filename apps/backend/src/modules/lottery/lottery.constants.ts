@@ -15,6 +15,14 @@ export const LOTTERY_MESSAGES = {
   TICKET_EARNED: (username: string) =>
     `🎉 @${username} earned enough weekly XP and received a Lottery Ticket! Good luck! 🎫✨`,
 
+  // Когда зритель уже получил билет
+  TICKET_ALREADY_EARNED: (username: string) =>
+    `🎫 @${username}, you already have your weekly Lottery Ticket! Sit back and relax. 🎉`,
+
+  // Прогресс зрителя к билету
+  TICKET_PROGRESS: (username: string, xp: number, threshold: number) =>
+    `💪 @${username}, you've earned ${xp}/${threshold} XP for the weekly VIP Lottery. ${threshold - xp} XP to go for your ticket! 🎟️`,
+
   // Одно четкое стартовое сообщение (вместо старых двух на разных языках)
   START_ANNOUNCEMENT:
     "🎰 Weekly Lottery Started! Spinning the Wheel of Fortune on overlay... 🎰",
