@@ -1,4 +1,8 @@
-import { LotteryUserDto, TwitchChatMessagePayload } from "@fox-sphere/types";
+import {
+  LotteryUserDto,
+  TwitchAnnouncementColor,
+  TwitchChatMessagePayload,
+} from "@fox-sphere/types";
 import { ApiClient } from "@twurple/api";
 import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
@@ -22,7 +26,7 @@ import {
   TwitchBadgeService,
 } from "./services";
 import { BOT_MESSAGES } from "./twitch.constants";
-import { AnnouncementColor, TwitchConfig } from "./twitch.types";
+import { TwitchConfig } from "./twitch.types";
 
 export class ChatbotService {
   private chatClient!: ChatClient;
@@ -58,6 +62,11 @@ export class ChatbotService {
     this.announcementService = new AnnouncementService(
       this.apiClient,
       this.twitchConfig,
+      (message, color) =>
+        this.emitBotMessage(message, {
+          isAnnouncement: true,
+          announceColor: color,
+        }),
     );
     this.badgeService = new TwitchBadgeService(
       this.apiClient,
@@ -498,6 +507,7 @@ export class ChatbotService {
           isBot: msg.userInfo.userId === config.twitch.botId,
           isPermanentVip: userData?.isPermanentVip ?? false,
           isFounder: userData?.isFounder ?? false,
+          isHighlight: msg.isHighlight,
         };
 
         globalEventBus.emit("chat:message", chatMessagePayload);
@@ -514,7 +524,13 @@ export class ChatbotService {
     }
   }
 
-  private async emitBotMessage(message: string): Promise<void> {
+  private async emitBotMessage(
+    message: string,
+    announce?: {
+      isAnnouncement: boolean;
+      announceColor: TwitchAnnouncementColor;
+    },
+  ): Promise<void> {
     try {
       const userData = await this.userService.getUserWithPokemon(
         config.twitch.botId,
@@ -540,6 +556,9 @@ export class ChatbotService {
         isPermanentVip: false,
         isBroadcaster: false,
         isBot: true,
+        isAnnouncement: announce?.isAnnouncement,
+        announceColor: announce?.announceColor,
+        isHighlight: false,
       };
 
       globalEventBus.emit("chat:message", payload);
@@ -554,7 +573,7 @@ export class ChatbotService {
 
   public async sendAnnouncement(
     message: string,
-    color: AnnouncementColor = "blue",
+    color: TwitchAnnouncementColor = "blue",
   ): Promise<void> {
     try {
       await this.announcementService.enqueue(message, color);

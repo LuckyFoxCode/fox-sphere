@@ -13,7 +13,9 @@ defineProps<{ timer: TwitchTimerPayload; timeDigits: string[] }>();
       :is-shadow="false"
     >
       <div class="flex h-full w-full flex-col items-center">
-        <h4 class="text-xs capitalize">{{ timer.title }}</h4>
+        <h4 class="w-full truncate px-1 text-center text-base leading-none capitalize">
+          {{ timer.title }}
+        </h4>
         <div class="flex w-3/4 flex-1 items-center justify-center gap-x-2">
           <template
             v-for="(char, index) in timeDigits"
