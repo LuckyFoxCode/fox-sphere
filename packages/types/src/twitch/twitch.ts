@@ -1,6 +1,8 @@
 import { PokemonPoolItem } from "../pokemon/pokemon.js";
 import { WidgetVariant } from "./variants.js";
 
+export type TwitchAnnouncementColor = "blue" | "green" | "orange" | "purple";
+
 // Данные событий (Payloads)
 export interface TwitchAddVipPaylod {
   twitchId: string;
@@ -52,6 +54,9 @@ export interface TwitchChatMessagePayload {
   isPermanentVip: boolean;
   isBroadcaster: boolean;
   isBot: boolean;
+  isHighlight: boolean;
+  isAnnouncement?: boolean;
+  announceColor?: TwitchAnnouncementColor;
 }
 
 export interface TwitchServerToClientEvents {

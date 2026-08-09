@@ -14,7 +14,11 @@ import {
   StackCommand,
   TelegramCommand,
 } from "../commands/general";
-import { LotteryCommand, TicketsCommands } from "../commands/lottery";
+import {
+  LotteryCommand,
+  TicketCommand,
+  TicketsCommand,
+} from "../commands/lottery";
 import {
   AddVipCommand,
   RemoveVipCommand,
@@ -45,7 +49,8 @@ export class CommandRegisry {
       new ProjectCommand(this.chatbotService),
       new StackCommand(this.chatbotService),
       new TelegramCommand(this.chatbotService),
-      new TicketsCommands(this.chatbotService),
+      new TicketCommand(this.chatbotService),
+      new TicketsCommand(this.chatbotService),
       new TimerCommand(this.chatbotService),
       new TimerStopCommand(this.chatbotService),
       new AddVipCommand(this.chatbotService, this.userService, this.apiClient),
