@@ -13,15 +13,15 @@ export const LOTTERY_DELAYS = {
 export const LOTTERY_MESSAGES = {
   // Когда зритель набрал нужное количество XP в чате
   TICKET_EARNED: (username: string) =>
-    `🎉 @${username} earned enough weekly XP and received a Lottery Ticket! Good luck! 🎫✨`,
+    `🎉 @${username} earned enough weekly XP and received a VIP Lottery Ticket! Good luck! 🎫✨`,
 
   // Когда зритель уже получил билет
   TICKET_ALREADY_EARNED: (username: string) =>
-    `🎫 @${username}, you already have your weekly Lottery Ticket! Sit back and relax. 🎉`,
+    `🎫 @${username}, you already have your weekly VIP Lottery Ticket! Sit back and relax. 🎉`,
 
   // Прогресс зрителя к билету
   TICKET_PROGRESS: (username: string, xp: number, threshold: number) =>
-    `💪 @${username}, you've earned ${xp}/${threshold} XP for the weekly VIP Lottery. ${threshold - xp} XP to go for your ticket! 🎟️`,
+    `💪 @${username}, you've earned ${xp}/${threshold} XP for the weekly VIP Lottery. ${threshold - xp} XP to go for your VIP Lottery Ticket! 🎟️`,
 
   // Одно четкое стартовое сообщение (вместо старых двух на разных языках)
   START_ANNOUNCEMENT:
@@ -45,11 +45,15 @@ export const LOTTERY_MESSAGES = {
   LOTTERY_POSTPONED_NO_PARTICIPANTS:
     "⚠ No one managed to get a Lottery Ticket this week. The lottery is postponed! 💪",
 
+  // Если пока никто не набрал XP на билет
   NO_PARTICIPANTS_YET:
     "⚠ No one has earned a Lottery Ticket yet this week. Be the first! 💪",
 
+  // Краткая сводка по числу держателей билетов
   TOTAL_PARTICIPANTS: (count: number) =>
     `📊 Total VIP ticket holders this week: ${count} users.`,
+
+  // Полный список участников (при малом количестве)
   ALL_PARTICIPANTS: (usernames: string, count: number) =>
-    `🎟️ VIP lottery participants: ${count} people: ${usernames}. ✨ Earn 100 XP before the end of the week!`,
+    `🎟️ VIP lottery participants: ${count} people: ${usernames}. ✨ Earn ${LOTTERY_CONFIG.TICKET_XP_THRESHOLD} XP before the end of the week!`,
 } as const;
