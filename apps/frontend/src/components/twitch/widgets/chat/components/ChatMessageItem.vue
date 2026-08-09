@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { TwitchEmote } from '@/components/ui';
-import { parseTwitchEmotes } from '@/utils/twitch';
+import { getAnnounceStyle, parseTwitchEmotes } from '@/utils/twitch';
 import type { TwitchChatMessagePayload } from '@fox-sphere/types';
 import { computed } from 'vue';
 
@@ -9,12 +9,20 @@ const props = defineProps<{
 }>();
 
 const tokens = computed(() => parseTwitchEmotes(props.message.text, props.message.emotes));
+
+const announceStyle = computed(() =>
+  props.message.isAnnouncement ? getAnnounceStyle(props.message.announceColor ?? 'blue') : null,
+);
 </script>
 
 <template>
   <li
     class="bg-card/80 border-text-second/10 relative flex flex-col gap-1 rounded-r-xl border-2 border-l-4 p-2 text-sm shadow-sm backdrop-blur-md"
-    :style="{ borderLeftColor: message.color }"
+    :style="
+      announceStyle
+        ? { borderColor: announceStyle.borderColor, backgroundColor: announceStyle.backgroundColor }
+        : { borderLeftColor: message.color }
+    "
   >
     <div class="flex items-center gap-1.5 font-semibold">
       <div
@@ -29,6 +37,13 @@ const tokens = computed(() => parseTwitchEmotes(props.message.text, props.messag
           class="size-4 object-contain"
         />
       </div>
+      <span
+        v-if="message.isAnnouncement"
+        class="rounded-full border px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase"
+        :style="{ borderColor: announceStyle?.borderColor, color: announceStyle?.borderColor }"
+      >
+        Announcement
+      </span>
 
       <span
         :style="{ color: message.color }"

@@ -1,12 +1,13 @@
+import { TwitchAnnouncementColor } from "@fox-sphere/types";
 import { ApiClient } from "@twurple/api";
 import { config } from "../../../shared/config";
 import { Logger } from "../../../shared/services";
 import { COOLDOWNS } from "../twitch.constants";
-import { AnnouncementColor, TwitchConfig } from "../twitch.types";
+import { TwitchConfig } from "../twitch.types";
 
 interface QueuedAnnouncement {
   message: string;
-  color: AnnouncementColor;
+  color: TwitchAnnouncementColor;
 }
 
 export class AnnouncementService {
@@ -16,11 +17,15 @@ export class AnnouncementService {
   constructor(
     private apiClient: ApiClient,
     private twitchConfig: TwitchConfig,
+    private onAnnouncementSent?: (
+      message: string,
+      color: TwitchAnnouncementColor,
+    ) => void,
   ) {}
 
   public async enqueue(
     message: string,
-    color: AnnouncementColor = "blue",
+    color: TwitchAnnouncementColor = "blue",
   ): Promise<void> {
     this.announcementQueue.push({ message, color });
     Logger.debug(
@@ -51,6 +56,7 @@ export class AnnouncementService {
               `💤[DEV-MODE] Successfully sent announcement: "${current.message.substring(0, 50)}..."`,
             );
             await new Promise((resolve) => setTimeout(resolve, 200));
+            this.onAnnouncementSent?.(current.message, current.color);
           } else {
             await this.apiClient.asUser(
               this.twitchConfig.botId,
@@ -66,6 +72,7 @@ export class AnnouncementService {
               "AnnouncementService",
               `Successfully sent ${current.color} announcement: "${current.message.substring(0, 50)}..."`,
             );
+            this.onAnnouncementSent?.(current.message, current.color);
           }
         } catch (error) {
           Logger.error(
