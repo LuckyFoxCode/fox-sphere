@@ -60,10 +60,12 @@ config.twitch.clientId;
 ```
 
 New code reads `config`, never `process.env` directly. Four places in `shared/` still read
-it raw and are drift, not precedent - `lib/prisma.ts` and `services/logger.service.ts`
-check `DEBUG`, `middleware/error-handler.ts` and `services/logger.service.ts` check
-`NODE_ENV`. `config` already exposes both as `config.debug` and `config.nodeEnv`, so those
-four are straightforwardly convertible whenever someone is in the file.
+it raw and are drift, not precedent - `apps/backend/src/shared/lib/prisma.ts` and
+`apps/backend/src/shared/services/logger.service.ts` check `DEBUG`,
+`apps/backend/src/shared/middleware/error-handler.ts` and
+`apps/backend/src/shared/services/logger.service.ts` check `NODE_ENV`. `config` already
+exposes both as `config.debug` and `config.nodeEnv`, so those four are straightforwardly
+convertible whenever someone is in the file.
 
 Adding a required key to `config` means every entrypoint - and every future test - must
 supply it, so give a default unless the value genuinely must come from the environment.
