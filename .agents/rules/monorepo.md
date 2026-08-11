@@ -65,9 +65,11 @@ package by hand.
 
 ## Docker knows the member list
 
-`.docker/backend.Dockerfile` copies the root manifests plus each member's `package.json`
-individually before `pnpm install --frozen-lockfile`. **A new workspace member therefore
-needs a new `COPY` line there**, or the Docker build silently installs without it.
+`.docker/backend.Dockerfile` copies the root manifests plus one `package.json` per member
+**the backend build needs** - `apps/backend`, `packages/types`, `packages/shared-schemas` -
+before `pnpm install --frozen-lockfile`. `apps/frontend` is deliberately absent; the backend
+image never builds it. **A new member that the backend depends on therefore needs a new
+`COPY` line there**, or the Docker build silently installs without it.
 
 The image runs as the `node` user (uid 1000) deliberately: dev bind-mounts write
 `apps/backend/src/generated/` and `packages/*/dist` back to the host, and root-owned output
