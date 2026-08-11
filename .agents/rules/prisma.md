@@ -1,6 +1,6 @@
 ---
 name: prisma
-description: Prisma 7 conventions for fox-sphere - the single client, generate-before-typecheck, migration commands, query shape, and mapping ORM errors at the data boundary.
+description: Prisma 7 conventions specific to fox-sphere - the single client, generate-before-typecheck, the schema's traps, and mapping ORM errors at the data boundary.
 paths:
   - "apps/backend/prisma/**"
   - "apps/backend/prisma.config.ts"
@@ -8,6 +8,10 @@ paths:
 ---
 
 # Prisma 7
+
+General Prisma usage - CLI commands, client query shape, `select`/`include`, transactions,
+and the v6-to-v7 upgrade path - lives in the `prisma-client-api`, `prisma-cli` and
+`prisma-upgrade-v7` skills. This rule covers only what is specific to fox-sphere.
 
 ## One client, one pool
 
@@ -57,22 +61,6 @@ datasource db {
 Prisma 7 takes the URL from `apps/backend/prisma.config.ts`, which reads
 `env("DATABASE_URL")`. If a command complains about a missing URL, fix the environment -
 do not add `url` back to the schema.
-
-## Migrations
-
-| Command | When |
-|---|---|
-| `pnpm prisma:m` (`prisma migrate dev`) | local - generates and applies |
-| `pnpm --filter backend migrate:deploy` | production - applies only, generates no artifacts |
-| `pnpm prisma:s` | Prisma Studio |
-
-Never edit a migration that has been applied anywhere. Add a new one.
-
-## Query shape
-
-- Prefer `select` over `include` on anything in a chat-message or socket-event path. `include` fetches whole related rows you then discard.
-- Group related writes in `prisma.$transaction([...])` so a partial economy update cannot survive a crash.
-- Every foreign key in the current schema already carries `@@index`. Add an index when you introduce a new query predicate, not speculatively.
 
 ## ORM errors stop at the data boundary
 

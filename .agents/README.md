@@ -61,6 +61,18 @@ description: <what it does, and the phrasings that should trigger it>
 It becomes visible to Claude Code through the `.claude/skills` symlink with no further
 wiring, and to opencode with none at all.
 
+## Vendored skills
+
+Some directories under `skills/` (`vue-best-practices`, `prisma-client-api`, `prisma-cli`,
+`prisma-upgrade-v7`) are vendored copies of third-party skills, checked in so every tool and
+teammate gets them instead of just whoever has them in `~/.claude/skills`. Each carries a
+`_VERSION` file recording the upstream repo URL, the pinned commit SHA, the path within that
+repo, and the vendor date.
+
+To resync one: re-clone the upstream repo at a newer commit, replace the vendored directory
+with the matching subtree, update `_VERSION` with the new SHA and date, and review the diff
+before committing.
+
 ## Adding a persona
 
 Personas go in `agents/` as `<name>.md` with `name`, `description`, `tools` and `model`

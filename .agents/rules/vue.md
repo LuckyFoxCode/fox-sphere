@@ -9,59 +9,26 @@ paths:
 
 # Vue 3.5
 
+General Vue 3 patterns - Composition API, `defineProps`/`defineModel`/`defineEmits`,
+composables, reactivity - live in the `vue-best-practices` skill. This rule covers only
+what is specific to fox-sphere.
+
 ## SFC shape
 
 `<script setup lang="ts">` first, `<template>` second, `<style>` last if present. No
 Options API, no `defineComponent`.
 
-Props are type-declared, never runtime-declared:
-
-```vue
-<script setup lang="ts">
-interface Props {
-  level: number;
-  label?: string;
-}
-
-const { level, label = 'XP' } = defineProps<Props>();
-</script>
-```
-
-Destructuring `defineProps` keeps reactivity in Vue 3.5+ - the compiler rewrites the
-bindings back to `props.x` - and native default syntax replaces `withDefaults`. Never
-`defineProps(['level'])`.
-
-That is the target, not a description of what is there now. No component uses the
-destructure-with-defaults form yet; 23 `defineProps` calls take props without defaults, and
-three components still use `withDefaults` - `components/ui/widget-frame/WidgetFrame.vue`,
+Props are type-declared, never runtime-declared. That is the target, not a description of
+what is there now: no component uses the Vue 3.5 destructure-with-defaults form yet; 23
+`defineProps` calls take props without defaults, and three components still use
+`withDefaults` - `components/ui/widget-frame/WidgetFrame.vue`,
 `components/ui/widget-frame/DecorativeCap.vue`, `components/ui/TwitchEmote.vue`. Those work
 and are not bugs. Convert one when you are already editing it; do not sweep them.
 
-Two-way binding is `defineModel<T>()`:
-
-```ts
-const value = defineModel<number>({ required: true });
-```
-
-Emits are typed too: `const emit = defineEmits<{ close: []; select: [id: number] }>()`.
-
 ## Composables
 
-Anything stateful or reused goes in `src/composables/`, named `useX`, returning refs:
-
-```ts
-export const useThing = (source: MaybeRefOrGetter<string>) => {
-  const data = ref<Thing | null>(null);
-  watchEffect(() => {
-    void toValue(source);
-    // ...
-  });
-  return { data };
-};
-```
-
-Accept `MaybeRefOrGetter` and read through `toValue()`, so a caller can pass a ref, a
-getter or a plain value. Export through the folder barrel.
+Anything stateful or reused goes in `src/composables/`, named `useX`. Export through the
+folder barrel.
 
 Socket subscriptions specifically belong in `src/composables/sockets/` - see the realtime
 rule.
