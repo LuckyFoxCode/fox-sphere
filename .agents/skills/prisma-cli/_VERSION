@@ -1,0 +1,4 @@
+upstream: https://github.com/prisma/skills
+commit: 808913c1dac11dc425631c2454f7fcb2d5ade5ca
+path: prisma-cli
+vendored: 2026-08-11

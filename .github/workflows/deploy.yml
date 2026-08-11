@@ -65,8 +65,11 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -e
+            # ~/foxsphere holds the deploy repo's compose.yaml + a real .env (never committed).
+            # compose auto-detects compose.yaml and auto-loads .env for ${...} interpolation.
             cd ~/foxsphere
             docker compose pull
+            # Run migrations before swapping the app (one-shot container).
             docker compose run --rm backend pnpm --filter backend migrate:deploy
             docker compose up -d
             docker image prune -f

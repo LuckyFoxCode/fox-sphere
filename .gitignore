@@ -22,4 +22,14 @@ Thumbs.db
 .biome/
 .turbo/
 .cache/
-.opencode/
+.opencode/*
+!.opencode/opencode.json
+
+# Subagent-driven-development scratch (ledger, briefs, review packages)
+.superpowers/
+
+# Local specs/plans scratch produced by the superpowers skill - not committed in this repo
+docs/superpowers/
+
+# Per-developer agent notes
+AGENTS.local.md

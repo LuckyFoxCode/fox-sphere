@@ -1,0 +1,8 @@
+upstream: https://github.com/antfu/skills
+commit: a74f281a27dadc02397bc1a174b0f2c97531b6ae
+path: skills/vue-best-practices
+vendored: 2026-08-11
+
+Note: this skill's own SYNC.md records second-order provenance — it was
+itself vendored into antfu/skills from vuejs-ai/skills @
+f3dd1bf4d3ac78331bdc903e4519d561c538ca6a on 2026-03-16.
