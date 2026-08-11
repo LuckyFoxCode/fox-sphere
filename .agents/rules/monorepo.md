@@ -42,7 +42,8 @@ A type error naming a symbol you just added to `packages/types` almost always me
 
 ## Root script naming
 
-Root scripts are `pnpm --filter` wrappers with a suffix:
+Ten of the seventeen root scripts are `pnpm --filter` wrappers whose suffix names the
+target:
 
 | Suffix | Target |
 |---|---|
@@ -50,8 +51,13 @@ Root scripts are `pnpm --filter` wrappers with a suffix:
 | `:f` | `apps/frontend` |
 | `:p` | `packages/*` |
 
-Follow the pattern for new scripts, and add a row to the Commands table in `AGENTS.md`
-when you add one.
+The other seven do not follow it, and are not anomalies. `prisma:g`, `prisma:m`, `prisma:s`
+and `worker:t` are all `--filter backend` wrappers whose suffix abbreviates the *action*
+(`generate`, `migrate`, `studio`, `twitch`) because the topic prefix already implies the
+backend. `build`, `build:all` and `new:pkg` are scoped by neither.
+
+For a new script, use the target suffix for a plain per-app command and a topic prefix for
+a family. Either way, add a row to the Commands table in `AGENTS.md`.
 
 ## Adding a package
 
