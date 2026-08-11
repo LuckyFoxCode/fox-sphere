@@ -42,7 +42,8 @@ does in `apps/backend/src/app.ts`:
 
 ```ts
 socket.on("stream:get-system-state", async (_, socketCallback) => {
-  socketCallback(await getStreamStatePrepared());
+  const state = await getStreamStatePrepared();
+  socketCallback(state);
 });
 ```
 

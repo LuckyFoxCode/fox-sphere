@@ -31,6 +31,12 @@ Destructuring `defineProps` keeps reactivity in Vue 3.5+ - the compiler rewrites
 bindings back to `props.x` - and native default syntax replaces `withDefaults`. Never
 `defineProps(['level'])`.
 
+That is the target, not a description of what is there now. No component uses the
+destructure-with-defaults form yet; 23 `defineProps` calls take props without defaults, and
+three components still use `withDefaults` - `components/ui/widget-frame/WidgetFrame.vue`,
+`components/ui/widget-frame/DecorativeCap.vue`, `components/ui/TwitchEmote.vue`. Those work
+and are not bugs. Convert one when you are already editing it; do not sweep them.
+
 Two-way binding is `defineModel<T>()`:
 
 ```ts
