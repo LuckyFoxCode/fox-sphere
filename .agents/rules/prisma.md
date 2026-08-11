@@ -15,8 +15,11 @@ paths:
 `pg.Pool`, wrapped in `PrismaPg`, passed as `adapter`. Import that instance.
 
 ```ts
-import { prisma } from "../../shared/lib/prisma";
+import { prisma } from "../../shared/lib";
 ```
+
+Import from the `shared/lib` barrel, not the deep `shared/lib/prisma` path — all ten call
+sites in `apps/backend/src` do, and the barrel rule in the typescript rule says so.
 
 Never call `new PrismaClient()` anywhere else. Each one opens its own connection pool, and
 Postgres runs out of connections well before anyone connects the symptom to the cause.
