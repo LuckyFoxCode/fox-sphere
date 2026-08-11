@@ -50,6 +50,12 @@ pnpm prisma:g
 `tsc` fails with missing-module errors until it has run. The Docker build does this for
 you; a host build does not.
 
+`pnpm prisma:m` (`prisma migrate dev`) is the local command - it generates and applies.
+`pnpm --filter backend migrate:deploy` (`prisma migrate deploy`) is the production one - it
+applies only and generates no artifacts, and is invoked by the deploy workflow rather than
+run by hand. Never edit a migration that has already been applied anywhere; add a new one.
+For the rest of the CLI verbs, see the `prisma-cli` skill.
+
 ## The datasource has no url, and that is correct
 
 ```prisma
@@ -89,6 +95,8 @@ responses; nothing deeper in the stack should be choosing a status code.
 - **`TwitchToken.obtainmentTimestamp` is `BigInt`.** `JSON.stringify` throws on a BigInt, so a raw `TwitchToken` cannot go through `res.json()` or `io.emit()`. Convert with `Number()` or `.toString()` at the boundary.
 - **`TwitchToken` has no `@id`.** Its unique criterion is `twitchUserId` - that is what `findUnique` and `upsert` key on.
 - **`SystemState` is a singleton row** (`@id @default(1)`). Upsert it; never create a second.
+- **Every relation field in the current schema already has a matching `@@index`.** Add an
+  index when you introduce a new query predicate, not speculatively.
 
 ## Never edit generated output
 

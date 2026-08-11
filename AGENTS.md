@@ -25,7 +25,8 @@ are scoped by neither.
 | `pnpm lint:f` | `run-s lint:*` - oxlint then eslint, both with `--fix` |
 | `pnpm format:f` | Prettier over `apps/frontend/src` |
 | `pnpm prisma:g` | `prisma generate` - **required after clone and after every schema edit** |
-| `pnpm prisma:m` | `prisma migrate dev` |
+| `pnpm prisma:m` | `prisma migrate dev` - local |
+| `pnpm --filter backend migrate:deploy` | `prisma migrate deploy` - production migration step; applies only, generates no artifacts; run by CI, not by hand |
 | `pnpm prisma:s` | Prisma Studio |
 | `pnpm new:pkg` | Scaffold a workspace package - see `docs/adding-a-package.md` |
 
