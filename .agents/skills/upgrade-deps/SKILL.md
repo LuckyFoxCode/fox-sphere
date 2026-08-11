@@ -21,7 +21,7 @@ pnpm install
 pnpm --filter backend exec prisma generate
 pnpm build:p
 cd apps/backend  && ./node_modules/.bin/tsc --noEmit && ./node_modules/.bin/eslint .
-cd apps/frontend && ./node_modules/.bin/vue-tsc --build && ./node_modules/.bin/oxlint . && ./node_modules/.bin/eslint .
+cd ../frontend   && ./node_modules/.bin/vue-tsc --build && ./node_modules/.bin/oxlint . && ./node_modules/.bin/eslint .
 cd ../.. && pnpm build
 docker compose build backend      # only when a runtime dependency moved
 ```

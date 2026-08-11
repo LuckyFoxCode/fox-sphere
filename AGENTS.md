@@ -6,7 +6,11 @@
 
 ## Commands
 
-Run from the repo root. Script suffixes: `:b` backend, `:f` frontend, `:p` packages.
+Run from the repo root. Most scripts are `pnpm --filter` wrappers whose suffix names the
+target: `:b` backend, `:f` frontend, `:p` packages. `prisma:*` and `worker:*` use a topic
+prefix instead, with the suffix abbreviating the action (`generate`, `migrate`, `studio`,
+`twitch`) since the prefix already implies the backend. `build`, `build:all` and `new:pkg`
+are scoped by neither.
 
 | Command | Does |
 |---|---|
@@ -150,7 +154,7 @@ pnpm install
 pnpm --filter backend exec prisma generate
 pnpm build:p
 cd apps/backend  && ./node_modules/.bin/tsc --noEmit && ./node_modules/.bin/eslint .
-cd apps/frontend && ./node_modules/.bin/vue-tsc --build && ./node_modules/.bin/oxlint . && ./node_modules/.bin/eslint .
+cd ../frontend   && ./node_modules/.bin/vue-tsc --build && ./node_modules/.bin/oxlint . && ./node_modules/.bin/eslint .
 cd ../.. && pnpm build
 ```
 
@@ -167,7 +171,7 @@ CI then fails.
 | Skills | `.agents/skills/`; `.claude/skills` symlinks to it |
 | Subagent personas | `.agents/agents/` (none yet) |
 | Agent config layout | `.agents/README.md` |
-| Design specs and implementation plans | `docs/superpowers/specs/`, `docs/superpowers/plans/` |
+| Design specs and implementation plans | local-only scratch under `docs/superpowers/` (gitignored) - not committed in this repo, so it does not exist on a fresh clone |
 | Architecture proposals | `apps/backend/docs/` |
 | Adding a workspace package | `docs/adding-a-package.md` |
 
@@ -175,12 +179,12 @@ CI then fails.
 |---|---|
 | `.agents/rules/agent-workflow.md` | everything |
 | `.agents/rules/typescript.md` | `**/*.ts`, `**/*.vue` |
-| `.agents/rules/prisma.md` | `apps/backend/prisma/**`, `apps/backend/src/**/*.ts` |
-| `.agents/rules/express.md` | `apps/backend/src/{app,server,prod}.ts`, `apps/backend/src/shared/middleware/**` |
-| `.agents/rules/vue.md` | `apps/frontend/src/**` |
-| `.agents/rules/realtime.md` | `apps/backend/src/**`, `apps/frontend/src/composables/sockets/**` |
-| `.agents/rules/monorepo.md` | `package.json`, `packages/**`, `pnpm-workspace.yaml` |
-| `.agents/rules/testing.md` | `**/*.test.ts`, `**/*.spec.ts`, `**/__tests__/**` |
+| `.agents/rules/prisma.md` | `apps/backend/prisma/**`, `apps/backend/prisma.config.ts`, `apps/backend/src/**/*.ts` |
+| `.agents/rules/express.md` | `apps/backend/src/{app,server,prod}.ts`, `apps/backend/src/shared/{middleware,errors,config}/**` |
+| `.agents/rules/vue.md` | `apps/frontend/src/**`, `apps/frontend/*.config.ts`, `apps/frontend/.prettierrc.json` |
+| `.agents/rules/realtime.md` | `apps/backend/src/app.ts`, `apps/backend/src/shared/services/**`, `apps/frontend/src/{composables/sockets,services}/**`, `packages/types/**` |
+| `.agents/rules/monorepo.md` | `package.json`, `pnpm-workspace.yaml`, `packages/**`, `apps/*/package.json`, `.docker/**` |
+| `.agents/rules/testing.md` | `**/*.test.ts`, `**/*.spec.ts`, `**/__tests__/**`, `**/vitest.config.*` |
 
 opencode auto-loads these through `.opencode/opencode.json`. Claude Code does not - read
 the rule matching the files you are about to touch.

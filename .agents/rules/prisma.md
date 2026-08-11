@@ -18,8 +18,13 @@ paths:
 import { prisma } from "../../shared/lib";
 ```
 
-Import from the `shared/lib` barrel, not the deep `shared/lib/prisma` path — all ten call
-sites in `apps/backend/src` do, and the barrel rule in the typescript rule says so.
+Import from the `shared/lib` barrel, not a deep path. There are 12 call sites in
+`apps/backend/src`: the ten outside `shared/` import it as `../../shared/lib` (or deeper);
+the two files that live inside `shared/` itself reach the sibling `lib/` directory
+directly, since they're already at that level — `shared/services/stream-state.service.ts`
+does this correctly via the barrel (`../lib`), but `shared/infra/lifecycle.ts` imports the
+deep `../lib/prisma` path and violates this rule. The barrel rule in the typescript rule
+still applies: import the barrel, not `lib/prisma`, even from inside `shared/`.
 
 Never call `new PrismaClient()` anywhere else. Each one opens its own connection pool, and
 Postgres runs out of connections well before anyone connects the symptom to the cause.
