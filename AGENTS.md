@@ -169,7 +169,7 @@ CI then fails.
 | Entry doc | this file; `CLAUDE.md` is a symlink to it |
 | Per-developer notes | `AGENTS.local.md` (gitignored) |
 | Agent rules | `.agents/rules/` - table below |
-| Skills | `.agents/skills/`; `.claude/skills` symlinks to it. Includes vendored third-party skills (`vue-best-practices`, `prisma-client-api`, `prisma-cli`, `prisma-upgrade-v7`), each with a `_VERSION` file - see `.agents/README.md` |
+| Skills | `.agents/skills/`; `.claude/skills` symlinks to it. Includes vendored third-party skills (`vue-best-practices`, `prisma-client-api`, `prisma-cli`, `prisma-upgrade-v7`, and the mattpocock architecture cluster `improve-codebase-architecture` / `codebase-design` / `domain-modeling` / `grilling` - Mermaid-based architecture reviews, falls back to code names until a `CONTEXT.md` glossary exists), each with a `_VERSION` file - see `.agents/README.md` |
 | Subagent personas | `.agents/agents/` (none yet) |
 | Agent config layout | `.agents/README.md` |
 | Design specs and implementation plans | local-only scratch under `docs/superpowers/` (gitignored) - not committed in this repo, so it does not exist on a fresh clone |

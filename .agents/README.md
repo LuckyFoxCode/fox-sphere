@@ -63,15 +63,29 @@ wiring, and to opencode with none at all.
 
 ## Vendored skills
 
-Some directories under `skills/` (`vue-best-practices`, `prisma-client-api`, `prisma-cli`,
-`prisma-upgrade-v7`) are vendored copies of third-party skills, checked in so every tool and
-teammate gets them instead of just whoever has them in `~/.claude/skills`. Each carries a
-`_VERSION` file recording the upstream repo URL, the pinned commit SHA, the path within that
-repo, and the vendor date.
+Some directories under `skills/` are vendored copies of third-party skills, checked in so
+every tool and teammate gets them instead of just whoever has them in `~/.claude/skills`.
+Each carries a `_VERSION` file recording the upstream repo URL, the pinned commit SHA, the
+path within that repo, and the vendor date. Three upstreams are vendored so far:
 
-To resync one: re-clone the upstream repo at a newer commit, replace the vendored directory
-with the matching subtree, update `_VERSION` with the new SHA and date, and review the diff
-before committing.
+- **antfu** - `vue-best-practices`
+- **prisma** - `prisma-client-api`, `prisma-cli`, `prisma-upgrade-v7`
+- **mattpocock/skills** (MIT) - `improve-codebase-architecture` (Mermaid-based architecture
+  review, rendered as a self-contained HTML report) and its hard dependencies:
+  `codebase-design` (deep-module vocabulary it must use exactly), `grilling` (interview run
+  once a deepening candidate is picked) and `domain-modeling` (keeps the domain model
+  current). Vendored as a cluster because `improve-codebase-architecture`'s `SKILL.md`
+  points at the other three by name; vendoring it alone would ship dead pointers.
+
+  **Caveat:** `improve-codebase-architecture` and `domain-modeling` both expect a
+  `CONTEXT.md` domain glossary at the repo root. fox-sphere does not have one. Until someone
+  authors it, both skills fall back to code names instead of domain names -
+  `domain-modeling`'s own `CONTEXT-FORMAT.md` (`.agents/skills/domain-modeling/CONTEXT-FORMAT.md`)
+  is the recipe for writing that glossary.
+
+To resync one: re-clone the relevant upstream repo at a newer commit, replace the vendored
+directory with the matching subtree, update `_VERSION` with the new SHA and date, and review
+the diff before committing.
 
 ## Adding a persona
 

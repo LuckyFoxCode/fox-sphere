@@ -1,0 +1,4 @@
+upstream: https://github.com/mattpocock/skills
+commit: 84fdeffd12f2ee307994d1eb6feb48173b6e0502
+path: skills/engineering/improve-codebase-architecture
+vendored: 2026-08-11
