@@ -33,15 +33,35 @@ bind-mounted.
 ## First run
 
 ```bash
-cp apps/backend/.env.example apps/backend/.env   # then fill in the Twitch credentials
+cp apps/backend/.env.example apps/backend/.env
+docker compose up -d postgres      # or point DATABASE_URL at a Postgres you already run
 pnpm install
 pnpm build:p
 pnpm prisma:g
 ```
 
-`apps/backend/.env` is gitignored, and `config` throws on the first missing variable, so
-nothing backend-side starts until that file exists and is filled in. `docker compose up`
-reads the same file and overrides only `DATABASE_URL` to point at the compose service.
+Then edit `apps/backend/.env`. Two groups of values in the copied template are **not**
+usable as they ship:
+
+- **`DATABASE_URL`** is `postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public` - a
+  placeholder, not a default. It is non-empty, so `getEnv` does **not** throw on it; you get
+  an opaque Prisma connection failure against a host literally named `HOST` instead. For the
+  compose Postgres above, use
+  `postgresql://fox_user:fox_password@localhost:5432/foxsphere_db?schema=public`.
+- **The Twitch client id/secret and the four token values** are placeholders. `TWITCH_USER_ID`,
+  `TWITCH_CHANNEL_NAME` and `TWITCH_BOT_ID` ship with real values for `luckyfoxcode`.
+
+`PORT`, `NODE_ENV`, `DEBUG`, `COMMAND_PREFIX` and `ALLOWED_ORIGIN` ship with working values
+and need no edit.
+
+```bash
+pnpm prisma:m                      # apply migrations, once DATABASE_URL above is real
+```
+
+`apps/backend/.env` is gitignored, so it does not exist on a fresh clone, and `config` throws
+on the first genuinely missing variable. Note that `docker compose up` (the full stack) reads
+the same file but overrides `DATABASE_URL` to reach the `postgres` service by name - that
+override applies only inside compose, never to a native `pnpm dev:b`.
 
 ## Architecture
 
