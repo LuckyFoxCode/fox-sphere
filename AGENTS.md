@@ -30,6 +30,19 @@ Run from the repo root. Script suffixes: `:b` backend, `:f` frontend, `:p` packa
 `docker compose up` runs Postgres 18 plus the backend `dev` stage with the source
 bind-mounted.
 
+## First run
+
+```bash
+cp apps/backend/.env.example apps/backend/.env   # then fill in the Twitch credentials
+pnpm install
+pnpm build:p
+pnpm prisma:g
+```
+
+`apps/backend/.env` is gitignored, and `config` throws on the first missing variable, so
+nothing backend-side starts until that file exists and is filled in. `docker compose up`
+reads the same file and overrides only `DATABASE_URL` to point at the compose service.
+
 ## Architecture
 
 | Member | Stack | Role |
@@ -159,7 +172,7 @@ the rule matching the files you are about to touch.
 - Never use `--no-verify`.
 - Never edit `apps/backend/src/generated/` - `prisma generate` owns it and it is gitignored.
 - Never hand-edit `pnpm-lock.yaml`.
-- Never commit a `.env`. `.env.prod.example` is the template.
+- Never commit a `.env`. `apps/backend/.env.example` is the local-development template; `.env.prod.example` at the repo root is the production one - they are different files for different jobs.
 - `/api/internal/events` is unauthenticated and fans out to every socket. Do not expose it publicly, and do not add a second route under that prefix without stating its trust model.
 - Do not claim "tests pass". There are none.
 - If a change invalidates a documented gotcha, update this file in the same commit.
