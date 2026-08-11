@@ -12,6 +12,15 @@ export async function getStreamStatePrepared() {
       XP_CONFIG.BASE_STREAM_STEP,
     );
 
+    const now = Date.now();
+    const xpBoost =
+      state?.xpBoostExpiresAt && state.xpBoostExpiresAt.getTime() > now
+        ? {
+            multiplier: state.xpBoostMultiplier,
+            expiresAt: state.xpBoostExpiresAt.getTime(),
+          }
+        : null;
+
     return {
       lvl: currentLvl,
       newXp: state?.streamCurrentXp || 0,
@@ -20,6 +29,7 @@ export async function getStreamStatePrepared() {
         currentLvl - 1,
         XP_CONFIG.BASE_STREAM_STEP,
       ),
+      xpBoost,
     };
   } catch (error) {
     Logger.error(
@@ -32,6 +42,7 @@ export async function getStreamStatePrepared() {
       newXp: 0,
       maxXp: XP_CONFIG.BASE_STREAM_STEP,
       startXp: 0,
+      xpBoost: null,
     };
   }
 }
