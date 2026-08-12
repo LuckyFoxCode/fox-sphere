@@ -24,7 +24,9 @@ import {
   RemoveVipCommand,
   TimerCommand,
   TimerStopCommand,
+  XpBoostCommand,
 } from "../commands/moderation";
+import { StreamService } from "../../stream";
 
 export class CommandRegisry {
   private commands = new Map<string, TwitchCommand>();
@@ -34,6 +36,7 @@ export class CommandRegisry {
   constructor(
     private chatbotService: ChatbotService,
     private userService: UserService,
+    private streamService: StreamService,
     private apiClient: ApiClient,
   ) {
     this.registerCommands();
@@ -53,6 +56,7 @@ export class CommandRegisry {
       new TicketsCommand(this.chatbotService),
       new TimerCommand(this.chatbotService),
       new TimerStopCommand(this.chatbotService),
+      new XpBoostCommand(this.chatbotService, this.streamService),
       new AddVipCommand(this.chatbotService, this.userService, this.apiClient),
       new RemoveVipCommand(
         this.chatbotService,

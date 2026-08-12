@@ -34,6 +34,7 @@ export async function bootstrap() {
   const chatbotService = new ChatbotService(
     authProvider,
     userService,
+    streamService,
     twitchConfig,
   );
   const eventSubClient = new TwitchEventSubClient(authProvider, twitchConfig);

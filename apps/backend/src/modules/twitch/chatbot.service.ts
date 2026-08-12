@@ -27,6 +27,7 @@ import {
 } from "./services";
 import { BOT_MESSAGES } from "./twitch.constants";
 import { TwitchConfig } from "./twitch.types";
+import { StreamService } from "../stream";
 
 export class ChatbotService {
   private chatClient!: ChatClient;
@@ -46,6 +47,7 @@ export class ChatbotService {
   constructor(
     private authProvider: RefreshingAuthProvider,
     private userService: UserService,
+    private streamService: StreamService,
     private twitchConfig: TwitchConfig,
   ) {
     this.apiClient = new ApiClient({ authProvider: this.authProvider });
@@ -57,6 +59,7 @@ export class ChatbotService {
     this.commandRegistry = new CommandRegisry(
       this,
       this.userService,
+      this.streamService,
       this.apiClient,
     );
     this.announcementService = new AnnouncementService(
