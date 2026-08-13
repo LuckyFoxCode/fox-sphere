@@ -170,7 +170,7 @@ export class UserService {
       const isVip =
         userWithLottery.lotteryContext?.isLuckyVip ||
         userWithLottery.isPermanentVip;
-      const baseXp = isVip ? xpAmount * XP_REWARDS.LOTTERY : xpAmount;
+      const baseXp = isVip ? xpAmount + XP_REWARDS.VIP_BONUS : xpAmount;
       const activeBoost = await this.streamService.getActiveXpBoost();
       const finalXpAmount = baseXp * (activeBoost?.multiplier ?? 1);
 

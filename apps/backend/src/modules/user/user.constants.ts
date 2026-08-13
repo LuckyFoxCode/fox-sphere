@@ -11,4 +11,5 @@ export const XP_REWARDS = {
   BROADCASTER: 3,
   FOLLOWER: 2,
   LOTTERY: 1,
+  VIP_BONUS: 1,
 };
