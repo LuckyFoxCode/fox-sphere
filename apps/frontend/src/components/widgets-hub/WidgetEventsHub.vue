@@ -5,6 +5,7 @@ import { LotteryManager } from '../lottery';
 import { PokemonWidget } from '../pokemon';
 import { TwitchWidget } from '../twitch';
 import { UserWidget } from '../user';
+import { StreamWidget } from '../stream';
 
 onUnmounted(() => {
   socket.disconnect();
@@ -15,6 +16,7 @@ onUnmounted(() => {
 <template>
   <LotteryManager />
   <PokemonWidget />
+  <StreamWidget />
   <TwitchWidget />
   <UserWidget />
 </template>
