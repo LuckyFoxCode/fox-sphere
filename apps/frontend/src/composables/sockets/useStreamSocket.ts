@@ -8,14 +8,14 @@ import type { StreamEventType, WidgetSocket } from './types';
 import { useWidgetTimer } from './useWidgetTimer';
 
 const { currentStatus: currentEventType, setStatusWithTimeout } =
-  useWidgetTimer<StreamEventType>('level-up');
+  useWidgetTimer<StreamEventType>('idle');
 
 const level = ref(1);
 const newXp = ref(0);
 const maxXp = ref(0);
 const startXp = ref(0);
 const isLoading = ref(true);
-const levelUp = ref<StreamLevelUpPayload | null>({ lvl: 2 });
+const levelUp = ref<StreamLevelUpPayload | null>(null);
 const xpBoost = ref<StreamXpBoostPayload | null>(null);
 const xpBoostTimeLeft = ref(0);
 
