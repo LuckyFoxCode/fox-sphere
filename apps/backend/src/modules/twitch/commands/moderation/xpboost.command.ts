@@ -44,7 +44,11 @@ export class XpBoostCommand implements TwitchCommand {
 
     await this.chatbotService.sendMessage(
       ctx.channel,
-      BOT_MESSAGES.COMMANDS.XPBOOST_SUCCESS(ctx.user, minutes),
+      BOT_MESSAGES.COMMANDS.XPBOOST_SUCCESS(
+        ctx.user,
+        minutes,
+        BOOST_CONFIG.MULTIPLIER,
+      ),
     );
   }
 }

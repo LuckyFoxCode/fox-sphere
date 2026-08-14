@@ -1,6 +1,6 @@
 import { XP_CONFIG } from "../../modules/stream";
 import { prisma } from "../lib";
-import { getXpThresholdForLevel } from "../utils";
+import { getXpThresholdForLevel, resolveActiveXpBoost } from "../utils";
 import { Logger } from "./logger.service";
 
 export async function getStreamStatePrepared() {
@@ -12,14 +12,7 @@ export async function getStreamStatePrepared() {
       XP_CONFIG.BASE_STREAM_STEP,
     );
 
-    const now = Date.now();
-    const xpBoost =
-      state?.xpBoostExpiresAt && state.xpBoostExpiresAt.getTime() > now
-        ? {
-            multiplier: state.xpBoostMultiplier,
-            expiresAt: state.xpBoostExpiresAt.getTime(),
-          }
-        : null;
+    const xpBoost = state ? resolveActiveXpBoost(state) : null;
 
     return {
       lvl: currentLvl,

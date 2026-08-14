@@ -2,6 +2,7 @@ import { ApiClient } from "@twurple/api";
 import { ChatMessage } from "@twurple/chat";
 import { config } from "../../../shared/config";
 import { Logger } from "../../../shared/services/logger.service";
+import { StreamService } from "../../stream";
 import { UserService } from "../../user";
 import { ChatbotService } from "../chatbot.service";
 import { TwitchCommand } from "../commands/command.interface";
@@ -26,7 +27,6 @@ import {
   TimerStopCommand,
   XpBoostCommand,
 } from "../commands/moderation";
-import { StreamService } from "../../stream";
 
 export class CommandRegisry {
   private commands = new Map<string, TwitchCommand>();

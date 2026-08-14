@@ -1,13 +1,12 @@
-import { StreamXpBoostPayload } from "@fox-sphere/types";
+import type { StreamXpBoostPayload } from "@fox-sphere/types";
 import { prisma } from "../../shared/lib";
 import { globalEventBus } from "../../shared/services";
-import { getXpThresholdForLevel } from "../../shared/utils";
+import {
+  ActiveXpBoost,
+  getXpThresholdForLevel,
+  resolveActiveXpBoost,
+} from "../../shared/utils";
 import { BOOST_CONFIG, XP_CONFIG } from "./stream.constants";
-
-interface ActiveXpBoost {
-  multiplier: number;
-  expiresAt: number;
-}
 
 export class StreamService {
   private xpBoostCache: {
@@ -39,13 +38,7 @@ export class StreamService {
     }
 
     const state = await this.getOrCreateState();
-    const boost: ActiveXpBoost | null =
-      state.xpBoostExpiresAt && state.xpBoostExpiresAt.getTime() > now
-        ? {
-            multiplier: state.xpBoostMultiplier,
-            expiresAt: state.xpBoostExpiresAt.getTime(),
-          }
-        : null;
+    const boost = resolveActiveXpBoost(state);
 
     this.xpBoostCache = { boost, fetchedAt: now };
     return boost;
@@ -58,9 +51,16 @@ export class StreamService {
   }): Promise<void> {
     const expiresAt = new Date(Date.now() + input.durationMs);
 
-    await prisma.systemState.update({
+    await prisma.systemState.upsert({
       where: { id: XP_CONFIG.STREAM_STATE_ID },
-      data: {
+      update: {
+        xpBoostMultiplier: input.multiplier,
+        xpBoostExpiresAt: expiresAt,
+      },
+      create: {
+        id: XP_CONFIG.STREAM_STATE_ID,
+        streamLevel: 1,
+        streamCurrentXp: 0,
         xpBoostMultiplier: input.multiplier,
         xpBoostExpiresAt: expiresAt,
       },

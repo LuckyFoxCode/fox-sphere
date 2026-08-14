@@ -23,19 +23,20 @@ let boostInterval: ReturnType<typeof setInterval> | null = null;
 let isSocketInitialized = false;
 
 function startBoostCountdown(expiresAt: number) {
-  xpBoostTimeLeft.value = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
-
-  if (boostInterval) clearInterval(boostInterval);
-
-  boostInterval = setInterval(() => {
-    xpBoostTimeLeft.value -= 1;
+  const tick = () => {
+    xpBoostTimeLeft.value = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
 
     if (xpBoostTimeLeft.value <= 0) {
       xpBoost.value = null;
       if (boostInterval) clearInterval(boostInterval);
       boostInterval = null;
     }
-  }, 1000);
+  };
+
+  if (boostInterval) clearInterval(boostInterval);
+
+  tick();
+  boostInterval = setInterval(tick, 1000);
 }
 
 export function useStreamSocket(socketInstance: WidgetSocket) {
@@ -76,6 +77,13 @@ export function useStreamSocket(socketInstance: WidgetSocket) {
           source: 'auto',
         };
         startBoostCountdown(response.xpBoost.expiresAt);
+      } else {
+        xpBoost.value = null;
+        xpBoostTimeLeft.value = 0;
+        if (boostInterval) {
+          clearInterval(boostInterval);
+          boostInterval = null;
+        }
       }
     });
   };

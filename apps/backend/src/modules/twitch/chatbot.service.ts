@@ -12,6 +12,7 @@ import { prisma } from "../../shared/lib";
 import { globalEventBus } from "../../shared/services/event-bus.service";
 import { Logger } from "../../shared/services/logger.service";
 import { LOTTERY_DELAYS, LOTTERY_MESSAGES } from "../lottery";
+import { StreamService } from "../stream";
 import { COOLDOWNS as USER_COOLDOWNS, UserService } from "../user";
 import {
   CoinExchangeHandler,
@@ -27,7 +28,6 @@ import {
 } from "./services";
 import { BOT_MESSAGES } from "./twitch.constants";
 import { TwitchConfig } from "./twitch.types";
-import { StreamService } from "../stream";
 
 export class ChatbotService {
   private chatClient!: ChatClient;
