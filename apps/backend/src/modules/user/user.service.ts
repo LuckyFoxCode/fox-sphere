@@ -170,7 +170,9 @@ export class UserService {
       const isVip =
         userWithLottery.lotteryContext?.isLuckyVip ||
         userWithLottery.isPermanentVip;
-      const finalXpAmount = isVip ? xpAmount + XP_REWARDS.LOTTERY : xpAmount;
+      const baseXp = isVip ? xpAmount + XP_REWARDS.VIP_BONUS : xpAmount;
+      const activeBoost = await this.streamService.getActiveXpBoost();
+      const finalXpAmount = baseXp * (activeBoost?.multiplier ?? 1);
 
       const updatedUser = await prisma.user.update({
         where: { twitchId },

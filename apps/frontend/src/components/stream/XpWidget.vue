@@ -18,7 +18,7 @@ const progressPercentage = computed(() => {
 <template>
   <div
     v-if="!isLoading"
-    class="my-auto flex w-100 items-center gap-x-1.5"
+    class="relative my-auto flex w-100 items-center gap-x-1.5"
   >
     <LevelBadge :level="level" />
     <XpProgressBar

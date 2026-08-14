@@ -10,6 +10,7 @@ import {
   StreamGetSystemStatePayload,
   StreamLevelUpPayload,
   StreamSystemStateResponse,
+  StreamXpBoostPayload,
   StreamXpUpdatePayload,
   TwitchAddVipPaylod,
   TwitchChatMessagePayload,
@@ -38,6 +39,7 @@ interface AppEvents {
   "lottery:finished": LotteryFinishedPayload;
   "pokemon:assigned": PokemonAssignedPayload;
   "stream:xp-updated": StreamXpUpdatePayload;
+  "stream:xp-boost": StreamXpBoostPayload;
   "stream:level-up": StreamLevelUpPayload;
   "stream:get-system-state": {
     data: StreamGetSystemStatePayload;

@@ -1,9 +1,20 @@
+import type { StreamXpBoostPayload } from "@fox-sphere/types";
 import { prisma } from "../../shared/lib";
 import { globalEventBus } from "../../shared/services";
-import { getXpThresholdForLevel } from "../../shared/utils";
-import { XP_CONFIG } from "./stream.constants";
+import {
+  ActiveXpBoost,
+  getXpThresholdForLevel,
+  resolveActiveXpBoost,
+} from "../../shared/utils";
+import { BOOST_CONFIG, XP_CONFIG } from "./stream.constants";
 
 export class StreamService {
+  private xpBoostCache: {
+    boost: ActiveXpBoost | null;
+    fetchedAt: number;
+  } | null = null;
+  private static readonly XP_BOOST_CACHE_TTL = 1000;
+
   public async getOrCreateState() {
     return await prisma.systemState.upsert({
       where: { id: XP_CONFIG.STREAM_STATE_ID },
@@ -14,6 +25,58 @@ export class StreamService {
         streamCurrentXp: 0,
       },
     });
+  }
+
+  public async getActiveXpBoost(): Promise<ActiveXpBoost | null> {
+    const now = Date.now();
+
+    if (
+      this.xpBoostCache &&
+      now - this.xpBoostCache.fetchedAt < StreamService.XP_BOOST_CACHE_TTL
+    ) {
+      return this.xpBoostCache.boost;
+    }
+
+    const state = await this.getOrCreateState();
+    const boost = resolveActiveXpBoost(state);
+
+    this.xpBoostCache = { boost, fetchedAt: now };
+    return boost;
+  }
+
+  public async activateXpBoost(input: {
+    multiplier: number;
+    durationMs: number;
+    source: StreamXpBoostPayload["source"];
+  }): Promise<void> {
+    const expiresAt = new Date(Date.now() + input.durationMs);
+
+    await prisma.systemState.upsert({
+      where: { id: XP_CONFIG.STREAM_STATE_ID },
+      update: {
+        xpBoostMultiplier: input.multiplier,
+        xpBoostExpiresAt: expiresAt,
+      },
+      create: {
+        id: XP_CONFIG.STREAM_STATE_ID,
+        streamLevel: 1,
+        streamCurrentXp: 0,
+        xpBoostMultiplier: input.multiplier,
+        xpBoostExpiresAt: expiresAt,
+      },
+    });
+
+    this.xpBoostCache = {
+      boost: { multiplier: input.multiplier, expiresAt: expiresAt.getTime() },
+      fetchedAt: Date.now(),
+    };
+
+    const payload: StreamXpBoostPayload = {
+      multiplier: input.multiplier,
+      expiresAt: expiresAt.getTime(),
+      source: input.source,
+    };
+    globalEventBus.emit("stream:xp-boost", payload);
   }
 
   public async updateStreamXp(xpAmount: number): Promise<void> {
@@ -55,6 +118,15 @@ export class StreamService {
 
     if (hasLeveledUp) {
       globalEventBus.emit("stream:level-up", { lvl: currentLvl });
+
+      const activeBoost = await this.getActiveXpBoost();
+      if (!activeBoost) {
+        await this.activateXpBoost({
+          multiplier: BOOST_CONFIG.MULTIPLIER,
+          durationMs: BOOST_CONFIG.AUTO_DURATION,
+          source: "auto",
+        });
+      }
     }
   }
 }

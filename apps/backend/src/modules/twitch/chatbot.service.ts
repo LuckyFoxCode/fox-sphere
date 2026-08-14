@@ -12,6 +12,7 @@ import { prisma } from "../../shared/lib";
 import { globalEventBus } from "../../shared/services/event-bus.service";
 import { Logger } from "../../shared/services/logger.service";
 import { LOTTERY_DELAYS, LOTTERY_MESSAGES } from "../lottery";
+import { StreamService } from "../stream";
 import { COOLDOWNS as USER_COOLDOWNS, UserService } from "../user";
 import {
   CoinExchangeHandler,
@@ -46,6 +47,7 @@ export class ChatbotService {
   constructor(
     private authProvider: RefreshingAuthProvider,
     private userService: UserService,
+    private streamService: StreamService,
     private twitchConfig: TwitchConfig,
   ) {
     this.apiClient = new ApiClient({ authProvider: this.authProvider });
@@ -57,6 +59,7 @@ export class ChatbotService {
     this.commandRegistry = new CommandRegisry(
       this,
       this.userService,
+      this.streamService,
       this.apiClient,
     );
     this.announcementService = new AnnouncementService(

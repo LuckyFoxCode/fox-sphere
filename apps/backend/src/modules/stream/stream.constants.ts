@@ -3,3 +3,11 @@ export const XP_CONFIG = {
   BASE_USER_STEP: 100,
   BASE_STREAM_STEP: 1000,
 };
+
+export const BOOST_CONFIG = {
+  AUTO_DURATION: 30 * 60 * 1000,
+  MULTIPLIER: 2,
+  MIN: 5 * 60 * 1000,
+  MAX: 60 * 60 * 1000,
+  DEFAULT: 30 * 60 * 1000,
+};
