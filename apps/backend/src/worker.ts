@@ -34,6 +34,7 @@ export async function bootstrap() {
   const chatbotService = new ChatbotService(
     authProvider,
     userService,
+    streamService,
     twitchConfig,
   );
   const eventSubClient = new TwitchEventSubClient(authProvider, twitchConfig);
@@ -151,6 +152,14 @@ export async function bootstrap() {
       `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding stream newXp to overlay |  New exp: ${data.newXp} / ${data.maxXp}`,
     );
     await forwardEventToBackend("stream:xp-updated", data);
+  });
+
+  globalEventBus.on("stream:xp-boost", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding xp boost to overlay | Multiplier: ×${data.multiplier}`,
+    );
+    await forwardEventToBackend("stream:xp-boost", data);
   });
 
   globalEventBus.on("twitch:add-vip", async (data) => {

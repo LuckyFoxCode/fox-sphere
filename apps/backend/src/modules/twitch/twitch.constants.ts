@@ -69,6 +69,10 @@ export const BOT_MESSAGES = {
     TIMER_WARNING: (username: string) =>
       `@${username}, time must be a number! Example: !timer 60 cyan My cool timer`,
     TIMER_STOP: (username: string) => `@${username}, timer stopped. ⏹️`,
+    XPBOOST_SUCCESS: (username: string, minutes: number, multiplier: number) =>
+      `⚡ @${username} activated an XP ×${multiplier} boost for ${minutes} minutes! 🚀`,
+    XPBOOST_WARNING: (username: string) =>
+      `@${username}, usage: !xpboost <5-60> — duration in minutes.`,
   },
   // Награды за баллы канала (Channel Points)
   REWARDS: {

@@ -2,6 +2,7 @@ import { ApiClient } from "@twurple/api";
 import { ChatMessage } from "@twurple/chat";
 import { config } from "../../../shared/config";
 import { Logger } from "../../../shared/services/logger.service";
+import { StreamService } from "../../stream";
 import { UserService } from "../../user";
 import { ChatbotService } from "../chatbot.service";
 import { TwitchCommand } from "../commands/command.interface";
@@ -24,6 +25,7 @@ import {
   RemoveVipCommand,
   TimerCommand,
   TimerStopCommand,
+  XpBoostCommand,
 } from "../commands/moderation";
 
 export class CommandRegisry {
@@ -34,6 +36,7 @@ export class CommandRegisry {
   constructor(
     private chatbotService: ChatbotService,
     private userService: UserService,
+    private streamService: StreamService,
     private apiClient: ApiClient,
   ) {
     this.registerCommands();
@@ -53,6 +56,7 @@ export class CommandRegisry {
       new TicketsCommand(this.chatbotService),
       new TimerCommand(this.chatbotService),
       new TimerStopCommand(this.chatbotService),
+      new XpBoostCommand(this.chatbotService, this.streamService),
       new AddVipCommand(this.chatbotService, this.userService, this.apiClient),
       new RemoveVipCommand(
         this.chatbotService,
