@@ -61,6 +61,11 @@ const announceStyle = computed(() =>
         :key="index"
       >
         <span v-if="token.type === 'text'">{{ token.content }}</span>
+        <span
+          v-else-if="token.type === 'link'"
+          class="text-link"
+          >{{ token.content }}</span
+        >
         <TwitchEmote
           v-else
           :url="token.url"
