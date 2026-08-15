@@ -21,6 +21,23 @@ export class XpBoostCommand implements TwitchCommand {
     }
 
     const raw = ctx.args[0];
+    if (raw === "cancel" || raw === "off") {
+      const activeBoost = await this.streamService.getActiveXpBoost();
+      if (!activeBoost) {
+        await this.chatbotService.sendMessage(
+          ctx.channel,
+          BOT_MESSAGES.COMMANDS.XPBOOST_NO_ACTIVE(ctx.user),
+        );
+        return;
+      }
+      await this.streamService.deactivateXpBoost();
+      await this.chatbotService.sendMessage(
+        ctx.channel,
+        BOT_MESSAGES.COMMANDS.XPBOOST_CANCEL(ctx.user),
+      );
+      return;
+    }
+
     const minutes =
       raw === undefined ? BOOST_CONFIG.DEFAULT / 60_000 : Number(raw);
 
