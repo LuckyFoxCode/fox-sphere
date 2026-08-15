@@ -73,6 +73,10 @@ export const BOT_MESSAGES = {
       `⚡ @${username} activated an XP ×${multiplier} boost for ${minutes} minutes! 🚀`,
     XPBOOST_WARNING: (username: string) =>
       `@${username}, usage: !xpboost <5-60> — duration in minutes.`,
+    XPBOOST_CANCEL: (username: string) =>
+      `⚡ @${username} cancelled the XP boost! 🛑`,
+    XPBOOST_NO_ACTIVE: (username: string) =>
+      `@${username}, there is no active XP boost to cancel.`,
   },
   // Награды за баллы канала (Channel Points)
   REWARDS: {

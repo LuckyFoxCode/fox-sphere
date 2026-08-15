@@ -58,6 +58,15 @@ export function useStreamSocket(socketInstance: WidgetSocket) {
   };
 
   const handleXpBoost = (data: StreamXpBoostPayload) => {
+    if (data.canceled) {
+      xpBoost.value = null;
+      xpBoostTimeLeft.value = 0;
+      if (boostInterval) {
+        clearInterval(boostInterval);
+        boostInterval = null;
+      }
+      return;
+    }
     xpBoost.value = data;
     startBoostCountdown(data.expiresAt);
   };
@@ -75,6 +84,7 @@ export function useStreamSocket(socketInstance: WidgetSocket) {
           multiplier: response.xpBoost.multiplier,
           expiresAt: response.xpBoost.expiresAt,
           source: 'auto',
+          canceled: false,
         };
         startBoostCountdown(response.xpBoost.expiresAt);
       } else {
