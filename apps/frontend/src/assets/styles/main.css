@@ -24,6 +24,8 @@
   --twitch-amber: #ffa502;
   --twitch-blue: #3b82f6;
   --twitch-rose: #f6339a;
+
+  --link: #3b82f6;
 }
 
 @theme {
@@ -50,6 +52,8 @@
   --color-event-amber: var(--twitch-amber);
   --color-event-blue: var(--twitch-blue);
   --color-event-rose: var(--twitch-rose);
+
+  --color-link: var(--link);
 }
 
 @layer base {
