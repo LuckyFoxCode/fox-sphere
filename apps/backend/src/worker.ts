@@ -44,6 +44,7 @@ export async function bootstrap() {
   registerShutdownHandlers([
     { name: "Twitch EventSub", action: () => eventSubClient.stop() },
     { name: "Twitch Chatbot", action: () => chatbotService.stop() },
+    { name: "Pokemon pool top-up", action: () => pokemonService.stop() },
   ]);
 
   // Запуск сервисов
