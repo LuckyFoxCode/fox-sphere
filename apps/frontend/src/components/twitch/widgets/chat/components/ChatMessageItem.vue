@@ -13,6 +13,12 @@ const tokens = computed(() => parseTwitchEmotes(props.message.text, props.messag
 const announceStyle = computed(() =>
   props.message.isAnnouncement ? getAnnounceStyle(props.message.announceColor ?? 'blue') : null,
 );
+
+const watchStreakSummary = computed(() => {
+  const streak = props.message.watchStreak;
+  if (!streak) return null;
+  return `🔥 ${streak.value} streams in a row! +${streak.reward} channel points`;
+});
 </script>
 
 <template>
@@ -21,7 +27,7 @@ const announceStyle = computed(() =>
     :style="
       announceStyle
         ? { borderColor: announceStyle.borderColor, backgroundColor: announceStyle.backgroundColor }
-        : message.isHighlight
+        : message.watchStreak || message.isHighlight
           ? { borderColor: message.color, borderLeftColor: message.color }
           : { borderLeftColor: message.color }
     "
@@ -46,6 +52,13 @@ const announceStyle = computed(() =>
       >
         Announcement
       </span>
+      <span
+        v-if="message.watchStreak"
+        class="rounded-full border px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase"
+        :style="{ borderColor: message.color, color: message.color }"
+      >
+        Watch Streak
+      </span>
 
       <span
         :style="{ color: message.color }"
@@ -55,7 +68,17 @@ const announceStyle = computed(() =>
       </span>
     </div>
 
-    <p class="text-text-main leading-snug wrap-break-word">
+    <p
+      v-if="watchStreakSummary"
+      class="text-text-main text-xs leading-snug font-medium"
+    >
+      {{ watchStreakSummary }}
+    </p>
+
+    <p
+      v-if="message.text"
+      class="text-text-main leading-snug wrap-break-word"
+    >
       <template
         v-for="(token, index) in tokens"
         :key="index"
