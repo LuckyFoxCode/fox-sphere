@@ -10,6 +10,7 @@ export interface StreamXpBoostPayload {
   multiplier: number;
   expiresAt: number;
   source: XpBoostSource;
+  canceled: boolean;
 }
 
 export interface StreamXpUpdatePayload {

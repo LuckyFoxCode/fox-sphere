@@ -75,6 +75,34 @@ export class StreamService {
       multiplier: input.multiplier,
       expiresAt: expiresAt.getTime(),
       source: input.source,
+      canceled: false,
+    };
+    globalEventBus.emit("stream:xp-boost", payload);
+  }
+
+  public async deactivateXpBoost(): Promise<void> {
+    await prisma.systemState.upsert({
+      where: { id: XP_CONFIG.STREAM_STATE_ID },
+      update: {
+        xpBoostMultiplier: 1,
+        xpBoostExpiresAt: null,
+      },
+      create: {
+        id: XP_CONFIG.STREAM_STATE_ID,
+        streamLevel: 1,
+        streamCurrentXp: 0,
+        xpBoostMultiplier: 1,
+        xpBoostExpiresAt: null,
+      },
+    });
+
+    this.xpBoostCache = { boost: null, fetchedAt: Date.now() };
+
+    const payload: StreamXpBoostPayload = {
+      multiplier: BOOST_CONFIG.MULTIPLIER,
+      expiresAt: 0,
+      source: "command",
+      canceled: true,
     };
     globalEventBus.emit("stream:xp-boost", payload);
   }

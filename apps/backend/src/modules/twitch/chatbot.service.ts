@@ -518,6 +518,67 @@ export class ChatbotService {
         Logger.error("ChatbotService", "Error processing chat message", error);
       }
     });
+
+    this.chatClient.onViewerMilestone(
+      async (channel, user, milestoneInfo, msg) => {
+        try {
+          Logger.debug(
+            "ChatbotService",
+            `[${channel}] Watch streak by ${user}`,
+          );
+
+          const userData = await this.userService.getUserWithPokemon(
+            msg.userInfo.userId,
+          );
+          const isFollower = this.activityService.isFollower(
+            msg.userInfo.userId,
+          );
+
+          const emotes: Record<string, string[]> = Object.fromEntries(
+            msg.emoteOffsets,
+          );
+          const rawBadges: Record<string, string> = Object.fromEntries(
+            msg.userInfo.badges,
+          );
+          const badgeUrls = this.badgeService.getBadgeUrls(rawBadges);
+
+          const chatMessagePayload: TwitchChatMessagePayload = {
+            id: msg.id,
+            userId: msg.userInfo.userId,
+            username: user,
+            displayName: msg.userInfo.displayName,
+            color: msg.userInfo.color || "#9146FF",
+            text: milestoneInfo.message ?? "",
+            badges: badgeUrls,
+            emotes,
+            timestamp: msg.date.getTime(),
+            userLvl: userData?.lvl ?? 1,
+            isFollower,
+            pokemon: userData?.pokemon,
+            isMod: msg.userInfo.isMod,
+            isSubscriber: msg.userInfo.isSubscriber,
+            isVip: msg.userInfo.isVip,
+            isBroadcaster: msg.userInfo.isBroadcaster,
+            isBot: false,
+            isPermanentVip: userData?.isPermanentVip ?? false,
+            isFounder: userData?.isFounder ?? false,
+            isHighlight: false,
+            watchStreak: {
+              value: milestoneInfo.value ?? 0,
+              reward: milestoneInfo.reward ?? 0,
+            },
+          };
+
+          globalEventBus.emit("chat:message", chatMessagePayload);
+        } catch (error) {
+          Logger.error(
+            "ChatbotService",
+            "Error processing viewer milestone",
+            error,
+          );
+        }
+      },
+    );
   }
 
   public async sendMessage(channel: string, message: string): Promise<void> {

@@ -2,7 +2,48 @@ import type { TwitchChatMessagePayload } from '@fox-sphere/types';
 
 export type TextToken =
   | { type: 'text'; content: string }
+  | { type: 'link'; content: string }
   | { type: 'emote'; id: string; name: string; url: string };
+
+const URL_PATTERN = /https?:\/\/[^\s<>"'`]+/gi;
+const TRAILING_PUNCTUATION_PATTERN = /[.,;:!?)\]"'`]+$/;
+
+function splitTextTokens(content: string): TextToken[] {
+  const tokens: TextToken[] = [];
+  const matches = Array.from(content.matchAll(URL_PATTERN));
+  let currentIndex = 0;
+
+  for (const match of matches) {
+    const raw = match[0];
+    const matchIndex = match.index;
+    if (raw === undefined || matchIndex === undefined) continue;
+
+    if (matchIndex > currentIndex) {
+      tokens.push({
+        type: 'text',
+        content: Array.from(content).slice(currentIndex, matchIndex).join(''),
+      });
+    }
+
+    const url = raw.replace(TRAILING_PUNCTUATION_PATTERN, '');
+    if (url.length > 0) {
+      tokens.push({ type: 'link', content: url });
+    } else {
+      tokens.push({ type: 'text', content: raw });
+    }
+
+    currentIndex = matchIndex + raw.length;
+  }
+
+  if (currentIndex < content.length) {
+    tokens.push({
+      type: 'text',
+      content: Array.from(content).slice(currentIndex).join(''),
+    });
+  }
+
+  return tokens;
+}
 
 function parseEmotesRaw(emotes: unknown): Record<string, string[]> {
   if (!emotes) return {};
@@ -42,7 +83,7 @@ export function parseTwitchEmotes(
   }
 
   if (replacements.length === 0) {
-    return [{ type: 'text', content: text }];
+    return splitTextTokens(text);
   }
 
   replacements.sort((a, b) => a.start - b.start);
@@ -55,10 +96,7 @@ export function parseTwitchEmotes(
     if (rep.start < currentIndex) continue;
 
     if (rep.start > currentIndex) {
-      tokens.push({
-        type: 'text',
-        content: chars.slice(currentIndex, rep.start).join(''),
-      });
+      tokens.push(...splitTextTokens(chars.slice(currentIndex, rep.start).join('')));
     }
 
     const emoteName = chars.slice(rep.start, rep.end + 1).join('');
@@ -74,10 +112,7 @@ export function parseTwitchEmotes(
   }
 
   if (currentIndex < chars.length) {
-    tokens.push({
-      type: 'text',
-      content: chars.slice(currentIndex).join(''),
-    });
+    tokens.push(...splitTextTokens(chars.slice(currentIndex).join('')));
   }
 
   return tokens;

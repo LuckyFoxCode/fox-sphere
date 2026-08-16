@@ -73,13 +73,17 @@ export const BOT_MESSAGES = {
       `⚡ @${username} activated an XP ×${multiplier} boost for ${minutes} minutes! 🚀`,
     XPBOOST_WARNING: (username: string) =>
       `@${username}, usage: !xpboost <5-60> — duration in minutes.`,
+    XPBOOST_CANCEL: (username: string) =>
+      `⚡ @${username} cancelled the XP boost! 🛑`,
+    XPBOOST_NO_ACTIVE: (username: string) =>
+      `@${username}, there is no active XP boost to cancel.`,
   },
   // Награды за баллы канала (Channel Points)
   REWARDS: {
     COIN_EXCHANGE: (username: string, amount: number) =>
       `💰 @${username} exchanged Channel Points for ${amount} Coins! Wallet updated! 🪙`,
-    LEADERBOARD: (username: string, topList: string) =>
-      `🏆 LEADERBOARD (Ordered by @${username}) 🏆   ➔   ${topList}`,
+    LEADERBOARD: (_username: string, topList: string) =>
+      `🏆 LEADERBOARD: ➔ ${topList}`,
     USER_STATS: (
       username: string,
       lvl: number,

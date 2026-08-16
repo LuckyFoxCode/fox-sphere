@@ -110,20 +110,20 @@ is exposed on `:3000` (Socket.io + REST).
 feature/*  --(PR)-->  dev  --(PR)-->  main  --(tag)-->  vX.Y.Z
 ```
 
-1. Create a feature branch from `dev` (`feat/...`, `fix/...`, `refactor/...`)
+1. Create a feature branch from `dev` (`feat/DEV-<id>-<slug>`, `fix/DEV-<id>-<slug>`, `refactor/DEV-<id>-<slug>` — the Linear issue ID makes Linear link the branch to the issue automatically)
 2. Open a PR into `dev`
 3. Merge `dev` into `main`
 4. Tag the release on `main`
 
 ### Conventional commits
 
-Commit messages follow the conventional-commit format: `type(scope): subject`
+Commit messages follow the conventional-commit format with the Linear issue ID prefix: `DEV-<id> type(scope): subject`
 
-- `feat(...)` — new feature → minor release
-- `fix(...)` — bug fix → patch release
-- `docs(...)` — documentation only → no version bump
-- `refactor(...)` — behavior-neutral refactor → patch release
-- `feat(...)!:` / breaking change → major release
+- `DEV-16 feat(...)` — new feature → minor release
+- `DEV-16 fix(...)` — bug fix → patch release
+- `DEV-16 docs(...)` — documentation only → no version bump
+- `DEV-16 refactor(...)` — behavior-neutral refactor → patch release
+- `DEV-16 feat(...)!:` / breaking change → major release
 
 ### Release tags (semver)
 
