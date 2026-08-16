@@ -83,7 +83,7 @@ export const BOT_MESSAGES = {
     COIN_EXCHANGE: (username: string, amount: number) =>
       `💰 @${username} exchanged Channel Points for ${amount} Coins! Wallet updated! 🪙`,
     LEADERBOARD: (username: string, topList: string) =>
-      `🏆 LEADERBOARD (Ordered by @${username}) 🏆   ➔   ${topList}`,
+      `🏆 LEADERBOARD: ➔ ${topList}`,
     USER_STATS: (
       username: string,
       lvl: number,
