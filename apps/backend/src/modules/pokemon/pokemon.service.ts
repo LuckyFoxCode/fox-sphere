@@ -1,26 +1,92 @@
 import { PokemonPoolItem } from "@fox-sphere/types";
 import { prisma } from "../../shared/lib";
 import { globalEventBus, Logger } from "../../shared/services";
-import { fetchPokemonPoolData } from "./pokemon.helpers";
+import { BASE_POKEMON_POOL } from "./pokemon.constants";
+import { fetchPokemon, fetchPokemonPoolData } from "./pokemon.helpers";
+
+const TOP_UP_INTERVAL_MS = 5 * 60 * 1000;
 
 export class PokemonService {
   private pokemonPool: PokemonPoolItem[] = [];
+  private topUpTimer: NodeJS.Timeout | null = null;
 
   public async init(): Promise<void> {
-    try {
-      this.pokemonPool = await fetchPokemonPoolData();
+    this.pokemonPool = await fetchPokemonPoolData();
+    Logger.info(
+      "PokemonService",
+      `Loaded ${this.pokemonPool.length} base pokemons into memory pool.`,
+    );
+
+    this.setupEventListeners();
+    this.startPoolTopUp();
+  }
+
+  public stop(): void {
+    if (this.topUpTimer) {
+      clearInterval(this.topUpTimer);
+      this.topUpTimer = null;
+    }
+  }
+
+  private startPoolTopUp(): void {
+    if (this.pokemonPool.length >= BASE_POKEMON_POOL.length) {
+      return;
+    }
+
+    this.topUpTimer = setInterval(() => {
+      void this.topUpPool();
+    }, TOP_UP_INTERVAL_MS);
+    this.topUpTimer.unref();
+  }
+
+  private async topUpPool(): Promise<void> {
+    const loadedSpecies = new Set(
+      this.pokemonPool.map((item) => item.speciesName),
+    );
+    const missing = BASE_POKEMON_POOL.filter(
+      (name) => !loadedSpecies.has(name),
+    );
+
+    if (missing.length === 0) {
+      this.stop();
+      return;
+    }
+
+    Logger.info(
+      "PokemonService",
+      `Topping up base pokemon pool: ${missing.length} missing (${missing.join(", ")}).`,
+    );
+
+    for (const name of missing) {
+      try {
+        const item = await fetchPokemon(name);
+        const index = this.pokemonPool.findIndex(
+          (poolItem) => poolItem.pokemonId === item.pokemonId,
+        );
+        if (index === -1) {
+          this.pokemonPool.push(item);
+        } else {
+          this.pokemonPool[index] = item;
+        }
+        Logger.info(
+          "PokemonService",
+          `Topped up base pokemon "${item.speciesName}" (#${item.pokemonId}).`,
+        );
+      } catch (error) {
+        Logger.error(
+          "PokemonService",
+          `Top-up failed for base pokemon "${name}"`,
+          error,
+        );
+      }
+    }
+
+    if (this.pokemonPool.length === BASE_POKEMON_POOL.length) {
       Logger.info(
         "PokemonService",
-        `Loaded ${this.pokemonPool.length} base pokemons into memory pool.`,
+        `Base pokemon pool is complete (${this.pokemonPool.length}/${BASE_POKEMON_POOL.length}).`,
       );
-
-      this.setupEventListeners();
-    } catch (error) {
-      Logger.error(
-        "PokemonService",
-        "Failed to fetch base pokemon pool",
-        error,
-      );
+      this.stop();
     }
   }
 
