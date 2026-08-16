@@ -70,7 +70,7 @@ const watchStreakSummary = computed(() => {
 
     <p
       v-if="watchStreakSummary"
-      class="text-text-main text-xs leading-snug font-medium"
+      class="text-text-main text-sm leading-snug font-medium"
     >
       {{ watchStreakSummary }}
     </p>
@@ -78,7 +78,9 @@ const watchStreakSummary = computed(() => {
     <p
       v-if="message.text"
       class="text-text-main leading-snug wrap-break-word"
+      :class="{ 'text-sm italic opacity-80': message.watchStreak }"
     >
+      <span v-if="message.watchStreak">💬&nbsp;</span>
       <template
         v-for="(token, index) in tokens"
         :key="index"
