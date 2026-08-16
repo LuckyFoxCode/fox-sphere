@@ -3,6 +3,11 @@ import { WidgetVariant } from "./variants.js";
 
 export type TwitchAnnouncementColor = "blue" | "green" | "orange" | "purple";
 
+export interface TwitchWatchStreakInfo {
+  value: number;
+  reward: number;
+}
+
 // Данные событий (Payloads)
 export interface TwitchAddVipPaylod {
   twitchId: string;
@@ -57,6 +62,7 @@ export interface TwitchChatMessagePayload {
   isHighlight: boolean;
   isAnnouncement?: boolean;
   announceColor?: TwitchAnnouncementColor;
+  watchStreak?: TwitchWatchStreakInfo;
 }
 
 export interface TwitchServerToClientEvents {
