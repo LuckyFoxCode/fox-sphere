@@ -26,7 +26,7 @@ are scoped by neither.
 | `pnpm format:f` | Prettier over `apps/frontend/src` |
 | `pnpm prisma:g` | `prisma generate` - **required after clone and after every schema edit** |
 | `pnpm prisma:m` | `prisma migrate dev` - local |
-| `pnpm --filter backend migrate:deploy` | `prisma migrate deploy` - production migration step; applies only, generates no artifacts; run by CI, not by hand |
+| `pnpm --filter @fox-sphere/db prisma:migrate:deploy` | `prisma migrate deploy` - production migration step; applies only, generates no artifacts; run by CI, not by hand |
 | `pnpm prisma:s` | Prisma Studio |
 | `pnpm new:pkg` | Scaffold a workspace package - see `docs/adding-a-package.md` |
 
@@ -131,11 +131,11 @@ Two consequences for code written today:
 | Gotcha | Where |
 |---|---|
 | **`pnpm start:b` is broken.** `start` is `node dist/server.js`, but the backend is ESM (`"type": "module"`) with extensionless relative imports under `moduleResolution: "Bundler"`. Node's ESM loader needs full specifiers. Production runs `start:prod` (`tsx src/prod.ts`) instead. | `apps/backend/package.json`, `apps/backend/tsconfig.json` |
-| **The Prisma client is gitignored** (`/src/generated/prisma`). Run `pnpm prisma:g` after a clone and after every schema edit, before anything type-checks. | `apps/backend/.gitignore` |
-| **`datasource db` has no `url`.** Prisma 7 reads it from `prisma.config.ts` via `env("DATABASE_URL")`. Putting `url` back in the schema is the wrong fix. | `apps/backend/prisma/schema.prisma`, `apps/backend/prisma.config.ts` |
-| **Import the client from `generated/prisma/client`**, not `generated/prisma`. | `apps/backend/src/shared/lib/prisma.ts` |
-| **`TwitchToken.obtainmentTimestamp` is `BigInt`.** `JSON.stringify` throws on it, so never hand a raw `TwitchToken` to `res.json()` or `io.emit()`. | `apps/backend/prisma/schema.prisma` |
-| **`TwitchToken` has no `@id`.** Its unique criterion is `twitchUserId` - that is the key for `findUnique` and `upsert`. | `apps/backend/prisma/schema.prisma` |
+| **The Prisma client is gitignored** (`packages/db/src/generated/`). Run `pnpm prisma:g` after a clone and after every schema edit, before anything type-checks. | `packages/db/.gitignore` |
+| **`datasource db` has no `url`.** Prisma 7 reads it from `prisma.config.ts` via `env("DATABASE_URL")`. Putting `url` back in the schema is the wrong fix. | `packages/db/prisma/schema.prisma`, `packages/db/prisma.config.ts` |
+| **Import PrismaClient and types from `@fox-sphere/db`**, not from a local `generated/` path. | `apps/backend/src/shared/lib/prisma.ts` |
+| **`TwitchToken.obtainmentTimestamp` is `BigInt`.** `JSON.stringify` throws on it, so never hand a raw `TwitchToken` to `res.json()` or `io.emit()`. | `packages/db/prisma/schema.prisma` |
+| **`TwitchToken` has no `@id`.** Its unique criterion is `twitchUserId` - that is the key for `findUnique` and `upsert`. | `packages/db/prisma/schema.prisma` |
 | **Dev runs two processes, production runs one.** `prod.ts` shares an in-memory `globalEventBus` between server and worker; in dev they are separate and talk over HTTP. | `apps/backend/src/prod.ts`, `apps/backend/src/worker.ts` |
 | **`/api/internal/events` is unauthenticated** and re-emits arbitrary `event` and `data` to every connected socket. It must never be publicly reachable. | `apps/backend/src/app.ts` |
 | **CORS is inconsistent.** Socket.io pins `config.allowedOrigin`; `app.use(cors())` is wide open. | `apps/backend/src/app.ts` |
@@ -180,7 +180,7 @@ CI then fails.
 |---|---|
 | `.agents/rules/agent-workflow.md` | everything |
 | `.agents/rules/typescript.md` | `**/*.ts`, `**/*.vue` |
-| `.agents/rules/prisma.md` | `apps/backend/prisma/**`, `apps/backend/prisma.config.ts`, `apps/backend/src/**/*.ts` |
+| `.agents/rules/prisma.md` | `packages/db/prisma/**`, `packages/db/prisma.config.ts`, `apps/backend/src/**/*.ts` |
 | `.agents/rules/express.md` | `apps/backend/src/{app,server,prod}.ts`, `apps/backend/src/shared/{middleware,errors,config}/**` |
 | `.agents/rules/vue.md` | `apps/frontend/src/**`, `apps/frontend/*.config.ts`, `apps/frontend/.prettierrc.json` |
 | `.agents/rules/realtime.md` | `apps/backend/src/app.ts`, `apps/backend/src/shared/services/**`, `apps/frontend/src/{composables/sockets,services}/**`, `packages/types/**` |
