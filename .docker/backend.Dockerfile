@@ -11,7 +11,7 @@ WORKDIR /app
 # --- Run everything as the built-in non-root `node` user (uid 1000). ---------
 # WHY: the dev stack bind-mounts ./apps/backend and ./packages into the
 # container (see docker-compose.yml). Anything the container writes back into
-# those mounts — Prisma client in apps/backend/src/generated/, tsdown output in
+# those mounts — Prisma client in packages/db/src/generated/, tsdown output in
 # packages/*/dist — lands on the HOST with the writer's UID. If the container
 # runs as root (the default), those files become root:root on the host and a
 # later host-side `pnpm build` dies with:
@@ -21,10 +21,10 @@ WORKDIR /app
 #
 # ONE-TIME FIX for files already owned by root (left over from before this
 # change) — remove them as root, then rebuild normally as yourself:
-#     sudo rm -rf apps/backend/src/generated packages/*/dist
+#     sudo rm -rf packages/db/src/generated packages/*/dist
 #     pnpm build            # host: packages + frontend
 #     docker compose build  # backend (Prisma client regenerated in-container)
-# (chown also works: sudo chown -R "$USER:$USER" apps/backend/src/generated)
+# (chown also works: sudo chown -R "$USER:$USER" packages/db/src/generated)
 RUN chown -R node:node /app
 USER node
 
@@ -38,6 +38,7 @@ COPY --chown=node:node package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY --chown=node:node apps/backend/package.json ./apps/backend/
 COPY --chown=node:node packages/types/package.json ./packages/types/
 COPY --chown=node:node packages/shared-schemas/package.json ./packages/shared-schemas/
+COPY --chown=node:node packages/db/package.json ./packages/db/
 RUN pnpm install --frozen-lockfile
 
 # ==========================================
@@ -60,7 +61,7 @@ FROM deps AS build
 ARG DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder?schema=public"
 ENV DATABASE_URL=$DATABASE_URL
 COPY --chown=node:node . .
-RUN pnpm --filter backend exec prisma generate
+RUN pnpm --filter @fox-sphere/db exec prisma generate
 # backend imports @fox-sphere/types AND @fox-sphere/shared-schemas — build both.
 RUN pnpm --filter "./packages/*" build
 RUN pnpm --filter backend build

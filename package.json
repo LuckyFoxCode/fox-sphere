@@ -17,9 +17,9 @@
     "build:b": "pnpm --filter backend build",
     "start:b": "pnpm --filter backend start",
     "lint:b": "pnpm --filter backend lint",
-    "prisma:g": "pnpm --filter backend prisma:generate",
-    "prisma:m": "pnpm --filter backend prisma:migrate",
-    "prisma:s": "pnpm --filter backend prisma:studio",
+    "prisma:g": "pnpm --filter @fox-sphere/db prisma:generate",
+    "prisma:m": "pnpm --filter @fox-sphere/db prisma:migrate",
+    "prisma:s": "pnpm --filter @fox-sphere/db prisma:studio",
     "worker:t": "pnpm --filter backend worker:twitch"
   },
   "keywords": [],

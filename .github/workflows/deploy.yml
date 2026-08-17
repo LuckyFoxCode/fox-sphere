@@ -70,6 +70,6 @@ jobs:
             cd ~/foxsphere
             docker compose pull
             # Run migrations before swapping the app (one-shot container).
-            docker compose run --rm backend pnpm --filter backend migrate:deploy
+            docker compose run --rm backend pnpm --filter @fox-sphere/db prisma:migrate:deploy
             docker compose up -d
             docker image prune -f
