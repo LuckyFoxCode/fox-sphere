@@ -209,6 +209,9 @@ importers:
 
   apps/backend:
     dependencies:
+      '@fox-sphere/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@fox-sphere/shared-schemas':
         specifier: workspace:*
         version: link:../../packages/shared-schemas
@@ -361,6 +364,22 @@ importers:
       vue-tsc:
         specifier: ^3.2.6
         version: 3.2.9(typescript@6.0.3)
+
+  packages/db:
+    dependencies:
+      '@prisma/client':
+        specifier: ^7.8.0
+        version: 7.8.0(prisma@7.8.0(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3))(typescript@6.0.3)
+    devDependencies:
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
+      prisma:
+        specifier: ^7.8.0
+        version: 7.8.0(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
 
   packages/shared-schemas:
     dependencies:
