@@ -4,13 +4,9 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio",
-    "build": "prisma generate && tsc",
+    "build": "tsc",
     "start": "node dist/server.js",
     "start:prod": "tsx src/prod.ts",
-    "migrate:deploy": "prisma migrate deploy",
     "dev": "tsx watch --inspect=9229 src/server.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -21,6 +17,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@fox-sphere/db": "workspace:*",
     "@fox-sphere/shared-schemas": "workspace:*",
     "@fox-sphere/types": "workspace:*",
     "@prisma/adapter-pg": "^7.8.0",
