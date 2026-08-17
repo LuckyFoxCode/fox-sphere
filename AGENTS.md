@@ -38,14 +38,14 @@ bind-mounted.
 ## First run
 
 ```bash
-cp apps/backend/.env.example apps/backend/.env
+cp .env.example .env
 docker compose up -d postgres      # or point DATABASE_URL at a Postgres you already run
 pnpm install
 pnpm build:p
 pnpm prisma:g
 ```
 
-Then edit `apps/backend/.env`. Two groups of values in the copied template are **not**
+Then edit `.env`. Two groups of values in the copied template are **not**
 usable as they ship:
 
 - **`DATABASE_URL`** is `postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public` - a
@@ -63,7 +63,7 @@ and need no edit.
 pnpm prisma:m                      # apply migrations, once DATABASE_URL above is real
 ```
 
-`apps/backend/.env` is gitignored, so it does not exist on a fresh clone, and `config` throws
+`.env` at the repo root is gitignored, so it does not exist on a fresh clone, and `config` throws
 on the first genuinely missing variable. Note that `docker compose up` (the full stack) reads
 the same file but overrides `DATABASE_URL` to reach the `postgres` service by name - that
 override applies only inside compose, never to a native `pnpm dev:b`.
@@ -197,7 +197,7 @@ the rule matching the files you are about to touch.
 - Never use `--no-verify`.
 - Never edit `apps/backend/src/generated/` - `prisma generate` owns it and it is gitignored.
 - Never hand-edit `pnpm-lock.yaml`.
-- Never commit a `.env`. `apps/backend/.env.example` is the local-development template; `.env.prod.example` at the repo root is the production one - they are different files for different jobs.
+- Never commit a `.env`. `.env.example` at the repo root is the local-development template; `.env.prod.example` is the production one - they are different files for different jobs.
 - `/api/internal/events` is unauthenticated and fans out to every socket. Do not expose it publicly, and do not add a second route under that prefix without stating its trust model.
 - Do not claim "tests pass". There are none.
 - If a change invalidates a documented gotcha, update this file in the same commit.
