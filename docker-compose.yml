@@ -38,7 +38,7 @@ services:
       # Twitch creds / PORT come from the gitignored .env...
       - "9229:9229"
     env_file:
-      - apps/backend/.env
+      - .env
     # ...but DATABASE_URL must point at the compose service, so override it here.
     environment:
       DATABASE_URL: "postgresql://fox_user:fox_password@postgres:5432/foxsphere_db?schema=public"

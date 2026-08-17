@@ -1,5 +1,8 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+import { resolve } from "path";
 import { AppError } from "../errors/app-error";
+
+dotenv.config({ path: resolve(process.cwd(), "../../.env") });
 
 const getEnv = (key: string, defaultValue?: string): string => {
   const value = process.env[key] || defaultValue;

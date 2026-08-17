@@ -2,8 +2,8 @@ import dotenv from "dotenv";
 import { resolve } from "path";
 import { defineConfig, env } from "prisma/config";
 
-// Load .env from the backend directory (single .env for the monorepo)
-dotenv.config({ path: resolve(import.meta.dirname, "../../apps/backend/.env") });
+// Load .env from the repo root (single .env for the monorepo)
+dotenv.config({ path: resolve(import.meta.dirname, "../../.env") });
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
