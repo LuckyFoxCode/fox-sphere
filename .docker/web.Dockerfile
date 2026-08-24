@@ -25,7 +25,10 @@ COPY . .
 # Empty -> same-origin (Option B). Set to the backend URL for Option A.
 ARG VITE_API_BASE_URL=""
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-RUN pnpm --filter "./packages/*" build && pnpm --filter frontend build
+# @fox-sphere/db is filtered out: its `build` runs `prisma generate`, which
+# requires a real DATABASE_URL this image must never need (the frontend does
+# not import @fox-sphere/db).
+RUN pnpm --filter "./packages/*" --filter "!@fox-sphere/db" build && pnpm --filter frontend build
 
 # ==========================================
 # Serve with Caddy
