@@ -26,7 +26,10 @@ const watchStreakSummary = computed(() => {
     class="bg-card/80 border-text-second/10 relative flex flex-col gap-1 rounded-r-xl border-2 border-l-4 p-2 text-sm shadow-sm backdrop-blur-md"
     :style="
       announceStyle
-        ? { borderColor: announceStyle.borderColor, backgroundColor: announceStyle.backgroundColor }
+        ? {
+            borderColor: announceStyle.borderColor,
+            backgroundImage: `linear-gradient(${announceStyle.tint}, ${announceStyle.tint})`,
+          }
         : message.watchStreak || message.isHighlight
           ? { borderColor: message.color, borderLeftColor: message.color }
           : { borderLeftColor: message.color }
