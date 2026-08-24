@@ -1,5 +1,5 @@
 import { PokemonPoolItem } from "@fox-sphere/types";
-import { User } from "../../generated/prisma/client";
+import type { User } from "@fox-sphere/db";
 import { config } from "../../shared/config";
 import { AppError } from "../../shared/errors";
 import { prisma } from "../../shared/lib";

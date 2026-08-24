@@ -26,7 +26,7 @@ are scoped by neither.
 | `pnpm format:f` | Prettier over `apps/frontend/src` |
 | `pnpm prisma:g` | `prisma generate` - **required after clone and after every schema edit** |
 | `pnpm prisma:m` | `prisma migrate dev` - local |
-| `pnpm --filter backend migrate:deploy` | `prisma migrate deploy` - production migration step; applies only, generates no artifacts; run by CI, not by hand |
+| `pnpm --filter @fox-sphere/db prisma:migrate:deploy` | `prisma migrate deploy` - production migration step; applies only, generates no artifacts; run by CI, not by hand |
 | `pnpm prisma:s` | Prisma Studio |
 | `pnpm new:pkg` | Scaffold a workspace package - see `docs/adding-a-package.md` |
 
@@ -38,14 +38,14 @@ bind-mounted.
 ## First run
 
 ```bash
-cp apps/backend/.env.example apps/backend/.env
+cp .env.example .env
 docker compose up -d postgres      # or point DATABASE_URL at a Postgres you already run
 pnpm install
 pnpm build:p
 pnpm prisma:g
 ```
 
-Then edit `apps/backend/.env`. Two groups of values in the copied template are **not**
+Then edit `.env`. Two groups of values in the copied template are **not**
 usable as they ship:
 
 - **`DATABASE_URL`** is `postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public` - a
@@ -63,7 +63,7 @@ and need no edit.
 pnpm prisma:m                      # apply migrations, once DATABASE_URL above is real
 ```
 
-`apps/backend/.env` is gitignored, so it does not exist on a fresh clone, and `config` throws
+`.env` at the repo root is gitignored, so it does not exist on a fresh clone, and `config` throws
 on the first genuinely missing variable. Note that `docker compose up` (the full stack) reads
 the same file but overrides `DATABASE_URL` to reach the `postgres` service by name - that
 override applies only inside compose, never to a native `pnpm dev:b`.
@@ -131,11 +131,11 @@ Two consequences for code written today:
 | Gotcha | Where |
 |---|---|
 | **`pnpm start:b` is broken.** `start` is `node dist/server.js`, but the backend is ESM (`"type": "module"`) with extensionless relative imports under `moduleResolution: "Bundler"`. Node's ESM loader needs full specifiers. Production runs `start:prod` (`tsx src/prod.ts`) instead. | `apps/backend/package.json`, `apps/backend/tsconfig.json` |
-| **The Prisma client is gitignored** (`/src/generated/prisma`). Run `pnpm prisma:g` after a clone and after every schema edit, before anything type-checks. | `apps/backend/.gitignore` |
-| **`datasource db` has no `url`.** Prisma 7 reads it from `prisma.config.ts` via `env("DATABASE_URL")`. Putting `url` back in the schema is the wrong fix. | `apps/backend/prisma/schema.prisma`, `apps/backend/prisma.config.ts` |
-| **Import the client from `generated/prisma/client`**, not `generated/prisma`. | `apps/backend/src/shared/lib/prisma.ts` |
-| **`TwitchToken.obtainmentTimestamp` is `BigInt`.** `JSON.stringify` throws on it, so never hand a raw `TwitchToken` to `res.json()` or `io.emit()`. | `apps/backend/prisma/schema.prisma` |
-| **`TwitchToken` has no `@id`.** Its unique criterion is `twitchUserId` - that is the key for `findUnique` and `upsert`. | `apps/backend/prisma/schema.prisma` |
+| **The Prisma client is gitignored** (`packages/db/src/generated/`). Run `pnpm prisma:g` after a clone and after every schema edit, before anything type-checks. | `packages/db/.gitignore` |
+| **`datasource db` has no `url`.** Prisma 7 reads it from `prisma.config.ts` via `env("DATABASE_URL")`. Putting `url` back in the schema is the wrong fix. | `packages/db/prisma/schema.prisma`, `packages/db/prisma.config.ts` |
+| **Import PrismaClient and types from `@fox-sphere/db`**, not from a local `generated/` path. | `apps/backend/src/shared/lib/prisma.ts` |
+| **`TwitchToken.obtainmentTimestamp` is `BigInt`.** `JSON.stringify` throws on it, so never hand a raw `TwitchToken` to `res.json()` or `io.emit()`. | `packages/db/prisma/schema.prisma` |
+| **`TwitchToken` has no `@id`.** Its unique criterion is `twitchUserId` - that is the key for `findUnique` and `upsert`. | `packages/db/prisma/schema.prisma` |
 | **Dev runs two processes, production runs one.** `prod.ts` shares an in-memory `globalEventBus` between server and worker; in dev they are separate and talk over HTTP. | `apps/backend/src/prod.ts`, `apps/backend/src/worker.ts` |
 | **`/api/internal/events` is unauthenticated** and re-emits arbitrary `event` and `data` to every connected socket. It must never be publicly reachable. | `apps/backend/src/app.ts` |
 | **CORS is inconsistent.** Socket.io pins `config.allowedOrigin`; `app.use(cors())` is wide open. | `apps/backend/src/app.ts` |
@@ -180,7 +180,7 @@ CI then fails.
 |---|---|
 | `.agents/rules/agent-workflow.md` | everything |
 | `.agents/rules/typescript.md` | `**/*.ts`, `**/*.vue` |
-| `.agents/rules/prisma.md` | `apps/backend/prisma/**`, `apps/backend/prisma.config.ts`, `apps/backend/src/**/*.ts` |
+| `.agents/rules/prisma.md` | `packages/db/prisma/**`, `packages/db/prisma.config.ts`, `apps/backend/src/**/*.ts` |
 | `.agents/rules/express.md` | `apps/backend/src/{app,server,prod}.ts`, `apps/backend/src/shared/{middleware,errors,config}/**` |
 | `.agents/rules/vue.md` | `apps/frontend/src/**`, `apps/frontend/*.config.ts`, `apps/frontend/.prettierrc.json` |
 | `.agents/rules/realtime.md` | `apps/backend/src/app.ts`, `apps/backend/src/shared/services/**`, `apps/frontend/src/{composables/sockets,services}/**`, `packages/types/**` |
@@ -197,7 +197,7 @@ the rule matching the files you are about to touch.
 - Never use `--no-verify`.
 - Never edit `apps/backend/src/generated/` - `prisma generate` owns it and it is gitignored.
 - Never hand-edit `pnpm-lock.yaml`.
-- Never commit a `.env`. `apps/backend/.env.example` is the local-development template; `.env.prod.example` at the repo root is the production one - they are different files for different jobs.
+- Never commit a `.env`. `.env.example` at the repo root is the local-development template; `.env.prod.example` is the production one - they are different files for different jobs.
 - `/api/internal/events` is unauthenticated and fans out to every socket. Do not expose it publicly, and do not add a second route under that prefix without stating its trust model.
 - Do not claim "tests pass". There are none.
 - If a change invalidates a documented gotcha, update this file in the same commit.

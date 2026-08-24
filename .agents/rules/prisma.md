@@ -2,8 +2,8 @@
 name: prisma
 description: Prisma 7 conventions specific to fox-sphere - the single client, generate-before-typecheck, the schema's traps, and mapping ORM errors at the data boundary.
 paths:
-  - "apps/backend/prisma/**"
-  - "apps/backend/prisma.config.ts"
+  - "packages/db/prisma/**"
+  - "packages/db/prisma.config.ts"
   - "apps/backend/src/**/*.ts"
 ---
 
@@ -33,15 +33,17 @@ still applies: import the barrel, not `lib/prisma`, even from inside `shared/`.
 Never call `new PrismaClient()` anywhere else. Each one opens its own connection pool, and
 Postgres runs out of connections well before anyone connects the symptom to the cause.
 
-Types come from the generated client, and the entrypoint ends in `/client`:
+Types come from the generated client. Import `PrismaClient` and model types from
+`@fox-sphere/db`:
 
 ```ts
-import { PrismaClient } from "../../generated/prisma/client";
+import { PrismaClient } from "@fox-sphere/db";
+import type { User } from "@fox-sphere/db";
 ```
 
 ## Generate before you type-check
 
-`/src/generated/prisma` is gitignored. After a clone, and after **every** schema edit:
+`packages/db/src/generated/` is gitignored. After a clone, and after **every** schema edit:
 
 ```bash
 pnpm prisma:g
@@ -51,10 +53,10 @@ pnpm prisma:g
 you; a host build does not.
 
 `pnpm prisma:m` (`prisma migrate dev`) is the local command - it generates and applies.
-`pnpm --filter backend migrate:deploy` (`prisma migrate deploy`) is the production one - it
-applies only and generates no artifacts, and is invoked by the deploy workflow rather than
-run by hand. Never edit a migration that has already been applied anywhere; add a new one.
-For the rest of the CLI verbs, see the `prisma-cli` skill.
+`pnpm --filter @fox-sphere/db prisma:migrate:deploy` (`prisma migrate deploy`) is the
+production one - it applies only and generates no artifacts, and is invoked by the deploy
+workflow rather than run by hand. Never edit a migration that has already been applied
+anywhere; add a new one. For the rest of the CLI verbs, see the `prisma-cli` skill.
 
 ## The datasource has no url, and that is correct
 
@@ -64,7 +66,7 @@ datasource db {
 }
 ```
 
-Prisma 7 takes the URL from `apps/backend/prisma.config.ts`, which reads
+Prisma 7 takes the URL from `packages/db/prisma.config.ts`, which reads
 `env("DATABASE_URL")`. If a command complains about a missing URL, fix the environment -
 do not add `url` back to the schema.
 
@@ -100,5 +102,5 @@ responses; nothing deeper in the stack should be choosing a status code.
 
 ## Never edit generated output
 
-`apps/backend/src/generated/` is rewritten by every `prisma generate`. Edits there vanish
+`packages/db/src/generated/` is rewritten by every `prisma generate`. Edits there vanish
 without a trace.

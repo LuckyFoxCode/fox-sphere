@@ -1,5 +1,0 @@
-.env
-.env.local
-.env.development
-.env.production
-/src/generated/prisma
