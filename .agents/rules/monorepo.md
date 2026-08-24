@@ -77,6 +77,11 @@ before `pnpm install --frozen-lockfile`. `apps/frontend` is deliberately absent;
 image never builds it. **A new member that the backend depends on therefore needs a new
 `COPY` line there**, or the Docker build silently installs without it.
 
+`.docker/web.Dockerfile` builds `packages/*` **minus `@fox-sphere/db`**
+(`--filter "!@fox-sphere/db"`): the frontend never imports it, and its `build` is
+`prisma generate`, which throws without a real `DATABASE_URL` that this image must never
+need. Keep the filter when adding packages.
+
 The image runs as the `node` user (uid 1000) deliberately: dev bind-mounts write
 `apps/backend/src/generated/` and `packages/*/dist` back to the host, and root-owned output
 makes a later host-side `pnpm build` fail with `EACCES`. Do not add `USER root` to make a

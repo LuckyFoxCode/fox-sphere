@@ -144,6 +144,7 @@ Two consequences for code written today:
 | **The backend has no path alias** - relative imports only. `@/*` exists in the frontend alone. | `apps/backend/tsconfig.json`, `apps/frontend/tsconfig.app.json` |
 | **Packages build before apps.** Root `build` runs `--filter "./packages/*" build` first; the backend build needs `packages/*/dist` to exist. | `package.json`, `.docker/backend.Dockerfile` |
 | **The backend image runs as uid 1000 (`node`) deliberately.** Dev bind-mounts write `src/generated/` and `packages/*/dist` back to the host, and root-owned output breaks a later host-side `pnpm build`. | `.docker/backend.Dockerfile` |
+| **The web image must not build `packages/db`.** Its `build` is `prisma generate`, which throws without a real `DATABASE_URL`, and the frontend never imports `@fox-sphere/db` - so the web image filters it out with `--filter "!@fox-sphere/db"`. Keep that filter when adding packages. | `.docker/web.Dockerfile` |
 | **No tests exist anywhere in this repo.** | whole tree |
 
 ## Verification
