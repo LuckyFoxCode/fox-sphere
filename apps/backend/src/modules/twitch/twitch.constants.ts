@@ -23,6 +23,8 @@ export const COOLDOWNS = {
   COINS_COMMAND: 5000,
   ANNOUNCEMENT_QUEUE: 2000,
   GENERAL_COMMAND: 10000,
+  LURK_COMMAND: 300000,
+  PIVO_COMMAND: 60000,
 };
 
 export const BOT_MESSAGES = {
@@ -48,7 +50,33 @@ export const BOT_MESSAGES = {
     TG: `📢 Telegram • Join for weekly devlogs, project updates, and live announcements: https://t.me/TheCodingFox 🦊🌐`,
     STACK: `💻 Tech Stack • Express / TypeScript • Vue 3 / TailwindCSS • PostgreSQL / Prisma / Docker ⚙️`,
     PROJECT: `🛠️ Current Project • FoxSphere: A custom Full-Stack Twitch interactive & gamification platform built from scratch (Vue 3 / Express / Postgres / Docker) to level up my dev skills live! 🦊🔮`,
-    HELP: `🔮 FoxSphere • Commands: !coins | Info: !gh • !tg • !stack • !project ➔ Type any command for details! 🚀`,
+    HELP: `🔮 FoxSphere • Commands: !coins • Fun: !lurk • !pivo | Info: !gh • !tg • !stack • !project ➔ Type any command for details! 🚀`,
+    LURK: [
+      (username: string) =>
+        `🦊 @${username} slips into the fox den to lurk. Enjoy the vibes!`,
+      (username: string) =>
+        `🌙 @${username} curls up on the couch. We'll keep a seat warm!`,
+      (username: string) =>
+        `👀 @${username} watches from the shadows... we see you! 💚`,
+      (username: string) =>
+        `☕ Lights off, snacks ready — @${username} went full lurk mode! 🚀`,
+      (username: string) =>
+        `🛋️ Welcome to lurk life, @${username}! Hydrate and enjoy 💧`,
+    ],
+    PIVO: [
+      (username: string) =>
+        `🍺 @${username} cracks open a cold one. Cheers!`,
+      (username: string) =>
+        `🍻 @${username} raises a toast to the Sphere! 🦊`,
+      (username: string) =>
+        `🧊 Drinks on @${username}! Chat, say thanks!`,
+      (username: string) =>
+        `🍺 @${username} shares a round with the whole chat. Salud!`,
+      (username: string) =>
+        `⚡ A wild beer appears! @${username} picked it up. It's super effective!`,
+    ],
+    PIVO_GOLDEN: (username: string) =>
+      `👑✨ GOLDEN BEER! @${username} found the legendary brew! 🍺`,
     POINTS: `🪙 Economy • Channel Points automatically integrate with FoxSphere rewards. Earn Coins by watching and save them to unlock custom interactive features in the future! 🔮`,
     DENIED: (username: string) =>
       `@${username}, you don't have permission to use this command!`,
