@@ -6,6 +6,7 @@ import { Server } from "socket.io";
 import { config } from "./shared/config";
 import { errorHandler } from "./shared/middleware/error-handler";
 import { getStreamStatePrepared, Logger } from "./shared/services";
+import { channelRouter } from "./modules/channel";
 
 const app = express();
 const httpServer = createServer(app);
@@ -50,6 +51,8 @@ io.on("connection", (socket) => {
     Logger.info("Socket", `Client disconnected: ${socket.id}`);
   });
 });
+
+app.use("/api", channelRouter);
 
 app.use(errorHandler);
 export { app, httpServer, io };
