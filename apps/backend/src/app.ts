@@ -3,8 +3,10 @@ import cors from "cors";
 import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import swaggerUi from "swagger-ui-express";
 import { config } from "./shared/config";
 import { errorHandler } from "./shared/middleware/error-handler";
+import { generateOpenAPISpec } from "./shared/openapi/generator";
 import { getStreamStatePrepared, Logger } from "./shared/services";
 import { channelRouter } from "./modules/channel";
 
@@ -53,6 +55,10 @@ io.on("connection", (socket) => {
 });
 
 app.use("/api", channelRouter);
+
+const openApiSpec = generateOpenAPISpec();
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
+app.get("/openapi.json", (_req, res) => res.json(openApiSpec));
 
 app.use(errorHandler);
 export { app, httpServer, io };
