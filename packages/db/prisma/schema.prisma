@@ -93,8 +93,6 @@ model Channel {
   botIsMod    Boolean       @default(false)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-
-  @@index([twitchId])
 }
 
 model TwitchToken {
