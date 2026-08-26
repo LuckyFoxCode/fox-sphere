@@ -3,7 +3,7 @@ import { registry } from "../../shared/openapi";
 
 registry.registerPath({
   method: "get",
-  path: "/channels/{id}",
+  path: "/api/channels/{id}",
   summary: "Get channel by ID",
   request: {
     params: GetChannelParamsSchema,
