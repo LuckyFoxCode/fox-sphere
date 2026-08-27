@@ -1,8 +1,27 @@
-// frameUrl: '@/assets/images/frames/frame_1.png'
+import {
+  IconRank01,
+  IconRank02,
+  IconRank03,
+  IconRank04,
+  IconRank05,
+  IconRank06,
+  IconRank07,
+  IconRank08,
+  IconRank09,
+  IconRing01,
+  IconRing02,
+  IconRing03,
+  IconRing04,
+  IconRing05,
+  IconRing06,
+  IconRing07,
+  IconRing08,
+  IconRing09,
+} from '@/assets/icons';
+import type { Component } from 'vue';
 
 export interface RankTier {
   gradient: string;
-  // frameUrl?: string; // TODO: add path to rank frame image when ready
 }
 
 export interface RankConfig {
@@ -10,7 +29,32 @@ export interface RankConfig {
   maxLvl: number;
   rankTitle: string;
   gradient: string;
+  tier: number;
 }
+
+export const RANK_BADGES: Record<number, Component> = {
+  1: IconRank01,
+  2: IconRank02,
+  3: IconRank03,
+  4: IconRank04,
+  5: IconRank05,
+  6: IconRank06,
+  7: IconRank07,
+  8: IconRank08,
+  9: IconRank09,
+};
+
+export const RANK_RINGS: Record<number, Component> = {
+  1: IconRing01,
+  2: IconRing02,
+  3: IconRing03,
+  4: IconRing04,
+  5: IconRing05,
+  6: IconRing06,
+  7: IconRing07,
+  8: IconRing08,
+  9: IconRing09,
+};
 
 export const RANK_TIERS = {
   1: { gradient: 'linear-gradient(to right, #4B5563, #FEF08A, #4B5563)' },
@@ -47,16 +91,19 @@ export const TITLE_CONFIG: readonly RankConfig[] = RAW_TITLE_CONFIG.map((item) =
   maxLvl: item.maxLvl,
   rankTitle: item.rankTitle,
   gradient: RANK_TIERS[item.tier].gradient,
+  tier: item.tier,
 }));
 
 export const SPECIAL_RANKS = {
   BROADCASTER: {
     rankTitle: 'GAME MASTER',
     gradient: 'linear-gradient(to right, #DC2626, #FEF08A, #DC2626)',
+    tier: 1,
   },
   BOT: {
     rankTitle: 'SYSTEM BOT',
     gradient: 'linear-gradient(to right, #94A3B8, #475569, #94A3B8)',
+    tier: 1,
   },
 } as const satisfies Record<string, Omit<RankConfig, 'minLvl' | 'maxLvl'>>;
 
@@ -74,5 +121,5 @@ export const getRankConfigByLevel = (level?: number, isBroadcaster?: boolean, is
     (item) => currentLevel >= item.minLvl && currentLevel <= item.maxLvl,
   );
 
-  return match ?? TITLE_CONFIG[0];
+  return match ?? TITLE_CONFIG[0]!;
 };
