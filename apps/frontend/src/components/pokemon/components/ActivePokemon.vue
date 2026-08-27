@@ -3,7 +3,7 @@ import { TwitchEmote } from '@/components/ui';
 import type { ActivePokemon } from '@/composables';
 import { parseTwitchEmotes } from '@/utils/twitch';
 import { computed } from 'vue';
-import { getRankConfigByLevel, RANK_ICONS } from '../constants';
+import { getRankConfigByLevel, RANK_BADGES } from '@/constants';
 
 const props = defineProps<{ activePokemon: ActivePokemon }>();
 
@@ -31,7 +31,7 @@ const currentRank = computed(() =>
   ),
 );
 
-const currentIcon = computed(() => RANK_ICONS[Math.min(currentRank.value.tier, 9)]);
+const currentIcon = computed(() => RANK_BADGES[Math.min(currentRank.value.tier, 9)]);
 
 const MAX_MESSAGE_CHARS = 48;
 

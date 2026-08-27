@@ -8,6 +8,15 @@ import {
   IconRank07,
   IconRank08,
   IconRank09,
+  IconRing01,
+  IconRing02,
+  IconRing03,
+  IconRing04,
+  IconRing05,
+  IconRing06,
+  IconRing07,
+  IconRing08,
+  IconRing09,
 } from '@/assets/icons';
 import type { Component } from 'vue';
 
@@ -23,7 +32,7 @@ export interface RankConfig {
   tier: number;
 }
 
-export const RANK_ICONS: Record<number, Component> = {
+export const RANK_BADGES: Record<number, Component> = {
   1: IconRank01,
   2: IconRank02,
   3: IconRank03,
@@ -33,6 +42,18 @@ export const RANK_ICONS: Record<number, Component> = {
   7: IconRank07,
   8: IconRank08,
   9: IconRank09,
+};
+
+export const RANK_RINGS: Record<number, Component> = {
+  1: IconRing01,
+  2: IconRing02,
+  3: IconRing03,
+  4: IconRing04,
+  5: IconRing05,
+  6: IconRing06,
+  7: IconRing07,
+  8: IconRing08,
+  9: IconRing09,
 };
 
 export const RANK_TIERS = {
