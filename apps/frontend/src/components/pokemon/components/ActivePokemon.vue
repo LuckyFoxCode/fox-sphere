@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { IconBot, IconRank } from '@/assets/icons';
 import { TwitchEmote } from '@/components/ui';
 import type { ActivePokemon } from '@/composables';
 import { parseTwitchEmotes } from '@/utils/twitch';
 import { computed } from 'vue';
-import { getRankConfigByLevel } from '../constants';
+import { getRankConfigByLevel, RANK_ICONS } from '../constants';
 
 const props = defineProps<{ activePokemon: ActivePokemon }>();
 
@@ -31,6 +30,8 @@ const currentRank = computed(() =>
     props.activePokemon.isBot,
   ),
 );
+
+const currentIcon = computed(() => RANK_ICONS[Math.min(currentRank.value.tier, 9)]);
 
 const MAX_MESSAGE_CHARS = 48;
 
@@ -86,23 +87,10 @@ const bubbleTokens = computed(() => {
         class="bg-line/15 flex items-center gap-x-0.5 rounded-md border-r-2 pr-2"
         :style="{ borderColor: `${roleBorderClass}` }"
       >
-        <div class="relative flex size-9 items-center justify-center">
-          <IconRank class="size-9" />
-          <span class="text-text-main absolute top-1/2 left-1/2 -translate-1/2 text-sm font-medium">
-            <span
-              v-if="activePokemon.isBroadcaster"
-              class="text-[14px] font-semibold"
-              :style="{ color: activePokemon.userColor }"
-              >GM</span
-            >
-
-            <IconBot
-              v-else-if="activePokemon.isBot"
-              class="text-event-purple size-5"
-            />
-            <span v-else>{{ activePokemon.userLvl }}</span>
-          </span>
-        </div>
+        <component
+          :is="currentIcon"
+          class="size-10"
+        />
         <div class="flex h-full flex-col items-center justify-around leading-none">
           <span
             class="text-[16px] font-semibold tracking-wide whitespace-nowrap"
