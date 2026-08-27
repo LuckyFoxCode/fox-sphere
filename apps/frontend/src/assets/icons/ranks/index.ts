@@ -1,0 +1,9 @@
+export { default as IconRank01 } from './IconRank01.vue';
+export { default as IconRank02 } from './IconRank02.vue';
+export { default as IconRank03 } from './IconRank03.vue';
+export { default as IconRank04 } from './IconRank04.vue';
+export { default as IconRank05 } from './IconRank05.vue';
+export { default as IconRank06 } from './IconRank06.vue';
+export { default as IconRank07 } from './IconRank07.vue';
+export { default as IconRank08 } from './IconRank08.vue';
+export { default as IconRank09 } from './IconRank09.vue';
