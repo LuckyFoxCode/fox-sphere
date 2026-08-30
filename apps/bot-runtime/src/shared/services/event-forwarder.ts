@@ -15,9 +15,11 @@ export async function forwardEventToBackend(
     );
 
     if (!response.ok) {
+      // statusText alone is "Bad Request" - the body is the part that says why.
+      const body = await response.text().catch(() => "");
       Logger.error(
         "EventForwarder",
-        `Failed to forward ${event}: ${response.statusText}`,
+        `Failed to forward ${event}: ${response.status} ${response.statusText} ${body}`.trim(),
       );
     }
   } catch (error) {

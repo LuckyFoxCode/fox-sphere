@@ -98,6 +98,10 @@ jobs:
             # --remove-orphans: a container left over from a previous service name keeps
             # running beside the new one - two Twitch workers on one channel, so every
             # chat command and EventSub event is handled twice.
-            docker compose up -d --remove-orphans
+            # --wait blocks on the healthchecks, so a crash-looping container fails the
+            # deploy instead of passing silently. Dump logs on failure - "deploy failed"
+            # without them means SSHing in to find out why.
+            docker compose up -d --remove-orphans --wait --wait-timeout 120 \
+              || { docker compose logs --tail=100 bot-runtime; exit 1; }
             docker image prune -f || true   # cosmetic; must not abort before the logout
             docker logout ghcr.io

@@ -51,7 +51,10 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS dev
 ENV NODE_ENV=development
 EXPOSE 3000
-CMD ["pnpm", "--filter", "bot-runtime", "dev"]
+# `dev` is the Twitch worker in this package; the HTTP server this stage exposes
+# and health-checks on 3000 is `dev:server`. compose overrides the command anyway,
+# but `docker run` on this target has to start the right process.
+CMD ["pnpm", "--filter", "bot-runtime", "dev:server"]
 
 # ==========================================
 # Build: compile packages + bot-runtime, generate Prisma client.
@@ -63,8 +66,8 @@ ARG DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholde
 ENV DATABASE_URL=$DATABASE_URL
 COPY --chown=node:node . .
 RUN pnpm --filter @fox-sphere/db exec prisma generate
-# bot-runtime imports @fox-sphere/types, @fox-sphere/shared-schemas and
-# @fox-sphere/backend-shared.
+# Builds all four packages: bot-runtime imports types, shared-schemas and
+# backend-shared, and @fox-sphere/db's build is the prisma generate above.
 RUN pnpm --filter "./packages/*" build
 RUN pnpm --filter bot-runtime build
 

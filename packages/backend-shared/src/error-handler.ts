@@ -1,5 +1,9 @@
+// The one error middleware for both backends. It lived twice, byte-identical, in
+// apps/api and apps/bot-runtime - which is the shape every drift starts as.
 import { ErrorRequestHandler } from "express";
-import { AppError, config, Logger, ValidationError } from "@fox-sphere/backend-shared";
+import { AppError, ValidationError } from "./errors";
+import { config } from "./config";
+import { Logger } from "./logger";
 
 export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   if (err instanceof AppError) {

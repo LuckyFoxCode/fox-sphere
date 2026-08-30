@@ -1,5 +1,6 @@
 import {
   config,
+  errorHandler,
   getStreamStatePrepared,
   Logger,
 } from "@fox-sphere/backend-shared";
@@ -8,7 +9,6 @@ import cors from "cors";
 import express, { type Express } from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import { errorHandler } from "./shared/middleware/error-handler";
 
 const app: Express = express();
 const httpServer = createServer(app);
@@ -26,7 +26,7 @@ app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
 app.post("/api/internal/events", (req, res) => {
   const { event, data } = req.body;
-  if (!event || !data) {
+  if (event === undefined || data === undefined) {
     return res.status(400).json({ error: "Missing event or data" });
   }
   Logger.info("SocketServer", `Received internal event from worker: ${event}`);
@@ -37,8 +37,18 @@ app.post("/api/internal/events", (req, res) => {
 io.on("connection", (socket) => {
   Logger.info("Socket", `Client connected: ${socket.id}`);
   socket.on("stream:get-system-state", async (_, socketCallback) => {
-    const state = await getStreamStatePrepared();
-    socketCallback(state);
+    try {
+      socketCallback(await getStreamStatePrepared());
+    } catch (error) {
+      // Without this the ack never fires - Socket.io has no default timeout, so
+      // the overlay waits forever - and the rejection is unhandled, which ends
+      // the process and puts `restart: unless-stopped` into a loop.
+      Logger.error(
+        "Socket",
+        `stream:get-system-state failed for ${socket.id}`,
+        error,
+      );
+    }
   });
   socket.on("disconnect", () => {
     Logger.info("Socket", `Client disconnected: ${socket.id}`);

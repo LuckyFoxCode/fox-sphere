@@ -23,11 +23,9 @@
     "@asteasolutions/zod-to-openapi": "^9.1.0",
     "@fox-sphere/backend-shared": "workspace:*",
     "@fox-sphere/shared-schemas": "workspace:*",
-    "@fox-sphere/types": "workspace:*",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "openapi3-ts": "^4.6.1",
-    "socket.io": "^4.8.3",
     "swagger-ui-express": "^5.0.1",
     "zod": "^4.4.3"
   },

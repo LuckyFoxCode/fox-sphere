@@ -21,7 +21,7 @@ use a topic prefix instead, with the suffix abbreviating the action (`generate`,
 | `pnpm dev:api` | Admin-panel backend for `apps/api`, `tsx watch src/server.ts` on `:3001`. `apps/api` is local-only (not in compose), so this is now the normal way to run it. `:api` is the explicit suffix because `:a` is taken by admin (`dev:a`). |
 | `pnpm worker:t` | Twitch worker (chat bot + EventSub) - the normal way to run the bot locally in dev, so its logs land in the terminal. |
 | `pnpm dev:server:b` | `apps/bot-runtime` HTTP + Socket.io backend (`tsx watch src/server.ts`) on `:3000` - the bot's own server app, run in `docker compose` (normal) or here to run it out-of-container. |
-| `pnpm dev:a` | Vite dev server for the `admin` frontend on `:5174`, proxying `/api` and `/socket.io` to `:3001`. |
+| `pnpm dev:a` | Vite dev server for the `admin` frontend on `:5174`, proxying `/api` to `:3001`. |
 | `pnpm dev:f` | Vite dev server for the overlay on `:5173` |
 | `pnpm openapi:dump` | Regenerate `apps/api/openapi.json` from the routes. **Run after every route change**, in the same commit. |
 | `pnpm gen:api` | Regenerate the admin's typed vue-query client from that file (orval). |
@@ -87,13 +87,13 @@ override applies only inside compose, never to a native `pnpm dev:b`.
 
 | Member | Stack | Role |
 |---|---|---|
-| `apps/api` | Express 5, Socket.io | Admin-panel backend - **local-only**, not deployed. HTTP on `:3001` (swagger `/docs`), owns `app.ts`/`httpServer`/`io`, the channel module, the OpenAPI spec and a `/api/internal/events` route kept for parity with the Twitch backend |
+| `apps/api` | Express 5 | Admin-panel backend - **local-only**, not deployed. HTTP only on `:3001` (swagger `/docs`): the feature modules, the OpenAPI spec, and no realtime surface at all - sockets and the worker bridge belong to `bot-runtime` |
 | `apps/bot-runtime` | Express 5 (runtime), Prisma 7 + `@prisma/adapter-pg`, Twurple | Twitch backend - the deployed bot. Owns its own HTTP + Socket.io (`src/app.ts`, health on `/health`) and the worker (chat bot + EventSub) in one package. `server.ts` listens on `:3000`; in production `prod.ts` starts the HTTP listener and the worker in one process |
 | `apps/admin` | Vue 3.5, Vite 8, Tailwind 4 | Admin-panel frontend, dev on `:5174`. Not deployed |
 | `apps/overlay` | Vue 3.5, Vite 8, Tailwind 4 | OBS browser-source overlay |
 | `packages/types` | tsdown | Socket event and domain contracts |
 | `packages/shared-schemas` | tsdown, zod | Request and response DTOs |
-| `packages/backend-shared` | tsdown | Prisma client, `config`, `AppError`s, logger, xp, stream-state/constants - shared by `api` and `bot-runtime` |
+| `packages/backend-shared` | tsdown | Prisma client, `config`, `AppError`s, the Express `errorHandler`, logger, xp, stream-state/constants - shared by `api` and `bot-runtime` |
 | `packages/db` | Prisma 7 | The schema, the migrations and the generated client (`src/generated/`, gitignored) |
 
 The backend is a modular monolith split by app. In `apps/api`, `src/modules/<feature>/` holds
@@ -168,9 +168,9 @@ Two consequences for code written today:
 | **`TwitchToken.obtainmentTimestamp` is `BigInt`.** `JSON.stringify` throws on it, so never hand a raw `TwitchToken` to `res.json()` or `io.emit()`. | `packages/db/prisma/schema.prisma` |
 | **`TwitchToken` has no `@id`.** Its unique criterion is `twitchUserId` - that is the key for `findUnique` and `upsert`. | `packages/db/prisma/schema.prisma` |
 | **Dev runs several processes, production runs one.** The difference is process count, not transport: `forwardEventToBackend()` POSTs to `/api/internal/events` in both, and in production that POST simply lands in the same process. | `apps/bot-runtime/src/prod.ts`, `apps/bot-runtime/src/worker.ts` |
-| **`/api/internal/events` is unauthenticated** and re-emits arbitrary `event` and `data` to every connected socket. Caddy now 404s `/api/internal/*` at the edge, so it is reachable only in-process; keep that rule first in the `route` block, and never expose the port directly. `apps/api` still carries a copy of the route it does not need. | `apps/bot-runtime/src/app.ts`, `.docker/Caddyfile` |
-| **CORS is inconsistent.** Socket.io pins an origin allowlist while `app.use(cors())` is wide open. The allowlist is a hard gate for socket connections only, so a missing origin fails the WebSocket upgrade while plain HTTP keeps working - `apps/api` therefore lists the admin's `:5174` explicitly alongside `config.allowedOrigin`. | `apps/bot-runtime/src/app.ts`, `apps/api/src/app.ts` |
-| **Express 5 forwards rejected promises to the error middleware automatically.** No `asyncHandler`, no `try/catch` then `next(err)`. | `apps/bot-runtime/src/app.ts`, `apps/api/src/app.ts`, `apps/api/src/shared/middleware/error-handler.ts` |
+| **`/api/internal/events` is unauthenticated** and re-emits arbitrary `event` and `data` to every connected socket. Caddy now 404s `/api/internal/*` at the edge, so it is reachable only in-process; keep that rule first in the `route` block, and never expose the port directly. It exists in `bot-runtime` only. | `apps/bot-runtime/src/app.ts`, `.docker/Caddyfile` |
+| **CORS is inconsistent.** `bot-runtime`'s Socket.io pins `config.allowedOrigin` while `app.use(cors())` is wide open in both backends. The origin list gates socket connections only, so a missing origin fails the WebSocket upgrade while plain HTTP keeps working - a confusing pair to debug. | `apps/bot-runtime/src/app.ts`, `apps/api/src/app.ts` |
+| **Express 5 forwards rejected promises to the error middleware automatically.** No `asyncHandler`, no `try/catch` then `next(err)`. The one `errorHandler` is shared: `packages/backend-shared/src/error-handler.ts` - it was duplicated byte-for-byte in both apps. | `apps/bot-runtime/src/app.ts`, `apps/api/src/app.ts`, `packages/backend-shared/src/error-handler.ts` |
 | **`config` throws on any missing env var** through `getEnv`, and almost everything imports it transitively. Anything that loads backend code needs a complete environment. | `packages/backend-shared/src/config.ts` |
 | **The backend has no path alias** - relative imports only. `@/*` exists in the frontend alone. | `apps/api/tsconfig.json`, `apps/bot-runtime/tsconfig.json`, `apps/overlay/tsconfig.app.json` |
 | **Packages build before apps.** Root `build` runs `--filter "./packages/*" build` first; the backend build needs `packages/*/dist` to exist. | `package.json`, `.docker/bot-runtime.Dockerfile` |

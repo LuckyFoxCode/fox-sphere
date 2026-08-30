@@ -1,7 +1,9 @@
 export class AppError extends Error {
   constructor(
     message: string,
-    public statusCode = 500,
+    // readonly: the error handler reads this to pick the status - nothing may
+    // rewrite it after the fact.
+    public readonly statusCode = 500,
   ) {
     super(message);
     Object.setPrototypeOf(this, new.target.prototype);
@@ -24,7 +26,7 @@ export class ConflictError extends AppError {
 export class ValidationError extends AppError {
   constructor(
     message: string,
-    public errors?: Record<string, string[]>,
+    public readonly errors?: Record<string, string[]>,
   ) {
     super(message, 400);
   }

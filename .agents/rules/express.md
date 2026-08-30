@@ -5,6 +5,7 @@ paths:
   - "apps/api/src/app.ts"
   - "apps/api/src/server.ts"
   - "apps/api/src/shared/middleware/**"
+  - "packages/backend-shared/src/error-handler.ts"
   - "apps/bot-runtime/src/app.ts"
   - "apps/bot-runtime/src/server.ts"
   - "apps/bot-runtime/src/shared/middleware/**"
@@ -39,7 +40,7 @@ mapping in the prisma rule - but not when you are merely forwarding one.
 
 ## One terminal error middleware
 
-`errorHandler` (`apps/api/src/shared/middleware/error-handler.ts`) is mounted last,
+`errorHandler` (`packages/backend-shared/src/error-handler.ts`, shared by both backends) is mounted last,
 after every route. It answers an `AppError` with its `statusCode`, attaches `errors` for a
 `ValidationError`, and turns anything else into a 500 - the real message in development,
 `"Internal server error"` in production.

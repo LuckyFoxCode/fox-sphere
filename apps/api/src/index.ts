@@ -1,1 +1,1 @@
-export { app, httpServer, io } from "./app";
+export { app, httpServer } from "./app";

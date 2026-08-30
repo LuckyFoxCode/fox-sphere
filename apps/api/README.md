@@ -225,7 +225,7 @@ import { NotFoundError, ValidationError, AppError } from "@fox-sphere/backend-sh
 throw new NotFoundError("Channel not found");   // -> 404 {status, message}
 ```
 
-`shared/middleware/error-handler.ts` answers any `AppError` with its status code, attaches
+`errorHandler` (in `@fox-sphere/backend-shared`, shared with `bot-runtime`) answers any `AppError` with its status code, attaches
 `errors` for a `ValidationError`, and turns anything else into a 500 (the real message in
 development, `"Internal server error"` in production). A schema mismatch in `request`
 becomes a `ValidationError` before your handler runs.
@@ -240,7 +240,7 @@ and the UI has no branch for it.
 
 ```
 src/
-  app.ts                    express app, socket.io, swagger mount - no listen()
+  app.ts                    express app, module mounts, swagger, 404 - no listen()
   server.ts                 listen() on :3001
   port.ts                   API_PORT, default 3001
   dump-openapi.ts           writes openapi.json
@@ -253,8 +253,8 @@ src/
       registry.ts           the single OpenAPIRegistry
       generator.ts          registry -> OpenAPI document
     middleware/
-      validate.ts           Zod -> ValidationError
-      error-handler.ts      terminal error middleware
+      validate.ts           Zod -> ValidationError (errorHandler is shared,
+                            in @fox-sphere/backend-shared)
 ```
 
 Conventions: double quotes, two-space indent, semicolons, `const` arrow functions, no
@@ -266,8 +266,9 @@ folder carries a barrel. Import from the barrel, not a deep path.
 - **`pnpm start` is broken here**, same as in `bot-runtime`: `node dist/server.js` cannot resolve extensionless ESM specifiers. Use `pnpm dev:api`.
 - **`openapi.json` is committed and generated.** Never hand-edit it; re-run `pnpm openapi:dump`.
 - **Never call `registry.registerPath` or `router.get/post/...` directly.** That is how the spec and the routes drift apart - the whole reason `route()` exists. A duplicate method+path throws at import for the same reason.
-- **`app.use(cors())` is wide open** while Socket.io pins `config.allowedOrigin`. Known gap, not a pattern to copy.
-- **`/api/internal/events` exists here for parity with `bot-runtime` but nothing feeds it.** It is unauthenticated; do not build on it.
+- **`app.use(cors())` is wide open.** Known gap, not a pattern to copy - new HTTP surface should take an allowlist from config.
+- **No Socket.io here.** The realtime surface and the worker's `/api/internal/events` bridge live in `apps/bot-runtime`; this app is HTTP only.
+- **Unmatched routes get a JSON 404**, not Express's HTML page - the generated client `JSON.parse`s every body.
 
 The agent-facing version of these rules, with the reasoning, is
 [`.agents/rules/openapi-routes.md`](../../.agents/rules/openapi-routes.md). The client side

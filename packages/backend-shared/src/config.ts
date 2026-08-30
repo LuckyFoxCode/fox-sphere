@@ -1,8 +1,15 @@
 import dotenv from "dotenv";
-import { resolve } from "path";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
 import { AppError } from "./errors";
 
-dotenv.config({ path: resolve(process.cwd(), "../../.env") });
+// Resolved from this file, not from process.cwd(): the repo root is a fixed
+// distance from this package (dist/index.js or src/config.ts -> up three), while
+// cwd depends on who started the process - a root-cwd script used to silently
+// read a .env from above the repo and then throw about a missing variable.
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+dotenv.config({ path: resolve(repoRoot, ".env") });
 
 const getEnv = (key: string, defaultValue?: string): string => {
   const value = process.env[key] || defaultValue;

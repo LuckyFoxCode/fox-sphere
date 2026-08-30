@@ -1,68 +1,52 @@
-import { ClientToServerEvents, ServerToClientEvents } from "@fox-sphere/types";
+import { errorHandler, Logger, NotFoundError } from "@fox-sphere/backend-shared";
 import cors from "cors";
 import express, { type Express } from "express";
 import { createServer } from "http";
-import { Server } from "socket.io";
 import swaggerUi from "swagger-ui-express";
-import { config, getStreamStatePrepared, Logger } from "@fox-sphere/backend-shared";
-import { errorHandler } from "./shared/middleware";
 import { generateOpenAPISpec } from "./shared/openapi";
 import { modules } from "./modules";
 
 const app: Express = express();
 const httpServer = createServer(app);
 
-// ALLOWED_ORIGIN always has a value (config defaults it), so this is the whole
-// allowlist: the admin's dev origin has to be listed explicitly or its socket
-// upgrade is rejected while plain HTTP still works - a confusing pair to debug.
-const allowedOrigins = [config.allowedOrigin, "http://localhost:5174"];
-
-const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST"],
-  },
-});
+// No Socket.io here on purpose. This app serves the admin panel over HTTP; the
+// realtime surface (and the worker's /api/internal/events bridge that feeds it)
+// belongs to apps/bot-runtime, which is the process the overlay connects to.
 
 app.use(cors());
 app.use(express.json());
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
-app.post("/api/internal/events", (req, res) => {
-  const { event, data } = req.body;
-
-  if (!event || !data) {
-    return res.status(400).json({ error: "Missing event or data" });
-  }
-
-  Logger.info("SocketServer", `Received internal event from worker: ${event}`);
-
-  io.emit(event, data);
-
-  res.json({ success: true });
-});
-
-io.on("connection", (socket) => {
-  Logger.info("Socket", `Client connected: ${socket.id}`);
-
-  socket.on("stream:get-system-state", async (_, socketCallback) => {
-    const state = await getStreamStatePrepared();
-    socketCallback(state);
-  });
-
-  socket.on("disconnect", () => {
-    Logger.info("Socket", `Client disconnected: ${socket.id}`);
-  });
-});
-
 for (const { prefix, router } of modules) {
   app.use(prefix, router);
 }
 
-const openApiSpec = generateOpenAPISpec();
-app.use("/docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
-app.get("/openapi.json", (_req, res) => res.json(openApiSpec));
+// A docs defect must not take the API down with it: without the guard, a route
+// with incomplete OpenAPI metadata throws at import and nothing serves at all.
+let openApiSpec: ReturnType<typeof generateOpenAPISpec> | null = null;
+try {
+  openApiSpec = generateOpenAPISpec();
+} catch (error) {
+  Logger.error(
+    "OpenAPI",
+    "Spec generation failed - /docs and /openapi.json are disabled, the API still serves",
+    error,
+  );
+}
+
+if (openApiSpec) {
+  const spec = openApiSpec;
+  app.use("/docs", swaggerUi.serve, swaggerUi.setup(spec));
+  app.get("/openapi.json", (_req, res) => res.json(spec));
+}
+
+// Anything unmatched gets a JSON 404. Express's HTML default explodes in the
+// generated client, which JSON.parses every response body.
+app.use((req, _res, next) =>
+  next(new NotFoundError(`No route for ${req.method} ${req.originalUrl}`)),
+);
 
 app.use(errorHandler);
-export { app, httpServer, io };
+
+export { app, httpServer };

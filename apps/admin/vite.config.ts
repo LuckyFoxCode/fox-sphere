@@ -20,9 +20,9 @@ export default defineConfig({
   server: {
     port: 5174,
     strictPort: true,
+    // apps/api is HTTP only - no /socket.io proxy, because it has no socket server.
     proxy: {
       '/api': 'http://localhost:3001',
-      '/socket.io': { target: 'http://localhost:3001', ws: true },
     },
   },
 })
