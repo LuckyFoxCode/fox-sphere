@@ -4,17 +4,30 @@
 {$SITE_ADDRESS::80} {
 	encode gzip
 
-	# Socket.io handshake + WS upgrade AND the internal event bridge -> backend.
-	# reverse_proxy upgrades WebSockets automatically.
-	@api path /socket.io/* /api/* /health
-	handle @api {
-		reverse_proxy backend:3000
-	}
+	# `route` keeps these in written order - the internal-route block MUST be
+	# evaluated before the catch-all /api/* proxy below.
+	route {
+		# POST /api/internal/events is unauthenticated and re-emits arbitrary
+		# {event, data} to EVERY connected overlay socket. In production the worker
+		# runs in the same process as the server (prod.ts) and reaches it over
+		# localhost inside the container - it never needs to cross the edge. Anything
+		# arriving here is external, so it gets a 404, not a proxied request.
+		handle /api/internal/* {
+			respond 404
+		}
 
-	# Everything else: the Vue overlay SPA (served same-origin -> no CORS).
-	handle {
-		root * /srv
-		try_files {path} /index.html
-		file_server
+		# Socket.io handshake + WS upgrade -> bot-runtime.
+		# reverse_proxy upgrades WebSockets automatically.
+		@api path /socket.io/* /api/* /health
+		handle @api {
+			reverse_proxy bot-runtime:3000
+		}
+
+		# Everything else: the Vue overlay SPA (served same-origin -> no CORS).
+		handle {
+			root * /srv
+			try_files {path} /index.html
+			file_server
+		}
 	}
 }

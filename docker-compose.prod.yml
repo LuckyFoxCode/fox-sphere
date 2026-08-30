@@ -24,9 +24,9 @@ services:
       - foxsphere
 
   # Merged server + Twitch worker in one process (src/prod.ts).
-  backend:
-    image: ghcr.io/luckyfoxcode/foxsphere-backend:latest
-    container_name: foxsphere-backend
+  bot-runtime:
+    image: ghcr.io/luckyfoxcode/foxsphere-bot-runtime:latest
+    container_name: foxsphere-bot-runtime
     restart: unless-stopped
     env_file:
       - .env.prod
@@ -38,10 +38,25 @@ services:
         condition: service_healthy
     expose:
       - "3000"
+    # Without a healthcheck, `up -d --wait` returns as soon as the container is
+    # created - a container that boots, throws on a missing env var and restarts
+    # forever would still look like a successful deploy.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     networks:
       - foxsphere
 
-  # Caddy edge: serves the overlay + proxies /socket.io + /api to backend.
+  # Caddy edge: serves the overlay + proxies /socket.io + /api to bot-runtime.
   # Option A (overlay on Cloudflare Pages): swap this image for `caddy:2-alpine`
   # with a proxy-only Caddyfile mounted in.
   web:
@@ -55,7 +70,7 @@ services:
       - "80:80"
       - "443:443"
     depends_on:
-      - backend
+      - bot-runtime
     volumes:
       - caddy_data:/data
       - caddy_config:/config
