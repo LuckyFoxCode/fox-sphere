@@ -27,7 +27,8 @@ import type {
 } from 'vue';
 
 import type {
-  Channel
+  Channel,
+  ErrorResponse
 } from '../schemas';
 
 
@@ -39,15 +40,25 @@ export type getChannelByIdResponse200 = {
   status: 200
 }
 
+export type getChannelByIdResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
 export type getChannelByIdResponse404 = {
-  data: void
+  data: ErrorResponse
   status: 404
+}
+
+export type getChannelByIdResponse500 = {
+  data: ErrorResponse
+  status: 500
 }
 
 export type getChannelByIdResponseSuccess = (getChannelByIdResponse200) & {
   headers: Headers;
 };
-export type getChannelByIdResponseError = (getChannelByIdResponse404) & {
+export type getChannelByIdResponseError = (getChannelByIdResponse400 | getChannelByIdResponse404 | getChannelByIdResponse500) & {
   headers: Headers;
 };
 
@@ -93,7 +104,7 @@ export const getGetChannelByIdQueryKey = (id: MaybeRefOrGetter<string>,) => {
     }
 
 
-export const getGetChannelByIdQueryOptions = <TData = Awaited<ReturnType<typeof getChannelById>>, TError = void>(id: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelById>>, TError, TData>>, fetch?: RequestInit}
+export const getGetChannelByIdQueryOptions = <TData = Awaited<ReturnType<typeof getChannelById>>, TError = ErrorResponse>(id: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelById>>, TError, TData>>, fetch?: RequestInit}
 ) => {
 
 const {query: queryOptions, fetch: fetchOptions} = options ?? {};
@@ -112,14 +123,14 @@ const {query: queryOptions, fetch: fetchOptions} = options ?? {};
 }
 
 export type GetChannelByIdQueryResult = NonNullable<Awaited<ReturnType<typeof getChannelById>>>
-export type GetChannelByIdQueryError = void
+export type GetChannelByIdQueryError = ErrorResponse
 
 
 /**
  * @summary Get channel by ID
  */
 
-export function useGetChannelById<TData = Awaited<ReturnType<typeof getChannelById>>, TError = void>(
+export function useGetChannelById<TData = Awaited<ReturnType<typeof getChannelById>>, TError = ErrorResponse>(
  id: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelById>>, TError, TData>>, fetch?: RequestInit}
  , queryClient?: QueryClient
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {

@@ -62,10 +62,11 @@ config.databaseUrl;
 config.twitch.clientId;
 ```
 
-New code reads `config`, never `process.env` directly. A few places still read it raw and
+New code reads `config`, never `process.env` directly. Three places still read it raw and
 are drift, not precedent - `packages/backend-shared/src/prisma.ts` and
-`packages/backend-shared/src/logger.ts` check `DEBUG`, `apps/api/src/shared/middleware/error-handler.ts`
-and `packages/backend-shared/src/logger.ts` check `NODE_ENV`. `config` already exposes both
+`packages/backend-shared/src/logger.ts` check `DEBUG`, `packages/backend-shared/src/logger.ts`
+checks `NODE_ENV`, and `apps/api/src/port.ts` reads `API_PORT` (which is in no `.env.example`;
+it defaults to 3001). `config` already exposes both
 as `config.debug` and `config.nodeEnv`, so those are straightforwardly convertible
 whenever someone is in the file.
 

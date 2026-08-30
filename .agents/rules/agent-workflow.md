@@ -40,9 +40,9 @@ For a change confined to one app, the minimum is that app's type-check and lint 
 
 | Path | Why |
 |---|---|
-| `apps/bot-runtime/src/generated/` | `prisma generate` owns it; gitignored |
+| `packages/db/src/generated/` | `prisma generate` owns it; gitignored |
 | `pnpm-lock.yaml` | pnpm owns it - change `package.json` and reinstall |
-| `.env`, `.env.test` once populated with real secrets | Never commit one, never edit someone else's populated file. Creating `apps/bot-runtime/.env` from `apps/bot-runtime/.env.example` for local setup, and creating a fresh `.env.test` (see `testing.md`), are expected setup steps, not exceptions — `apps/bot-runtime/.env.example` is the local-development template, `.env.prod.example` at the repo root is the production one |
+| `.env`, `.env.test` once populated with real secrets | Never commit one, never edit someone else's populated file. Creating `.env` at the repo root from `.env.example` for local setup is an expected setup step, not an exception — `.env.example` at the repo root is the local-development template (there is no per-app `.env`; `packages/backend-shared/src/config.ts` loads the root one), `.env.prod.example` at the repo root is the production one |
 | `CLAUDE.md` | a symlink - edit `AGENTS.md` |
 
 ## Before structural change

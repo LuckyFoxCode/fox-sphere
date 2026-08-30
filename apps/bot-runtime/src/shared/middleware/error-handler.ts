@@ -1,11 +1,11 @@
 import { ErrorRequestHandler } from "express";
-import { AppError, Logger, ValidationError } from "@fox-sphere/backend-shared";
+import { AppError, config, Logger, ValidationError } from "@fox-sphere/backend-shared";
 
-export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   if (err instanceof AppError) {
-    Logger.debug(
+    Logger.warn(
       "ExpressErrorHandler",
-      `AppError [${err.statusCode}]: ${err.message}`,
+      `${req.method} ${req.originalUrl} -> ${err.statusCode}: ${err.message}`,
     );
 
     return res.status(err.statusCode).json({
@@ -21,9 +21,10 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     err,
   );
 
-  const isProd = process.env.NODE_ENV === "production";
+  const isProd = config.nodeEnv === "production";
+  const message = err instanceof Error ? err.message : String(err);
   return res.status(500).json({
     status: "error",
-    message: isProd ? "Internal server error" : err.message,
+    message: isProd ? "Internal server error" : message,
   });
 };

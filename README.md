@@ -34,7 +34,7 @@ fox-sphere/
 │   └── db/                   # Prisma schema & migrations (@fox-sphere/db)
 ├── docs/                     # Guides & workflows
 ├── .docker/                  # Dockerfiles
-├── .github/workflows/        # CI/CD (deploy)
+├── .github/workflows/        # ci (the gate) + deploy
 ├── package.json              # Global scripts & orchestration
 └── pnpm-workspace.yaml       # Workspace definition (apps/*, packages/*)
 ```
@@ -54,8 +54,8 @@ fox-sphere/
 
 ### Prerequisites
 
-- Node.js 20+
-- pnpm (`npm i -g pnpm`)
+- Node.js 22.18+ or 24.12+ (CI and both images run 24; `apps/admin` enforces it via `engines`)
+- pnpm 11 (`corepack enable` picks the version pinned in `packageManager`)
 - Docker + Docker Compose (for PostgreSQL and backend hot-reload)
 
 ### Quick Start

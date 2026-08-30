@@ -1,10 +1,11 @@
+import { ErrorResponseSchema } from "@fox-sphere/shared-schemas";
 import { Router, type RequestHandler } from "express";
 import type { ZodObject, ZodType } from "zod";
 import { validate } from "../middleware";
 import { registry } from "./registry";
 
 // Every module router is mounted under this prefix in app.ts, so the OpenAPI
-// path has to carry it - Express never sees it, the spec always does.
+// path has to carry it - the path passed to route() is relative to the mount.
 const API_PREFIX = "/api";
 
 type HttpMethod = "get" | "post" | "put" | "patch" | "delete";
@@ -17,6 +18,8 @@ type RouteRequest = {
 
 type RouteResponse = {
   description: string;
+  // Omit for a body-less answer (204). Any other status with no schema is
+  // documented with ErrorResponseSchema for 4xx/5xx - see toOpenApiResponses.
   schema?: ZodType;
 };
 
@@ -32,23 +35,40 @@ type RouteSpec = {
   responses: Record<number, RouteResponse>;
 };
 
+// zod-to-openapi merges a second registration of the same method+path over the first
+// without warning, while Express keeps serving the first handler - the spec would
+// then describe a route the server does not run. Refuse at import time instead.
+const registered = new Set<string>();
+
 const toOpenApiPath = (path: string): string =>
   `${API_PREFIX}${path.replace(/:([A-Za-z0-9_]+)/g, "{$1}")}`;
 
 const toOpenApiResponses = (responses: Record<number, RouteResponse>) =>
   Object.fromEntries(
-    Object.entries(responses).map(([status, { description, schema }]) => [
-      status,
-      schema
-        ? { description, content: { "application/json": { schema } } }
-        : { description },
-    ]),
+    Object.entries(responses).map(([status, { description, schema }]) => {
+      // An error status with no schema of its own still has a body - the one
+      // errorHandler sends. Documenting it is what lets a client tell a failure
+      // apart from an empty success.
+      const resolved =
+        schema ?? (Number(status) >= 400 ? ErrorResponseSchema : undefined);
+
+      return [
+        status,
+        resolved
+          ? { description, content: { "application/json": { schema: resolved } } }
+          : { description },
+      ];
+    }),
   );
 
 /**
  * One module = one tag = one router. `route()` registers the OpenAPI path and
- * mounts the Express handler from the same object, so the spec cannot drift
- * from the implementation.
+ * mounts the Express handler from the same object, so a path cannot be
+ * registered without a handler, or a handler mounted without a path.
+ *
+ * The committed spec still drifts if you skip `pnpm openapi:dump`, and a new
+ * module must be added to `src/modules/index.ts` or it reaches neither the app
+ * nor the spec.
  *
  *   const { router, route } = createModule("Users");
  *   route({ method: "get", path: "/users/:id", ... }, handler);
@@ -58,9 +78,23 @@ export const createModule = (tag: string) => {
   const router: Router = Router();
 
   const route = (spec: RouteSpec, ...handlers: RequestHandler[]): void => {
+    const openApiPath = toOpenApiPath(spec.path);
+    const key = `${spec.method} ${openApiPath}`;
+
+    if (registered.has(key)) {
+      throw new Error(
+        `Duplicate route ${key} - one route() call per method and path.`,
+      );
+    }
+    registered.add(key);
+
+    if (handlers.length === 0) {
+      throw new Error(`Route ${key} has no handler - the request would hang.`);
+    }
+
     registry.registerPath({
       method: spec.method,
-      path: toOpenApiPath(spec.path),
+      path: openApiPath,
       tags: [tag],
       summary: spec.summary,
       ...(spec.description && { description: spec.description }),

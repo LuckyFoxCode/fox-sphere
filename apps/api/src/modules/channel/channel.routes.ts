@@ -17,7 +17,9 @@ route(
     request: { params: GetChannelParamsSchema },
     responses: {
       200: { description: "Channel found", schema: ChannelResponseSchema },
+      400: { description: "Invalid channel id" },
       404: { description: "Channel not found" },
+      500: { description: "Unexpected server error" },
     },
   },
   async (req, res) => {

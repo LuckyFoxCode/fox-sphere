@@ -8,3 +8,6 @@
 
 export * from './channel';
 export * from './channelStatus';
+export * from './errorResponse';
+export * from './errorResponseErrors';
+export * from './errorResponseStatus';

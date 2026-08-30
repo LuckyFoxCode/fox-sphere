@@ -14,7 +14,8 @@ export default defineConfig({
       schemas: './src/api/generated/schemas', // types live in their own modules
       client: 'vue-query',
       httpClient: 'fetch',
-      prettier: true,
+      // No formatter: CI asserts `gen:api` is byte-identical to what is committed,
+      // so generation has to be reproducible on any machine. Raw orval output is.
       override: {
         enumGenerationType: 'enum',
       },

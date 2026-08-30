@@ -1,9 +1,14 @@
 name: deploy
 
 # Build ARM64 images, push to GHCR, then SSH to the Oracle VM and roll out.
+# Gated on ci.yml: both used to fire on the same push, so a red gate could not stop
+# a rollout. workflow_run fires after ci finishes; the guard below drops the run
+# unless it passed. workflow_dispatch stays for a manual re-deploy.
 on:
-  push:
+  workflow_run:
+    workflows: [ci]
     branches: [main]
+    types: [completed]
   workflow_dispatch: {}
 
 env:
@@ -12,6 +17,8 @@ env:
 
 jobs:
   build:
+    # A workflow_run trigger fires on failure too - only a green ci may deploy.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -27,6 +34,9 @@ jobs:
             target: ""
     steps:
       - uses: actions/checkout@v4
+        with:
+          # workflow_run defaults to the default branch tip; build the commit ci passed on.
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - uses: docker/setup-qemu-action@v3 # emulate arm64 on x86 runners
       - uses: docker/setup-buildx-action@v3
@@ -85,10 +95,9 @@ jobs:
             docker compose pull
             # Run migrations before swapping the app (one-shot container).
             docker compose run --rm bot-runtime pnpm --filter @fox-sphere/db prisma:migrate:deploy
-            # --remove-orphans: the service was renamed backend -> bot-runtime, so the
-            # old container is an orphan now. Without this it keeps running alongside
-            # the new one - two Twitch workers on the same channel, every chat command
-            # and EventSub event handled twice.
+            # --remove-orphans: a container left over from a previous service name keeps
+            # running beside the new one - two Twitch workers on one channel, so every
+            # chat command and EventSub event is handled twice.
             docker compose up -d --remove-orphans
-            docker image prune -f
+            docker image prune -f || true   # cosmetic; must not abort before the logout
             docker logout ghcr.io

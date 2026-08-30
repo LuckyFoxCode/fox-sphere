@@ -12,7 +12,7 @@ paths:
 # pnpm workspace
 
 Workspace members: `apps/api`, `apps/admin`, `apps/bot-runtime`, `apps/overlay`,
-`packages/types`, `packages/shared-schemas`. pnpm 11, pinned by `packageManager` in the
+`packages/types`, `packages/shared-schemas`, `packages/backend-shared`, `packages/db`. pnpm 11, pinned by `packageManager` in the
 root `package.json`.
 
 ## Internal dependencies
@@ -52,10 +52,11 @@ target:
 | `:f` | `apps/overlay` |
 | `:p` | `packages/*` |
 
-The other seven do not follow it, and are not anomalies. `prisma:g`, `prisma:m`, `prisma:s`
-and `worker:t` are all `--filter bot-runtime` wrappers whose suffix abbreviates the *action*
-(`generate`, `migrate`, `studio`, `twitch`) because the topic prefix already implies the
-backend. `build`, `build:all` and `new:pkg` are scoped by neither.
+The rest do not follow it, and are not anomalies. `prisma:g`, `prisma:m` and `prisma:s` wrap
+`--filter @fox-sphere/db` (the package that owns the schema), `worker:t` wraps
+`--filter bot-runtime`, and `openapi:dump` / `gen:api` wrap `--filter api` and
+`--filter admin`; each suffix abbreviates the *action* because the topic prefix already
+implies the target. `build`, `build:all` and `new:pkg` are scoped by neither.
 
 For a new script, use the target suffix for a plain per-app command and a topic prefix for
 a family. Either way, add a row to the Commands table in `AGENTS.md`.
@@ -73,9 +74,11 @@ package by hand.
 ## Docker knows the member list
 
 `.docker/bot-runtime.Dockerfile` copies the root manifests plus one `package.json` per member
-**the backend build needs** - `apps/bot-runtime`, `packages/types`, `packages/shared-schemas` -
-before `pnpm install --frozen-lockfile`. `apps/overlay` is deliberately absent; the backend
-image never builds it. **A new member that the backend depends on therefore needs a new
+**the backend build needs** - `apps/bot-runtime`, `packages/types`, `packages/shared-schemas`,
+`packages/backend-shared`, `packages/db` - before `pnpm install --frozen-lockfile`. The other
+apps are deliberately absent (`apps/admin` and `apps/api` are also excluded in
+`.dockerignore`); the backend image never builds them, and its runner stage copies only
+`apps/bot-runtime` plus `packages/`. **A new member that the backend depends on therefore needs a new
 `COPY` line there**, or the Docker build silently installs without it.
 
 `.docker/web.Dockerfile` builds `packages/*` **minus `@fox-sphere/db`**
@@ -84,6 +87,6 @@ image never builds it. **A new member that the backend depends on therefore need
 need. Keep the filter when adding packages.
 
 The image runs as the `node` user (uid 1000) deliberately: dev bind-mounts write
-`apps/bot-runtime/src/generated/` and `packages/*/dist` back to the host, and root-owned output
+`packages/db/src/generated/` and `packages/*/dist` back to the host, and root-owned output
 makes a later host-side `pnpm build` fail with `EACCES`. Do not add `USER root` to make a
 build step easier.

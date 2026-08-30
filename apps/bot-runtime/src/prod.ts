@@ -1,16 +1,16 @@
-// Объединённый production-процесс: HTTP+Socket.io сервер И Twitch-воркер в ОДНОМ
-// Node-процессе. Оба делят in-memory globalEventBus. forwardEventToBackend()
-// теперь бьёт в localhost (тот же процесс) — лишний хоп, но нулевой рефактор и
-// полная совместимость с dev, где это два раздельных процесса.
-// Сервер берётся из ./app — собственный HTTP+Socket.io бот-бэкенд пакета, а не
-// из пакета api (тот — отдельный локальный админ-бэкенд).
-// Один контейнер вместо двух — то, что нужно для бесплатной Oracle VM.
+// The combined production process: the HTTP + Socket.io server AND the Twitch worker in
+// ONE Node process. forwardEventToBackend() still POSTs to localhost, which is now the
+// same process - a redundant hop, but zero refactoring and one code path shared with dev,
+// where these are two separate processes.
+// The server comes from ./app - this package's own HTTP + Socket.io bot backend, not from
+// apps/api (that one is the separate, local-only admin backend).
+// One container instead of two, which is what the free Oracle VM needs.
 import { httpServer } from "./app";
 import { config, Logger } from "@fox-sphere/backend-shared";
 import { bootstrap } from "./worker";
 
 async function main() {
-  // 1) Поднимаем сервер ПЕРВЫМ — воркер шлёт события на его /api/internal/events.
+  // 1) Start the server FIRST - the worker posts its events to /api/internal/events.
   await new Promise<void>((resolve) => {
     httpServer.listen(config.port, () => {
       Logger.info(
@@ -21,7 +21,7 @@ async function main() {
     });
   });
 
-  // 2) Затем запускаем Twitch-воркер (chatbot + EventSub).
+  // 2) Then boot the Twitch worker (chatbot + EventSub).
   await bootstrap();
 }
 

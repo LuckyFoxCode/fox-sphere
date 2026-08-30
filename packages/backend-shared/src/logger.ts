@@ -43,6 +43,12 @@ export class Logger {
     }
   }
 
+  // Unlike info(), warn() is NOT silenced in production - a handled 4xx still has
+  // to leave a trace, or a client failing every request is invisible on the server.
+  public static warn(context: string, message: string): void {
+    console.warn(`[${new Date().toISOString()}] [WARN] [${context}]: ${message}`);
+  }
+
   public static debug(context: string, message: string): void {
     if (process.env.DEBUG === "true") {
       console.log(`[DEBUG] [${context}]: ${message}`);

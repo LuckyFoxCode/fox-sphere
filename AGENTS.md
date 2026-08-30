@@ -26,7 +26,7 @@ use a topic prefix instead, with the suffix abbreviating the action (`generate`,
 | `pnpm openapi:dump` | Regenerate `apps/api/openapi.json` from the routes. **Run after every route change**, in the same commit. |
 | `pnpm gen:api` | Regenerate the admin's typed vue-query client from that file (orval). |
 | `pnpm build:f` / `pnpm preview:f` | Frontend (overlay) production build / preview |
-| `pnpm lint:b` | eslint over the backend |
+| `pnpm lint:b` | eslint over `apps/bot-runtime` only. `apps/api` and `apps/admin` are linted by CI through `working-directory`, or locally with `pnpm --filter api lint` / `pnpm --filter admin lint` |
 | `pnpm lint:f` | `run-s lint:*` - oxlint then eslint, both with `--fix` |
 | `pnpm format:f` | Prettier over `apps/overlay/src` |
 | `pnpm prisma:g` | `prisma generate` - **required after clone and after every schema edit** |
@@ -93,9 +93,12 @@ override applies only inside compose, never to a native `pnpm dev:b`.
 | `packages/types` | tsdown | Socket event and domain contracts |
 | `packages/shared-schemas` | tsdown, zod | Request and response DTOs |
 | `packages/backend-shared` | tsdown | Prisma client, `config`, `AppError`s, logger, xp, stream-state/constants - shared by `api` and `bot-runtime` |
+| `packages/db` | Prisma 7 | The schema, the migrations and the generated client (`src/generated/`, gitignored) |
 
 The backend is a modular monolith split by app. In `apps/api`, `src/modules/<feature>/` holds
-that feature's service, constants, helpers and barrel. Cross-app backend code lives in
+that feature's `<feature>.routes.ts` (the `createModule`/`route()` declarations), its service
+and a barrel; `src/modules/index.ts` is the single list `app.ts` mounts and `dump-openapi.ts`
+reads. Cross-app backend code lives in
 `packages/backend-shared` (`config/`, `prisma.ts`, `errors/`, `logger`, `xp`,
 `stream-state`/`stream-constants`). Dependencies point one way - entrypoint to module
 service to shared.
@@ -103,7 +106,7 @@ service to shared.
 **Dev and production run different process shapes:**
 
 - **dev - several processes.** `apps/bot-runtime/src/server.ts` serves the Twitch backend's HTTP and Socket.io on `:3000` (runs in `docker compose`); `apps/bot-runtime/src/worker.ts` runs the chat bot and EventSub (run locally with `pnpm worker:t`); `apps/api/src/server.ts` runs the admin backend on `:3001` (locally, `pnpm dev:api`); the `admin` frontend runs on `:5174` (`pnpm dev:a`) and the overlay on `:5173` (`pnpm dev:f`).
-- **production - one process for the bot.** `apps/bot-runtime/src/prod.ts` starts its own HTTP listener and then boots the worker in the same process so both share the in-memory `globalEventBus`. `apps/api` and `apps/admin` are not deployed.
+- **production - one process for the bot.** `apps/bot-runtime/src/prod.ts` starts its own HTTP listener and then boots the worker in the same process, so the worker's `forwardEventToBackend()` POST reaches a listener in its own process. The HTTP hop is redundant there but kept so dev and production share one code path - the `globalEventBus` lives inside `worker.ts` and is never shared with `app.ts`. `apps/api` and `apps/admin` are not deployed.
 
 The event path is the same in both:
 
@@ -163,9 +166,9 @@ Two consequences for code written today:
 | **Import PrismaClient and types from `@fox-sphere/db`.** The only `PrismaClient` in the process is built in `packages/backend-shared/src/prisma.ts`. | `packages/backend-shared/src/prisma.ts` |
 | **`TwitchToken.obtainmentTimestamp` is `BigInt`.** `JSON.stringify` throws on it, so never hand a raw `TwitchToken` to `res.json()` or `io.emit()`. | `packages/db/prisma/schema.prisma` |
 | **`TwitchToken` has no `@id`.** Its unique criterion is `twitchUserId` - that is the key for `findUnique` and `upsert`. | `packages/db/prisma/schema.prisma` |
-| **Dev runs several processes, production runs one.** `prod.ts` shares an in-memory `globalEventBus` between server and worker; in dev they are separate processes and the worker talks to the bot HTTP server over HTTP. | `apps/bot-runtime/src/prod.ts`, `apps/bot-runtime/src/worker.ts` |
+| **Dev runs several processes, production runs one.** The difference is process count, not transport: `forwardEventToBackend()` POSTs to `/api/internal/events` in both, and in production that POST simply lands in the same process. | `apps/bot-runtime/src/prod.ts`, `apps/bot-runtime/src/worker.ts` |
 | **`/api/internal/events` is unauthenticated** and re-emits arbitrary `event` and `data` to every connected socket. Caddy now 404s `/api/internal/*` at the edge, so it is reachable only in-process; keep that rule first in the `route` block, and never expose the port directly. `apps/api` still carries a copy of the route it does not need. | `apps/bot-runtime/src/app.ts`, `.docker/Caddyfile` |
-| **CORS is inconsistent.** Socket.io pins `config.allowedOrigin`; `app.use(cors())` is wide open. `config.allowedOrigin` is also a hard gate for socket connections: if the admin ever opens a socket, its dev origin (`:5174`) must be added there, not just to the vite proxy. | `apps/bot-runtime/src/app.ts`, `apps/api/src/app.ts` |
+| **CORS is inconsistent.** Socket.io pins an origin allowlist while `app.use(cors())` is wide open. The allowlist is a hard gate for socket connections only, so a missing origin fails the WebSocket upgrade while plain HTTP keeps working - `apps/api` therefore lists the admin's `:5174` explicitly alongside `config.allowedOrigin`. | `apps/bot-runtime/src/app.ts`, `apps/api/src/app.ts` |
 | **Express 5 forwards rejected promises to the error middleware automatically.** No `asyncHandler`, no `try/catch` then `next(err)`. | `apps/bot-runtime/src/app.ts`, `apps/api/src/app.ts`, `apps/api/src/shared/middleware/error-handler.ts` |
 | **`config` throws on any missing env var** through `getEnv`, and almost everything imports it transitively. Anything that loads backend code needs a complete environment. | `packages/backend-shared/src/config.ts` |
 | **The backend has no path alias** - relative imports only. `@/*` exists in the frontend alone. | `apps/api/tsconfig.json`, `apps/bot-runtime/tsconfig.json`, `apps/overlay/tsconfig.app.json` |
@@ -184,7 +187,7 @@ pnpm --filter @fox-sphere/db prisma:generate
 pnpm build:p
 pnpm openapi:dump && git diff --exit-code apps/api/openapi.json          # spec matches routes
 pnpm gen:api      && git diff --exit-code apps/admin/src/api/generated   # client matches spec
-cd apps/api       && ./node_modules/.bin/tsc && ./node_modules/.bin/eslint .
+cd apps/api       && ./node_modules/.bin/tsc --noEmit && ./node_modules/.bin/eslint .
 cd ../bot-runtime && ./node_modules/.bin/tsc --noEmit && ./node_modules/.bin/eslint .
 cd ../overlay     && ./node_modules/.bin/vue-tsc --build && ./node_modules/.bin/oxlint . && ./node_modules/.bin/eslint .
 cd ../admin       && ./node_modules/.bin/vue-tsc --build && ./node_modules/.bin/oxlint . && ./node_modules/.bin/eslint .
@@ -214,8 +217,8 @@ CI then fails.
 | `.agents/rules/typescript.md` | `**/*.ts`, `**/*.vue` |
 | `.agents/rules/prisma.md` | `packages/db/prisma/**`, `packages/db/prisma.config.ts`, `apps/bot-runtime/src/**/*.ts`, `apps/api/src/modules/**/*.ts`, `packages/backend-shared/src/**/*.ts` |
 | `.agents/rules/express.md` | `apps/api/src/{app,server}.ts`, `apps/api/src/shared/middleware/**`, `apps/bot-runtime/src/{app,server,prod}.ts`, `apps/bot-runtime/src/shared/middleware/**`, `packages/backend-shared/src/{config,errors}.ts` |
-| `.agents/rules/openapi-routes.md` | `apps/api/src/modules/**`, `apps/api/src/shared/openapi/**`, `packages/shared-schemas/**`, `apps/admin/orval.config.ts` |
-| `.agents/rules/vue.md` | `apps/overlay/src/**`, `apps/overlay/*.config.ts`, `apps/overlay/.prettierrc.json` |
+| `.agents/rules/openapi-routes.md` | `apps/api/src/modules/**`, `apps/api/src/shared/openapi/**`, `apps/api/src/dump-openapi.ts`, `packages/shared-schemas/**`, `apps/admin/orval.config.ts` |
+| `.agents/rules/vue.md` | `apps/overlay/src/**`, `apps/overlay/*.config.ts`, `apps/overlay/.prettierrc.json`. `apps/admin` is a second Vue app with its **own** prettier/oxlint configs - the rule's conventions apply, the exact config values do not |
 | `.agents/rules/realtime.md` | `apps/bot-runtime/src/app.ts`, `apps/bot-runtime/src/shared/services/**`, `apps/overlay/src/{composables/sockets,services}/**`, `packages/types/**` |
 | `.agents/rules/monorepo.md` | `package.json`, `pnpm-workspace.yaml`, `packages/**`, `apps/*/package.json`, `.docker/**` |
 | `.agents/rules/testing.md` | `**/*.test.ts`, `**/*.spec.ts`, `**/__tests__/**`, `**/vitest.config.*` |
@@ -228,7 +231,7 @@ the rule matching the files you are about to touch.
 - Run `git commit` and `git push` ONLY when the user explicitly asks. Not to "save" work, not after finishing a task. Leave changes staged or unstaged for the user.
 - NEVER add a `Co-Authored-By: Claude` trailer, or any AI co-author line, to a commit message.
 - Never use `--no-verify`.
-- Never edit `apps/bot-runtime/src/generated/` - `prisma generate` owns it and it is gitignored.
+- Never edit `packages/db/src/generated/` - `prisma generate` owns it and it is gitignored.
 - Never hand-edit `pnpm-lock.yaml`.
 - Never commit a `.env`. `.env.example` at the repo root is the local-development template; `.env.prod.example` is the production one - they are different files for different jobs.
 - `/api/internal/events` is unauthenticated and fans out to every socket. Do not expose it publicly, and do not add a second route under that prefix without stating its trust model.

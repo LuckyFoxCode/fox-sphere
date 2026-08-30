@@ -1,7 +1,7 @@
 # admin
 
-Admin-panel frontend (Vue 3.5 + Vite + Tailwind 4). **Local-only** - not built by CI, not
-deployed. Dev server on `:5174`, proxying `/api` and `/socket.io` to the admin backend
+Admin-panel frontend (Vue 3.5 + Vite + Tailwind 4). **Local-only** - CI type-checks and
+lints it and diff-checks its generated client, but never builds or deploys it. Dev server on `:5174`, proxying `/api` and `/socket.io` to the admin backend
 `apps/api` on `:3001`.
 
 ```bash
@@ -36,7 +36,8 @@ in the same commit.
 
 ### Layout
 
-`mode: 'tags-split'` - one folder per OpenAPI tag, one module per schema:
+`mode: 'tags-split'` gives one folder per OpenAPI tag; `output.schemas` is what puts each
+schema in its own module:
 
 ```
 src/api/generated/
@@ -78,6 +79,13 @@ the outer `data` is the vue-query ref. A documented 4xx is **not** a thrown erro
 comes back as another member of the union (`status: 404`), so check `status` rather than
 relying on `isError`, which only fires on a transport failure.
 
+**Handle every status, and keep a final `v-else`.** Each documented status is its own union
+member, so a chain of `v-if`s that covers only the happy path renders *nothing at all* for
+the rest - a 500 then looks exactly like an empty result. `App.vue` is the reference: a
+branch for the transport failure, one for any unexpected status (with the message from
+`ErrorResponse`), one for 404, one for the data, and a catch-all. If a status is missing
+from the spec it cannot be handled here at all, so document it in `apps/api` first.
+
 ## Inspecting the query cache
 
 `<VueQueryDevtools />` is mounted in `App.vue` - the floating TanStack logo, bottom of the
@@ -85,8 +93,9 @@ page. It lists every query by key, its state (fresh / stale / fetching / inactiv
 response, and buttons to refetch, invalidate or reset one. Vue DevTools shows the component
 refs; this shows the cache behind them. It compiles to a no-op in a production build.
 
-Mutations (`POST`/`PATCH`/`DELETE`) come out as `useCreateUser()`-style hooks returning
-`{ mutate, mutateAsync, isPending }` - same import path, same naming rule.
+Mutations (`POST`/`PATCH`/`DELETE`) are expected to come out as `useCreateUser()`-style
+hooks returning `{ mutate, mutateAsync, isPending }` - same import path, same naming rule.
+The spec has only GETs today, so treat that as the expected shape, not an observed one.
 
 Requests go to relative `/api/*`, which Vite proxies to `:3001` in dev. There is no
 Authorization handling yet; when it is needed, add an orval `override.mutator` pointing at
@@ -102,4 +111,3 @@ a custom fetch wrapper rather than editing generated files.
 | `pnpm type-check` | `vue-tsc --build` |
 | `pnpm lint` | oxlint then eslint, both with `--fix` |
 | `pnpm format` | Prettier over `src/` |
-| `pnpm test:unit` | Vitest |

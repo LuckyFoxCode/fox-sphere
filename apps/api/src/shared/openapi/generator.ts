@@ -1,6 +1,5 @@
 import { OpenApiGeneratorV3 } from "@asteasolutions/zod-to-openapi";
 import type { OpenAPIObject } from "openapi3-ts/oas30";
-import { apiPort } from "../../port";
 
 import { registry } from "./registry";
 
@@ -12,5 +11,7 @@ export const generateOpenAPISpec = (): OpenAPIObject =>
       title: "Fox Sphere API",
       description: "REST API for the Fox Sphere Twitch bot platform",
     },
-    servers: [{ url: `http://localhost:${apiPort}` }],
+    // Hardcoded on purpose: openapi.json is committed and CI diffs it, so nothing
+    // in here may vary with a local env var (API_PORT moves the server, not the spec).
+    servers: [{ url: "http://localhost:3001" }],
   });

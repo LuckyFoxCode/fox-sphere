@@ -24,14 +24,17 @@ It needs Postgres (`docker compose up -d postgres`) and a complete `.env` at the
 
 A route is declared **once**. `createModule(tag)` returns `{ router, route }`; a `route()`
 call registers the OpenAPI path *and* mounts the Express handler *and* wires up Zod
-validation, all from the same object. There is no second file to keep in sync, and no way
-to ship a route that is missing from the docs.
+validation, all from the same object - there is no second file to keep in sync. Two things
+still are on you: registering the module in `src/modules/index.ts` (step 3 below), and
+running the two regeneration commands (step 4).
 
 ### 1. Write the schemas
 
 They live in `packages/shared-schemas`, so the admin and any future app share them.
-`.openapi("Name")` is what makes the schema a named component in the spec - which is what
-makes orval emit a named TypeScript type instead of an inline blob.
+`.openapi("Name")` on a **body or response** schema makes it a named component in the spec,
+which is what makes orval emit a named TypeScript type instead of an inline blob. Naming a
+`params`/`query` schema is still good practice, but OpenAPI inlines those as `parameters`
+either way.
 
 ```ts
 // packages/shared-schemas/src/user/user.schema.ts
@@ -94,7 +97,9 @@ route(
     request: { params: GetUserParamsSchema },
     responses: {
       200: { description: "User found", schema: UserResponseSchema },
+      400: { description: "Invalid user id" },
       404: { description: "User not found" },
+      500: { description: "Unexpected server error" },
     },
   },
   async (req, res) => {
@@ -107,9 +112,18 @@ route(
 export { router as userRouter };
 ```
 
-Barrel it (`src/modules/user/index.ts` → `export { userRouter } from "./user.routes";`),
-mount it in `src/app.ts` (`app.use("/api", userRouter);`), and add a side-effect import to
-`src/dump-openapi.ts` so the spec dump loads the module.
+Barrel it (`src/modules/user/index.ts` → `export { userRouter } from "./user.routes";`) and
+add one entry to `src/modules/index.ts`:
+
+```ts
+export const modules: readonly { prefix: string; router: Router }[] = [
+  { prefix: "/api", router: channelRouter },
+  { prefix: "/api", router: userRouter },
+];
+```
+
+That single list is what `app.ts` mounts and what `dump-openapi.ts` loads, so a module
+cannot be live in the app while missing from the spec.
 
 ### 4. Regenerate
 
@@ -196,6 +210,10 @@ route(
 
 `params` and `query` must be a `ZodObject`; `body` can be any Zod schema.
 
+The **parsed** value is what reaches your handler, so coercions and `.default()`s apply and
+unknown keys are stripped. `req.params` and `req.body` are replaced in place; `req.query` is
+read-only in Express 5, so the parsed query is on `req.validatedQuery`.
+
 ## Errors
 
 Throw, don't build error JSON. Express 5 forwards a rejected promise to the error
@@ -212,9 +230,11 @@ throw new NotFoundError("Channel not found");   // -> 404 {status, message}
 development, `"Internal server error"` in production). A schema mismatch in `request`
 becomes a `ValidationError` before your handler runs.
 
-Document each status you actually return. The generated client turns every documented
-status into its own member of a union, so an undocumented 4xx reaches the admin as an
-unexpected shape.
+Document each status you actually return - the 4xx and the 500. Any status >= 400 with no
+`schema` of its own is documented with `ErrorResponseSchema` (the exact body above)
+automatically. The generated client turns every documented status into its own union
+member, so an *undocumented* status reaches the admin as a shape its types call impossible,
+and the UI has no branch for it.
 
 ## Layout
 
@@ -224,7 +244,9 @@ src/
   server.ts                 listen() on :3001
   port.ts                   API_PORT, default 3001
   dump-openapi.ts           writes openapi.json
-  modules/<feature>/        <feature>.routes.ts | .service.ts | index.ts
+  modules/
+    index.ts                the one list app.ts mounts and dump-openapi.ts loads
+    <feature>/              <feature>.routes.ts | .service.ts | index.ts
   shared/
     openapi/
       define-route.ts       createModule + route()  <- the abstraction above
@@ -243,7 +265,7 @@ folder carries a barrel. Import from the barrel, not a deep path.
 
 - **`pnpm start` is broken here**, same as in `bot-runtime`: `node dist/server.js` cannot resolve extensionless ESM specifiers. Use `pnpm dev:api`.
 - **`openapi.json` is committed and generated.** Never hand-edit it; re-run `pnpm openapi:dump`.
-- **Never call `registry.registerPath` or `router.get/post/...` directly.** That is how the spec and the routes drift apart - the whole reason `route()` exists.
+- **Never call `registry.registerPath` or `router.get/post/...` directly.** That is how the spec and the routes drift apart - the whole reason `route()` exists. A duplicate method+path throws at import for the same reason.
 - **`app.use(cors())` is wide open** while Socket.io pins `config.allowedOrigin`. Known gap, not a pattern to copy.
 - **`/api/internal/events` exists here for parity with `bot-runtime` but nothing feeds it.** It is unauthenticated; do not build on it.
 

@@ -5,18 +5,21 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import swaggerUi from "swagger-ui-express";
 import { config, getStreamStatePrepared, Logger } from "@fox-sphere/backend-shared";
-import { errorHandler } from "./shared/middleware/error-handler";
-import { generateOpenAPISpec } from "./shared/openapi/generator";
-import { channelRouter } from "./modules/channel";
+import { errorHandler } from "./shared/middleware";
+import { generateOpenAPISpec } from "./shared/openapi";
+import { modules } from "./modules";
 
 const app: Express = express();
 const httpServer = createServer(app);
 
-const allowedOrigin = config.allowedOrigin || "http://localhost:5174";
+// ALLOWED_ORIGIN always has a value (config defaults it), so this is the whole
+// allowlist: the admin's dev origin has to be listed explicitly or its socket
+// upgrade is rejected while plain HTTP still works - a confusing pair to debug.
+const allowedOrigins = [config.allowedOrigin, "http://localhost:5174"];
 
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: {
-    origin: allowedOrigin,
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
   },
 });
@@ -53,7 +56,9 @@ io.on("connection", (socket) => {
   });
 });
 
-app.use("/api", channelRouter);
+for (const { prefix, router } of modules) {
+  app.use(prefix, router);
+}
 
 const openApiSpec = generateOpenAPISpec();
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));

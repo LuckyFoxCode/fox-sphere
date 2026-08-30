@@ -6,8 +6,9 @@ import { resolve } from "path";
 import { Logger } from "@fox-sphere/backend-shared";
 import { generateOpenAPISpec } from "./shared/openapi";
 
-// Side-effect imports: each module registers its paths when it is loaded.
-import "./modules/channel";
+// Importing the module list registers every route's OpenAPI path as a side effect.
+// It is the same list app.ts mounts, so the spec cannot miss a mounted module.
+import "./modules";
 
 const target = resolve(process.cwd(), "openapi.json");
 
