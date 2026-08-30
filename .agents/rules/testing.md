@@ -1,6 +1,6 @@
 ---
 name: testing
-description: There is no test suite yet - what that means for any claim of correctness today, and the conventions the phase-1 harness must be built to when it lands.
+description: What the small vitest suite covers and what it does not, the conventions every new test follows, and the database harness that is still missing.
 paths:
   - "**/*.test.ts"
   - "**/*.spec.ts"
@@ -10,29 +10,49 @@ paths:
 
 # Testing
 
-## Today: there is no suite
+## What exists
 
-No test runner is installed in any workspace member, and no `test` script exists.
+Vitest, in three members only:
 
-Therefore:
+| Where | File | Covers |
+|---|---|---|
+| `packages/backend-shared` | `src/__tests__/xp.spec.ts` | `getXpThresholdForLevel`, `resolveActiveXpBoost` |
+| `apps/overlay` | `src/utils/twitch/__tests__/parseTwitchEmotes.test.ts` | emote positions (code points, not UTF-16), urls, malformed emote maps |
+| `apps/admin` | `src/__tests__/App.test.ts` | every documented status branch, including the 500 that used to render nothing |
 
-- **Never say "tests pass", "tests are green", or "verified by tests".** There is nothing to run.
-- The verification gate is build, lint and type-check - see `agent-workflow.md`.
-- Do not add a lone test file. A test nothing runs is worse than no test: it rots quietly and implies coverage that does not exist. Bring the harness with it or leave it out.
+`pnpm test` runs all of it (`pnpm -r test`); CI runs it in the gate. Everything is a pure
+function or a mounted component with the generated client stubbed - **no database, no
+Twitch, no sockets**. So:
+
+- "Tests pass" means those units and nothing else. Never let it stand for the bot working.
+- The gate is still build + lint + type-check + these tests, in that order.
+- Do not add a test file to a member that has no `test` script - bring the wiring with it,
+  or the file rots unrun. That is what happened to the `create-vue` scaffold test this
+  suite replaced.
+
+## Conventions in force
+
+- **Vitest**, never Jest - `vi.fn()`, `vi.mock()`, `vi.spyOn()`.
+- **A `__tests__/` folder beside the code under test**, never a mirrored tree - `src/utils/twitch/__tests__/parseTwitchEmotes.test.ts` sits next to `parseTwitchEmotes.ts`.
+- Backend tests as `*.spec.ts`, frontend tests as `*.test.ts`.
+- Both Vue apps split their tsconfigs: `tsconfig.app.json` excludes `src/**/__tests__/*` so a build stays clean, and `tsconfig.vitest.json` type-checks the tests. `vue-tsc --build` runs both, so a broken test still fails the gate.
+- Mock a composable's return with **real refs** (`ref(value)`), never `{ value }` - a
+  template only unwraps refs, so a plain object reads as truthy and every branch misfires.
+- Prefer a test that fails when the fix is reverted. If deleting the code under test leaves
+  it green, it is testing the framework.
 
 ## When the harness lands
 
-`apps/backend/docs/multi-tenant-architecture.md` makes the harness phase 1, step 1. Build
-it to these conventions:
+`apps/bot-runtime/docs/multi-tenant-architecture.md` makes the database harness phase 1,
+step 1. It does not exist yet. Build it to these conventions:
 
-- **Vitest**, never Jest - `vi.fn()`, `vi.mock()`, `vi.spyOn()`.
 - A `foxsphere_test` database inside the existing Postgres container. Not a mock layer and not SQLite; the schema is Postgres-specific.
 - A `resetDb()` helper that truncates between tests, so test ordering never matters.
-- Backend tests as `*.spec.ts`, frontend tests as `*.test.ts`. `apps/frontend/tsconfig.app.json` already excludes `src/**/__tests__/*`, which fixes the frontend location.
+
 
 ### The trap that will bite first
 
-`apps/backend/src/shared/config/index.ts` builds `config` through `getEnv`, which **throws
+`packages/backend-shared/src/config.ts` builds `config` through `getEnv`, which **throws
 on any missing variable**, and nearly every backend module imports `config` transitively.
 Importing one service into one test therefore pulls in the entire environment requirement.
 
@@ -45,7 +65,7 @@ Importing one service into one test therefore pulls in the entire environment re
 Read the current list from the file before writing `.env.test`:
 
 ```bash
-grep -o 'getEnv("[A-Z_]*"' apps/backend/src/shared/config/index.ts | sort -u
+grep -o 'getEnv("[A-Z_]*"' packages/backend-shared/src/config.ts | sort -u
 ```
 
 ### The one test the plan requires

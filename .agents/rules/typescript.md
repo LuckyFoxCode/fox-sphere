@@ -19,7 +19,7 @@ paths:
 
 ## Backend imports
 
-`apps/backend/tsconfig.json` sets `moduleResolution: "Bundler"`, and the backend has **no
+`apps/bot-runtime/tsconfig.json` sets `moduleResolution: "Bundler"`, and the backend has **no
 path alias**.
 
 ```ts
@@ -42,7 +42,7 @@ a per-file choice.
 
 ## Frontend imports
 
-`apps/frontend/tsconfig.app.json` maps `@/*` to `./src/*`. Use it - long relative chains
+`apps/overlay/tsconfig.app.json` maps `@/*` to `./src/*`. Use it - long relative chains
 are not the house style there.
 
 It also sets **`noUncheckedIndexedAccess: true`**, so any indexed read is `T | undefined`:

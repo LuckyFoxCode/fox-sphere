@@ -16,7 +16,7 @@ RUN corepack enable && corepack prepare pnpm@11.2.2 --activate
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/frontend/package.json ./apps/frontend/
+COPY apps/overlay/package.json ./apps/overlay/
 COPY packages/types/package.json ./packages/types/
 COPY packages/shared-schemas/package.json ./packages/shared-schemas/
 RUN pnpm install --frozen-lockfile
@@ -28,12 +28,12 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 # @fox-sphere/db is filtered out: its `build` runs `prisma generate`, which
 # requires a real DATABASE_URL this image must never need (the frontend does
 # not import @fox-sphere/db).
-RUN pnpm --filter "./packages/*" --filter "!@fox-sphere/db" build && pnpm --filter frontend build
+RUN pnpm --filter "./packages/*" --filter "!@fox-sphere/db" build && pnpm --filter overlay build
 
 # ==========================================
 # Serve with Caddy
 # ==========================================
 FROM caddy:2-alpine
 COPY .docker/Caddyfile /etc/caddy/Caddyfile
-COPY --from=build /app/apps/frontend/dist /srv
+COPY --from=build /app/apps/overlay/dist /srv
 EXPOSE 80 443

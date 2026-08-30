@@ -136,9 +136,9 @@ packages ship a built `dist/` and apps consume the built types.
 
 ## Docker & file ownership (important)
 
-The backend runs in Docker and bind-mounts `./packages` and `./apps/backend`.
+The backend runs in Docker and bind-mounts `./packages` and `./apps/bot-runtime`.
 The container runs as the non-root **`node` user (uid 1000)** so artifacts it
-writes back to the host — `packages/*/dist`, `apps/backend/src/generated` — are
+writes back to the host — `packages/*/dist`, `packages/db/src/generated` — are
 owned by the host developer (uid 1000), not root. This is what keeps host-side
 `pnpm build` from failing with:
 
@@ -151,13 +151,13 @@ another tool running as root), reclaim them once **as root**, then build
 normally as yourself:
 
 ```bash
-sudo rm -rf apps/backend/src/generated packages/*/dist
+sudo rm -rf packages/db/src/generated packages/*/dist
 pnpm build                     # host: packages + frontend
-docker compose build backend   # regenerates Prisma client as `node`
+docker compose build bot-runtime   # regenerates Prisma client as `node`
 ```
 
-(Or `sudo chown -R "$USER:$USER" apps/backend/src/generated packages/*/dist`
+(Or `sudo chown -R "$USER:$USER" packages/db/src/generated packages/*/dist`
 instead of removing.)
 
-See the comments in `Dockerfile` (base stage) and `docker-compose.yml` (backend
+See the comments in `Dockerfile` (base stage) and `docker-compose.yml` (bot-runtime
 service) for the rationale.

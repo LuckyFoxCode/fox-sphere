@@ -1,0 +1,7 @@
+export const BOOST_CONFIG = {
+  AUTO_DURATION: 30 * 60 * 1000,
+  MULTIPLIER: 2,
+  MIN: 5 * 60 * 1000,
+  MAX: 60 * 60 * 1000,
+  DEFAULT: 30 * 60 * 1000,
+};

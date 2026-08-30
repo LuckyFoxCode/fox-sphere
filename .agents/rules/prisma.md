@@ -4,7 +4,9 @@ description: Prisma 7 conventions specific to fox-sphere - the single client, ge
 paths:
   - "packages/db/prisma/**"
   - "packages/db/prisma.config.ts"
-  - "apps/backend/src/**/*.ts"
+  - "apps/bot-runtime/src/**/*.ts"
+  - "apps/api/src/modules/**/*.ts"
+  - "packages/backend-shared/src/**/*.ts"
 ---
 
 # Prisma 7
@@ -15,20 +17,13 @@ and the v6-to-v7 upgrade path - lives in the `prisma-client-api`, `prisma-cli` a
 
 ## One client, one pool
 
-`apps/backend/src/shared/lib/prisma.ts` builds the only `PrismaClient` in the process: a
-`pg.Pool`, wrapped in `PrismaPg`, passed as `adapter`. Import that instance.
+`packages/backend-shared/src/prisma.ts` builds the only `PrismaClient` in the process: a
+`pg.Pool`, wrapped in `PrismaPg`, passed as `adapter`. Both `apps/api` and
+`apps/bot-runtime` consume it. Import that instance from the package barrel:
 
 ```ts
-import { prisma } from "../../shared/lib";
+import { prisma } from "@fox-sphere/backend-shared";
 ```
-
-Import from the `shared/lib` barrel, not a deep path. There are 12 call sites in
-`apps/backend/src`: the ten outside `shared/` import it as `../../shared/lib` (or deeper);
-the two files that live inside `shared/` itself reach the sibling `lib/` directory
-directly, since they're already at that level — `shared/services/stream-state.service.ts`
-does this correctly via the barrel (`../lib`), but `shared/infra/lifecycle.ts` imports the
-deep `../lib/prisma` path and violates this rule. The barrel rule in the typescript rule
-still applies: import the barrel, not `lib/prisma`, even from inside `shared/`.
 
 Never call `new PrismaClient()` anywhere else. Each one opens its own connection pool, and
 Postgres runs out of connections well before anyone connects the symptom to the cause.
@@ -76,7 +71,7 @@ Translate Prisma error codes into `AppError` subclasses where the query is made,
 route handler ever sees a `PrismaClientKnownRequestError`:
 
 ```ts
-import { ConflictError } from "../../shared/errors";
+import { ConflictError } from "@fox-sphere/backend-shared";
 
 try {
   return await prisma.user.create({ data });
@@ -89,7 +84,7 @@ try {
 ```
 
 `AppError`, `NotFoundError`, `ConflictError` and `ValidationError` live in
-`apps/backend/src/shared/errors/app-error.ts`. The error middleware turns them into
+`packages/backend-shared/src/errors.ts`. The error middleware turns them into
 responses; nothing deeper in the stack should be choosing a status code.
 
 ## Traps in the current schema
