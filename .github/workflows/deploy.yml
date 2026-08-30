@@ -56,20 +56,39 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    # packages:read is what makes the GHCR login below able to pull. Without it the VM
+    # can only fetch images whose package is public - and CI creates every new package
+    # private, so a renamed image would fail its first pull with `denied`.
+    permissions:
+      contents: read
+      packages: read
     steps:
       - name: SSH deploy
+        env:
+          GHCR_ACTOR: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
+          envs: GHCR_ACTOR,GHCR_TOKEN
           script: |
             set -e
+            # Authenticate to GHCR with this run's short-lived token, so visibility of the
+            # package does not gate the deploy. --password-stdin keeps it out of the VM's
+            # process list; the logout at the end keeps no stale credential on disk.
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_ACTOR" --password-stdin
             # ~/foxsphere holds the deploy repo's compose.yaml + a real .env (never committed).
             # compose auto-detects compose.yaml and auto-loads .env for ${...} interpolation.
             cd ~/foxsphere
             docker compose pull
             # Run migrations before swapping the app (one-shot container).
             docker compose run --rm bot-runtime pnpm --filter @fox-sphere/db prisma:migrate:deploy
-            docker compose up -d
+            # --remove-orphans: the service was renamed backend -> bot-runtime, so the
+            # old container is an orphan now. Without this it keeps running alongside
+            # the new one - two Twitch workers on the same channel, every chat command
+            # and EventSub event handled twice.
+            docker compose up -d --remove-orphans
             docker image prune -f
+            docker logout ghcr.io

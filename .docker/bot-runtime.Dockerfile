@@ -74,7 +74,12 @@ RUN pnpm --filter bot-runtime build
 FROM base AS runner
 ENV NODE_ENV=production
 COPY --from=build --chown=node:node /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
-COPY --from=build --chown=node:node /app/apps ./apps
+# Only the deployed app plus the packages it imports. `apps/api` and `apps/admin` are
+# local-only tools - copying all of ./apps used to ship their source AND install their
+# dependencies (vue, @tanstack/vue-query, swagger-ui-express) into the production image.
+# `pnpm install --frozen-lockfile` tolerates workspace members that are absent from the
+# context, so the lockfile stays authoritative with only these two directories present.
+COPY --from=build --chown=node:node /app/apps/bot-runtime ./apps/bot-runtime
 COPY --from=build --chown=node:node /app/packages ./packages
 RUN pnpm install --prod --frozen-lockfile
 EXPOSE 3000

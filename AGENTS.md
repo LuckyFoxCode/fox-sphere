@@ -23,6 +23,8 @@ use a topic prefix instead, with the suffix abbreviating the action (`generate`,
 | `pnpm dev:server:b` | `apps/bot-runtime` HTTP + Socket.io backend (`tsx watch src/server.ts`) on `:3000` - the bot's own server app, run in `docker compose` (normal) or here to run it out-of-container. |
 | `pnpm dev:a` | Vite dev server for the `admin` frontend on `:5174`, proxying `/api` and `/socket.io` to `:3001`. |
 | `pnpm dev:f` | Vite dev server for the overlay on `:5173` |
+| `pnpm openapi:dump` | Regenerate `apps/api/openapi.json` from the routes. **Run after every route change**, in the same commit. |
+| `pnpm gen:api` | Regenerate the admin's typed vue-query client from that file (orval). |
 | `pnpm build:f` / `pnpm preview:f` | Frontend (overlay) production build / preview |
 | `pnpm lint:b` | eslint over the backend |
 | `pnpm lint:f` | `run-s lint:*` - oxlint then eslint, both with `--fix` |
@@ -115,6 +117,14 @@ Twitch EventSub / IRC -> worker -> globalEventBus -> forwardEventToBackend()
                                                     overlay in OBS
 ```
 
+**The admin API surface is generated, end to end.** A route is declared once with
+`createModule` / `route()` in `apps/api/src/modules/<feature>/` - that single object both
+mounts the Express handler (with Zod validation) and registers the OpenAPI path. 
+`pnpm openapi:dump` writes the spec to the **committed** `apps/api/openapi.json`, and
+`pnpm gen:api` turns that file into `apps/admin/src/api/generated/` (orval, vue-query,
+one folder per tag). Nothing in that chain needs a running server. Details and the
+per-verb recipes: `.agents/rules/openapi-routes.md`.
+
 ## Target architecture
 
 Two design documents are authoritative for structural change. **Read the relevant one
@@ -147,13 +157,14 @@ Two consequences for code written today:
 | Gotcha | Where |
 |---|---|
 | **`pnpm start:b` is broken.** `start` is `node dist/server.js`, but the backend is ESM (`"type": "module"`) with extensionless relative imports under `moduleResolution: "Bundler"`, which Node's ESM loader cannot resolve. Production runs `start:prod` (`tsx src/prod.ts`) instead. `apps/api` has the **same** defect - its `start` is also `node dist/server.js`, so run it with `pnpm dev:api` instead. | `apps/bot-runtime/package.json`, `apps/bot-runtime/tsconfig.json`, `apps/api/package.json` |
+| **`apps/api/openapi.json` and `apps/admin/src/api/generated/` are generated but committed.** Never hand-edit either. Never call `registry.registerPath` or `router.get/post/...` directly - `createModule`/`route()` owns both. Re-run `pnpm openapi:dump && pnpm gen:api` after any route change; a stale client fails nothing loudly. | `apps/api/src/shared/openapi/define-route.ts`, `apps/admin/orval.config.ts` |
 | **The Prisma client is gitignored** (`packages/db/src/generated/`). Run `pnpm prisma:g` after a clone and after every schema edit, before anything type-checks. | `packages/db/.gitignore` |
 | **`datasource db` has no `url`.** Prisma 7 reads it from `prisma.config.ts` via `env("DATABASE_URL")`. Putting `url` back in the schema is the wrong fix. | `packages/db/prisma/schema.prisma`, `packages/db/prisma.config.ts` |
 | **Import PrismaClient and types from `@fox-sphere/db`.** The only `PrismaClient` in the process is built in `packages/backend-shared/src/prisma.ts`. | `packages/backend-shared/src/prisma.ts` |
 | **`TwitchToken.obtainmentTimestamp` is `BigInt`.** `JSON.stringify` throws on it, so never hand a raw `TwitchToken` to `res.json()` or `io.emit()`. | `packages/db/prisma/schema.prisma` |
 | **`TwitchToken` has no `@id`.** Its unique criterion is `twitchUserId` - that is the key for `findUnique` and `upsert`. | `packages/db/prisma/schema.prisma` |
 | **Dev runs several processes, production runs one.** `prod.ts` shares an in-memory `globalEventBus` between server and worker; in dev they are separate processes and the worker talks to the bot HTTP server over HTTP. | `apps/bot-runtime/src/prod.ts`, `apps/bot-runtime/src/worker.ts` |
-| **`/api/internal/events` is unauthenticated** and re-emits arbitrary `event` and `data` to every connected socket. It must never be publicly reachable. | `apps/bot-runtime/src/app.ts` |
+| **`/api/internal/events` is unauthenticated** and re-emits arbitrary `event` and `data` to every connected socket. Caddy now 404s `/api/internal/*` at the edge, so it is reachable only in-process; keep that rule first in the `route` block, and never expose the port directly. `apps/api` still carries a copy of the route it does not need. | `apps/bot-runtime/src/app.ts`, `.docker/Caddyfile` |
 | **CORS is inconsistent.** Socket.io pins `config.allowedOrigin`; `app.use(cors())` is wide open. `config.allowedOrigin` is also a hard gate for socket connections: if the admin ever opens a socket, its dev origin (`:5174`) must be added there, not just to the vite proxy. | `apps/bot-runtime/src/app.ts`, `apps/api/src/app.ts` |
 | **Express 5 forwards rejected promises to the error middleware automatically.** No `asyncHandler`, no `try/catch` then `next(err)`. | `apps/bot-runtime/src/app.ts`, `apps/api/src/app.ts`, `apps/api/src/shared/middleware/error-handler.ts` |
 | **`config` throws on any missing env var** through `getEnv`, and almost everything imports it transitively. Anything that loads backend code needs a complete environment. | `packages/backend-shared/src/config.ts` |
@@ -165,12 +176,14 @@ Two consequences for code written today:
 
 ## Verification
 
-**There is no test suite.** Never claim tests pass. The gate is:
+**There is no test suite.** Never claim tests pass. `.github/workflows/ci.yml` runs this gate on every PR and on pushes to `main`/`dev` (plus a build of both deployed images). Locally the gate is:
 
 ```bash
 pnpm install
 pnpm --filter @fox-sphere/db prisma:generate
 pnpm build:p
+pnpm openapi:dump && git diff --exit-code apps/api/openapi.json          # spec matches routes
+pnpm gen:api      && git diff --exit-code apps/admin/src/api/generated   # client matches spec
 cd apps/api       && ./node_modules/.bin/tsc && ./node_modules/.bin/eslint .
 cd ../bot-runtime && ./node_modules/.bin/tsc --noEmit && ./node_modules/.bin/eslint .
 cd ../overlay     && ./node_modules/.bin/vue-tsc --build && ./node_modules/.bin/oxlint . && ./node_modules/.bin/eslint .
@@ -201,6 +214,7 @@ CI then fails.
 | `.agents/rules/typescript.md` | `**/*.ts`, `**/*.vue` |
 | `.agents/rules/prisma.md` | `packages/db/prisma/**`, `packages/db/prisma.config.ts`, `apps/bot-runtime/src/**/*.ts`, `apps/api/src/modules/**/*.ts`, `packages/backend-shared/src/**/*.ts` |
 | `.agents/rules/express.md` | `apps/api/src/{app,server}.ts`, `apps/api/src/shared/middleware/**`, `apps/bot-runtime/src/{app,server,prod}.ts`, `apps/bot-runtime/src/shared/middleware/**`, `packages/backend-shared/src/{config,errors}.ts` |
+| `.agents/rules/openapi-routes.md` | `apps/api/src/modules/**`, `apps/api/src/shared/openapi/**`, `packages/shared-schemas/**`, `apps/admin/orval.config.ts` |
 | `.agents/rules/vue.md` | `apps/overlay/src/**`, `apps/overlay/*.config.ts`, `apps/overlay/.prettierrc.json` |
 | `.agents/rules/realtime.md` | `apps/bot-runtime/src/app.ts`, `apps/bot-runtime/src/shared/services/**`, `apps/overlay/src/{composables/sockets,services}/**`, `packages/types/**` |
 | `.agents/rules/monorepo.md` | `package.json`, `pnpm-workspace.yaml`, `packages/**`, `apps/*/package.json`, `.docker/**` |

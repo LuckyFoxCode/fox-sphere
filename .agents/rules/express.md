@@ -78,7 +78,7 @@ supply it, so give a default unless the value genuinely must come from the envir
 and re-emits it to **every** connected socket. It has no authentication. It exists so the
 dev-mode worker process can reach the server over HTTP.
 
-- It must not be reachable from outside the deployment. Caddy fronts only what it is configured to front - keep it that way.
+- It must not be reachable from outside the deployment. `.docker/Caddyfile` answers `/api/internal/*` with a 404 before the `/api/*` proxy rule - that block stays first inside `route { }`, which is what preserves the order.
 - Do not add a second route under `/api/internal/*` without writing down its trust model.
 - Do not call it from the frontend. The overlay consumes socket events; it does not publish them.
 
