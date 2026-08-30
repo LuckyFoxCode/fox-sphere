@@ -21,10 +21,12 @@ The full gate:
 
 ```bash
 pnpm install
-pnpm --filter backend exec prisma generate
+pnpm --filter @fox-sphere/db prisma:generate
 pnpm build:p
-cd apps/backend  && ./node_modules/.bin/tsc --noEmit && ./node_modules/.bin/eslint .
-cd ../frontend   && ./node_modules/.bin/vue-tsc --build && ./node_modules/.bin/oxlint . && ./node_modules/.bin/eslint .
+cd apps/api        && ./node_modules/.bin/tsc && ./node_modules/.bin/eslint .
+cd ../bot-runtime  && ./node_modules/.bin/tsc --noEmit && ./node_modules/.bin/eslint .
+cd ../overlay      && ./node_modules/.bin/vue-tsc --build && ./node_modules/.bin/oxlint . && ./node_modules/.bin/eslint .
+cd ../admin        && ./node_modules/.bin/vue-tsc --build && ./node_modules/.bin/oxlint . && ./node_modules/.bin/eslint .
 cd ../.. && pnpm build
 ```
 
@@ -38,15 +40,15 @@ For a change confined to one app, the minimum is that app's type-check and lint 
 
 | Path | Why |
 |---|---|
-| `apps/backend/src/generated/` | `prisma generate` owns it; gitignored |
+| `apps/bot-runtime/src/generated/` | `prisma generate` owns it; gitignored |
 | `pnpm-lock.yaml` | pnpm owns it - change `package.json` and reinstall |
-| `.env`, `.env.test` once populated with real secrets | Never commit one, never edit someone else's populated file. Creating `apps/backend/.env` from `apps/backend/.env.example` for local setup, and creating a fresh `.env.test` (see `testing.md`), are expected setup steps, not exceptions — `apps/backend/.env.example` is the local-development template, `.env.prod.example` at the repo root is the production one |
+| `.env`, `.env.test` once populated with real secrets | Never commit one, never edit someone else's populated file. Creating `apps/bot-runtime/.env` from `apps/bot-runtime/.env.example` for local setup, and creating a fresh `.env.test` (see `testing.md`), are expected setup steps, not exceptions — `apps/bot-runtime/.env.example` is the local-development template, `.env.prod.example` at the repo root is the production one |
 | `CLAUDE.md` | a symlink - edit `AGENTS.md` |
 
 ## Before structural change
 
-Read `apps/backend/docs/possible-architecture.md` (backend internals) or
-`apps/backend/docs/multi-tenant-architecture.md` (platform target) before moving files,
+Read `apps/bot-runtime/docs/possible-architecture.md` (backend internals) or
+`apps/bot-runtime/docs/multi-tenant-architecture.md` (platform target) before moving files,
 splitting a service, or reshaping the schema. Do not invent structure that contradicts
 them.
 

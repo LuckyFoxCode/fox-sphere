@@ -19,8 +19,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: backend
-            dockerfile: .docker/backend.Dockerfile
+          - name: bot-runtime
+            dockerfile: .docker/bot-runtime.Dockerfile
             target: runner
           - name: web
             dockerfile: .docker/web.Dockerfile
@@ -70,6 +70,6 @@ jobs:
             cd ~/foxsphere
             docker compose pull
             # Run migrations before swapping the app (one-shot container).
-            docker compose run --rm backend pnpm --filter @fox-sphere/db prisma:migrate:deploy
+            docker compose run --rm bot-runtime pnpm --filter @fox-sphere/db prisma:migrate:deploy
             docker compose up -d
             docker image prune -f

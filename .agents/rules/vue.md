@@ -2,9 +2,9 @@
 name: vue
 description: Vue 3.5 SFC and composable conventions for the overlay app, plus the formatting and lint order a change has to satisfy.
 paths:
-  - "apps/frontend/src/**"
-  - "apps/frontend/*.config.ts"
-  - "apps/frontend/.prettierrc.json"
+  - "apps/overlay/src/**"
+  - "apps/overlay/*.config.ts"
+  - "apps/overlay/.prettierrc.json"
 ---
 
 # Vue 3.5
@@ -41,7 +41,7 @@ rule.
 
 ## Formatting and lint
 
-`apps/frontend/.prettierrc.json`: single quotes, semicolons, two spaces, `printWidth` 100,
+`apps/overlay/.prettierrc.json`: single quotes, semicolons, two spaces, `printWidth` 100,
 `trailingComma: "all"`, `arrowParens: "always"`, and **`singleAttributePerLine: true`** -
 so a multi-prop tag breaks one attribute per line. `prettier-plugin-tailwindcss` orders
 class lists; never hand-sort them.
@@ -59,10 +59,10 @@ Props are camelCase in script and kebab-case as template attributes:
 oxlint has `correctness` at error with the `vue`, `typescript`, `unicorn` and `oxc`
 plugins enabled. Both must be clean - a green eslint over a failing oxlint is a red gate.
 
-Type-check with `vue-tsc --build` (`pnpm --filter frontend type-check`), not `tsc`; it
-uses the project references in `apps/frontend/tsconfig.json`.
+Type-check with `vue-tsc --build` (`pnpm --filter overlay type-check`), not `tsc`; it
+uses the project references in `apps/overlay/tsconfig.json`.
 
 ## noUncheckedIndexedAccess
 
-`apps/frontend/tsconfig.app.json` enables it, so indexed reads are `T | undefined` in this
+`apps/overlay/tsconfig.app.json` enables it, so indexed reads are `T | undefined` in this
 app. Narrow them rather than asserting - see the typescript rule.

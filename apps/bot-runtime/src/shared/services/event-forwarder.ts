@@ -1,0 +1,26 @@
+import { config, Logger } from "@fox-sphere/backend-shared";
+
+export async function forwardEventToBackend(
+  event: string,
+  data: Record<string, unknown> | unknown = {},
+) {
+  try {
+    const response = await fetch(
+      `http://localhost:${config.port}/api/internal/events`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event, data }),
+      },
+    );
+
+    if (!response.ok) {
+      Logger.error(
+        "EventForwarder",
+        `Failed to forward ${event}: ${response.statusText}`,
+      );
+    }
+  } catch (error) {
+    Logger.error("EventForwarder", `Error forwarding event ${event}`, error);
+  }
+}

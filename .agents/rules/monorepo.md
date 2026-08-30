@@ -11,8 +11,9 @@ paths:
 
 # pnpm workspace
 
-Four members: `apps/backend`, `apps/frontend`, `packages/types`, `packages/shared-schemas`.
-pnpm 11, pinned by `packageManager` in the root `package.json`.
+Workspace members: `apps/api`, `apps/admin`, `apps/bot-runtime`, `apps/overlay`,
+`packages/types`, `packages/shared-schemas`. pnpm 11, pinned by `packageManager` in the
+root `package.json`.
 
 ## Internal dependencies
 
@@ -47,12 +48,12 @@ target:
 
 | Suffix | Target |
 |---|---|
-| `:b` | `apps/backend` |
-| `:f` | `apps/frontend` |
+| `:b` | `apps/bot-runtime` |
+| `:f` | `apps/overlay` |
 | `:p` | `packages/*` |
 
 The other seven do not follow it, and are not anomalies. `prisma:g`, `prisma:m`, `prisma:s`
-and `worker:t` are all `--filter backend` wrappers whose suffix abbreviates the *action*
+and `worker:t` are all `--filter bot-runtime` wrappers whose suffix abbreviates the *action*
 (`generate`, `migrate`, `studio`, `twitch`) because the topic prefix already implies the
 backend. `build`, `build:all` and `new:pkg` are scoped by neither.
 
@@ -71,9 +72,9 @@ package by hand.
 
 ## Docker knows the member list
 
-`.docker/backend.Dockerfile` copies the root manifests plus one `package.json` per member
-**the backend build needs** - `apps/backend`, `packages/types`, `packages/shared-schemas` -
-before `pnpm install --frozen-lockfile`. `apps/frontend` is deliberately absent; the backend
+`.docker/bot-runtime.Dockerfile` copies the root manifests plus one `package.json` per member
+**the backend build needs** - `apps/bot-runtime`, `packages/types`, `packages/shared-schemas` -
+before `pnpm install --frozen-lockfile`. `apps/overlay` is deliberately absent; the backend
 image never builds it. **A new member that the backend depends on therefore needs a new
 `COPY` line there**, or the Docker build silently installs without it.
 
@@ -83,6 +84,6 @@ image never builds it. **A new member that the backend depends on therefore need
 need. Keep the filter when adding packages.
 
 The image runs as the `node` user (uid 1000) deliberately: dev bind-mounts write
-`apps/backend/src/generated/` and `packages/*/dist` back to the host, and root-owned output
+`apps/bot-runtime/src/generated/` and `packages/*/dist` back to the host, and root-owned output
 makes a later host-side `pnpm build` fail with `EACCES`. Do not add `USER root` to make a
 build step easier.

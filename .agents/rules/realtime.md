@@ -2,10 +2,10 @@
 name: realtime
 description: The Socket.io contract - where event types live, how the Twitch worker reaches a browser, and where subscriptions may be written.
 paths:
-  - "apps/backend/src/app.ts"
-  - "apps/backend/src/shared/services/**"
-  - "apps/frontend/src/composables/sockets/**"
-  - "apps/frontend/src/services/**"
+  - "apps/bot-runtime/src/app.ts"
+  - "apps/bot-runtime/src/shared/services/**"
+  - "apps/overlay/src/composables/sockets/**"
+  - "apps/overlay/src/services/**"
   - "packages/types/**"
 ---
 
@@ -38,7 +38,7 @@ locally while creating a delivery path that only exists in one of the two shapes
 ## Ack callbacks
 
 Request/response over the socket uses an ack callback, the way `stream:get-system-state`
-does in `apps/backend/src/app.ts`:
+does in `apps/bot-runtime/src/app.ts`:
 
 ```ts
 socket.on("stream:get-system-state", async (_, socketCallback) => {
@@ -52,7 +52,7 @@ The callback's type belongs in `ClientToServerEvents` next to the event.
 ## Client subscriptions live in composables
 
 Every `socket.on` belongs in a `useXSocket` composable under
-`apps/frontend/src/composables/sockets/`, exported from that barrel. Components call the
+`apps/overlay/src/composables/sockets/`, exported from that barrel. Components call the
 composable and render the refs it returns:
 
 ```ts
@@ -70,6 +70,6 @@ Socket payloads go through `JSON.stringify`, which throws on a `BigInt`.
 ## Do not add a new global broadcast
 
 `io.emit` reaches every connected overlay. Phase 1 of
-`apps/backend/docs/multi-tenant-architecture.md` replaces broadcast with per-channel
+`apps/bot-runtime/docs/multi-tenant-architecture.md` replaces broadcast with per-channel
 rooms. New event surface should not add another global emit for that work to unwind. If
 you genuinely need one now, say so in the change so the phase-1 work finds it.

@@ -75,7 +75,7 @@ is exposed on `:3000` (Socket.io + REST).
 
 ### Environment
 
-- Dev: copy `apps/backend/.env.example` → `apps/backend/.env` and fill Twitch credentials
+- Dev: copy `.env.example` → `.env` (repo root; see `AGENTS.md` "First run") and fill Twitch credentials
 - Prod: see `.env.prod.example` (used by `docker-compose.prod.yml` on the VM; never commit real values)
 
 ## Scripts
@@ -135,6 +135,6 @@ Releases are tagged on `main` only:
 
 ## Documentation
 
-- Frontend: [`apps/frontend/README.md`](apps/frontend/README.md)
-- Backend guides: [`apps/backend/docs/`](apps/backend/docs/)
+- Frontend: [`apps/overlay/README.md`](apps/overlay/README.md)
+- Backend guides: [`apps/bot-runtime/docs/`](apps/bot-runtime/docs/)
 - Adding a package: [`docs/adding-a-package.md`](docs/adding-a-package.md)

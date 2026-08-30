@@ -1,0 +1,31 @@
+{
+  "name": "@fox-sphere/backend-shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "type:check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fox-sphere/db": "workspace:*",
+    "@prisma/adapter-pg": "^7.8.0",
+    "dotenv": "^17.4.2",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0",
+    "tsdown": "^0.22.1",
+    "typescript": "~6.0.3"
+  }
+}

@@ -24,9 +24,9 @@ services:
       - foxsphere
 
   # Merged server + Twitch worker in one process (src/prod.ts).
-  backend:
-    image: ghcr.io/luckyfoxcode/foxsphere-backend:latest
-    container_name: foxsphere-backend
+  bot-runtime:
+    image: ghcr.io/luckyfoxcode/foxsphere-bot-runtime:latest
+    container_name: foxsphere-bot-runtime
     restart: unless-stopped
     env_file:
       - .env.prod
@@ -41,7 +41,7 @@ services:
     networks:
       - foxsphere
 
-  # Caddy edge: serves the overlay + proxies /socket.io + /api to backend.
+  # Caddy edge: serves the overlay + proxies /socket.io + /api to bot-runtime.
   # Option A (overlay on Cloudflare Pages): swap this image for `caddy:2-alpine`
   # with a proxy-only Caddyfile mounted in.
   web:
@@ -55,7 +55,7 @@ services:
       - "80:80"
       - "443:443"
     depends_on:
-      - backend
+      - bot-runtime
     volumes:
       - caddy_data:/data
       - caddy_config:/config

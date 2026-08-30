@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "gen:api": "openapi-typescript http://localhost:3000/openapi.json -o src/lib/api/openapi.d.ts",
+    "gen:api": "openapi-typescript http://localhost:3001/openapi.json -o src/lib/api/openapi.d.ts",
     "dev": "pnpm gen:api && vite",
     "build": "pnpm gen:api && run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",

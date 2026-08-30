@@ -22,17 +22,17 @@ Therefore:
 
 ## When the harness lands
 
-`apps/backend/docs/multi-tenant-architecture.md` makes the harness phase 1, step 1. Build
+`apps/bot-runtime/docs/multi-tenant-architecture.md` makes the harness phase 1, step 1. Build
 it to these conventions:
 
 - **Vitest**, never Jest - `vi.fn()`, `vi.mock()`, `vi.spyOn()`.
 - A `foxsphere_test` database inside the existing Postgres container. Not a mock layer and not SQLite; the schema is Postgres-specific.
 - A `resetDb()` helper that truncates between tests, so test ordering never matters.
-- Backend tests as `*.spec.ts`, frontend tests as `*.test.ts`. `apps/frontend/tsconfig.app.json` already excludes `src/**/__tests__/*`, which fixes the frontend location.
+- Backend tests as `*.spec.ts`, frontend tests as `*.test.ts`. `apps/overlay/tsconfig.app.json` already excludes `src/**/__tests__/*`, which fixes the frontend location.
 
 ### The trap that will bite first
 
-`apps/backend/src/shared/config/index.ts` builds `config` through `getEnv`, which **throws
+`packages/backend-shared/src/config.ts` builds `config` through `getEnv`, which **throws
 on any missing variable**, and nearly every backend module imports `config` transitively.
 Importing one service into one test therefore pulls in the entire environment requirement.
 
@@ -45,7 +45,7 @@ Importing one service into one test therefore pulls in the entire environment re
 Read the current list from the file before writing `.env.test`:
 
 ```bash
-grep -o 'getEnv("[A-Z_]*"' apps/backend/src/shared/config/index.ts | sort -u
+grep -o 'getEnv("[A-Z_]*"' packages/backend-shared/src/config.ts | sort -u
 ```
 
 ### The one test the plan requires
