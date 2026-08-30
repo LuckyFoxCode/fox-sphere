@@ -16,7 +16,7 @@ CREATE TABLE "Channel" (
 );
 
 -- CreateIndex
+-- The @unique on twitchId already provides the index; a separate @@index would
+-- be a duplicate. (The first draft of this migration created both, and the next
+-- one dropped the extra - squashed here since neither had reached production.)
 CREATE UNIQUE INDEX "Channel_twitchId_key" ON "Channel"("twitchId");
-
--- CreateIndex
-CREATE INDEX "Channel_twitchId_idx" ON "Channel"("twitchId");
