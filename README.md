@@ -155,7 +155,7 @@ artifact is stale. Neither step needs a running server: orval reads the committe
 
 - **Dev (`docker-compose.yml`):** PostgreSQL + backend in watch mode; frontend runs in the terminal.
 - **Prod (`docker-compose.prod.yml`):** production stack driven by `.env.prod` on the target VM.
-- **CI/CD:** pushing to `main` triggers `.github/workflows/deploy.yml` — ARM64 images are built, pushed to GHCR, and rolled out on the Oracle VM over SSH.
+- **CI/CD:** every PR runs `.github/workflows/ci.yml` (the gate). Pushing to `main` runs it again, and `deploy.yml` follows on a green run: `linux/amd64` images are built, pushed to GHCR, and rolled out on the Oracle VM over SSH.
 
 ## Development Workflow & Releases
 

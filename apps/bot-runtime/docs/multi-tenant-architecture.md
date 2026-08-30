@@ -424,7 +424,7 @@ That last line matters: one database write per chat message is what makes the 50
 
 Idle connections are cheap — a few KB each. What actually grows: database writes first, then Twitch rate limits, then CPU.
 
-The existing Oracle Always-Free ARM VM (4 cores / 24 GB) covers every row above. Its real weaknesses are backups and being a single machine, so keep containers provider-agnostic and move Postgres to a managed provider once users have data worth losing.
+The existing Oracle Always-Free VM (x86_64 AMD EPYC) covers every row above. Its real weaknesses are backups and being a single machine, so keep containers provider-agnostic and move Postgres to a managed provider once users have data worth losing.
 
 Bandwidth is not a constraint: overlay assets come from the CDN, socket traffic is small JSON.
 
