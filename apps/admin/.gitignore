@@ -38,5 +38,5 @@ __screenshots__/
 # Vite
 *.timestamp-*-*.mjs
 
-# Generated API types
-src/lib/api/openapi.d.ts
+# The orval-generated client is committed on purpose (see README.md) - it is what makes
+`pnpm type-check` and CI work without a running api. Regenerate with `pnpm gen:api`.

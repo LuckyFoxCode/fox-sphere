@@ -1,54 +1,105 @@
-# .
+# admin
 
-This template should help get you started developing with Vue 3 in Vite.
+Admin-panel frontend (Vue 3.5 + Vite + Tailwind 4). **Local-only** - not built by CI, not
+deployed. Dev server on `:5174`, proxying `/api` and `/socket.io` to the admin backend
+`apps/api` on `:3001`.
 
-## Recommended IDE Setup
-
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
-
-## Recommended Browser Setup
-
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
-```sh
-pnpm install
+```bash
+pnpm dev:a          # from the repo root (runs gen:api, then vite)
+pnpm dev:api        # in another terminal - the backend the proxy points at
 ```
 
-### Compile and Hot-Reload for Development
+## The API client is generated
 
-```sh
-pnpm dev
+Nothing in `src/api/generated/` is written by hand. The chain is:
+
+```
+apps/api route (createModule + route())
+  -> pnpm --filter api openapi:dump   -> apps/api/openapi.json   (committed)
+  -> pnpm gen:api  (orval)            -> src/api/generated/      (committed)
+  -> useGetChannelById() in a component
 ```
 
-### Type-Check, Compile and Minify for Production
+`orval.config.ts` reads the **committed spec file**, not a live server, so `pnpm gen:api`,
+`pnpm build` and CI all work with nothing running.
 
-```sh
-pnpm build
+### Regenerate
+
+```bash
+pnpm --filter api openapi:dump      # only if the api routes changed
+pnpm gen:api                        # from apps/admin (alias: orval)
 ```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+`pnpm dev` and `pnpm build` run `gen:api` first, so a stale client is normally impossible -
+as long as `openapi.json` itself is current. Adding a route means running **both** commands
+in the same commit.
 
-```sh
-pnpm test:unit
+### Layout
+
+`mode: 'tags-split'` - one folder per OpenAPI tag, one module per schema:
+
+```
+src/api/generated/
+  channels/channels.ts    # useGetChannelById, getChannelById, query keys
+  schemas/                # Channel, ChannelStatus, index.ts
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+The tag comes from `createModule("Channels")` in `apps/api`; the hook name comes from that
+route's `operationId`.
 
-```sh
-pnpm lint
+## Using a hook
+
+`main.ts` installs `VueQueryPlugin` once. In a component:
+
+```vue
+<script setup lang="ts">
+import { computed, ref } from 'vue';
+import { useGetChannelById } from '@/api/generated/channels/channels';
+
+// A path param takes a ref, a getter or a plain value; the ref is part of the
+// query key, so editing it refetches.
+const channelId = ref('clx1abc123def');
+const { data, isPending, isError } = useGetChannelById(channelId);
+
+// Every documented status is its own member of the response union - narrow on it.
+const channel = computed(() => (data.value?.status === 200 ? data.value.data : null));
+</script>
+
+<template>
+  <p v-if="isPending">Loading...</p>
+  <p v-else-if="isError">Request failed</p>
+  <p v-else-if="channel">{{ channel.login }}</p>
+  <p v-else>Channel not found</p>
+</template>
 ```
+
+The fetch client returns `{ data, status, headers }`, so the payload is `data.value.data` -
+the outer `data` is the vue-query ref. A documented 4xx is **not** a thrown error here: it
+comes back as another member of the union (`status: 404`), so check `status` rather than
+relying on `isError`, which only fires on a transport failure.
+
+## Inspecting the query cache
+
+`<VueQueryDevtools />` is mounted in `App.vue` - the floating TanStack logo, bottom of the
+page. It lists every query by key, its state (fresh / stale / fetching / inactive), the last
+response, and buttons to refetch, invalidate or reset one. Vue DevTools shows the component
+refs; this shows the cache behind them. It compiles to a no-op in a production build.
+
+Mutations (`POST`/`PATCH`/`DELETE`) come out as `useCreateUser()`-style hooks returning
+`{ mutate, mutateAsync, isPending }` - same import path, same naming rule.
+
+Requests go to relative `/api/*`, which Vite proxies to `:3001` in dev. There is no
+Authorization handling yet; when it is needed, add an orval `override.mutator` pointing at
+a custom fetch wrapper rather than editing generated files.
+
+## Scripts
+
+| Command | Does |
+|---|---|
+| `pnpm dev` | `gen:api`, then Vite on `:5174` |
+| `pnpm gen:api` | orval - regenerate the client from `../api/openapi.json` |
+| `pnpm build` | `gen:api`, then type-check + Vite build |
+| `pnpm type-check` | `vue-tsc --build` |
+| `pnpm lint` | oxlint then eslint, both with `--fix` |
+| `pnpm format` | Prettier over `src/` |
+| `pnpm test:unit` | Vitest |
