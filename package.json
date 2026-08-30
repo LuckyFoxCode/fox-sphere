@@ -18,6 +18,8 @@
     "preview:a": "pnpm --filter admin preview",
     "dev:b": "pnpm --filter bot-runtime dev",
     "dev:api": "pnpm --filter api dev",
+    "openapi:dump": "pnpm --filter api openapi:dump",
+    "gen:api": "pnpm --filter admin gen:api",
     "dev:server:b": "pnpm --filter bot-runtime dev:server",
     "build:b": "pnpm --filter bot-runtime build",
     "start:b": "pnpm --filter bot-runtime start",

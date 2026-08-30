@@ -8,7 +8,6 @@ import { config, getStreamStatePrepared, Logger } from "@fox-sphere/backend-shar
 import { errorHandler } from "./shared/middleware/error-handler";
 import { generateOpenAPISpec } from "./shared/openapi/generator";
 import { channelRouter } from "./modules/channel";
-import { helloRouter } from "./modules/hello";
 
 const app: Express = express();
 const httpServer = createServer(app);
@@ -55,7 +54,6 @@ io.on("connection", (socket) => {
 });
 
 app.use("/api", channelRouter);
-app.use("/api", helloRouter);
 
 const openApiSpec = generateOpenAPISpec();
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));

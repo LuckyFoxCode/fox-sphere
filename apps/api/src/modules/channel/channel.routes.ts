@@ -1,16 +1,25 @@
-import { GetChannelParamsSchema } from "@fox-sphere/shared-schemas";
-import { Router } from "express";
+import {
+  ChannelResponseSchema,
+  GetChannelParamsSchema,
+} from "@fox-sphere/shared-schemas";
 import { NotFoundError } from "@fox-sphere/backend-shared";
-import { validate } from "../../shared/middleware";
+import { createModule } from "../../shared/openapi";
 import { getChannelById } from "./channel.service";
 
-import "./channel.openapi";
+const { router, route } = createModule("Channels");
 
-const router: Router = Router();
-
-router.get(
-  "/channels/:id",
-  validate(GetChannelParamsSchema, "params"),
+route(
+  {
+    method: "get",
+    path: "/channels/:id",
+    summary: "Get channel by ID",
+    operationId: "getChannelById",
+    request: { params: GetChannelParamsSchema },
+    responses: {
+      200: { description: "Channel found", schema: ChannelResponseSchema },
+      404: { description: "Channel not found" },
+    },
+  },
   async (req, res) => {
     const id = req.params.id as string;
     const channel = await getChannelById(id);
