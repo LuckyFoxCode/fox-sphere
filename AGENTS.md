@@ -33,6 +33,7 @@ use a topic prefix instead, with the suffix abbreviating the action (`generate`,
 | `pnpm prisma:m` | `prisma migrate dev` - local |
 | `pnpm --filter @fox-sphere/db prisma:migrate:deploy` | `prisma migrate deploy` - production migration step; applies only, generates no artifacts; run by CI, not by hand |
 | `pnpm prisma:s` | Prisma Studio |
+| `pnpm test` | `vitest run` in every member that has tests - `apps/admin`, `apps/overlay`, `packages/backend-shared` |
 | `pnpm new:pkg` | Scaffold a workspace package - see `docs/adding-a-package.md` |
 
 `pnpm start:b` is broken - see Gotchas.
@@ -175,11 +176,11 @@ Two consequences for code written today:
 | **Packages build before apps.** Root `build` runs `--filter "./packages/*" build` first; the backend build needs `packages/*/dist` to exist. | `package.json`, `.docker/bot-runtime.Dockerfile` |
 | **The backend image runs as uid 1000 (`node`) deliberately.** Dev bind-mounts write `src/generated/` and `packages/*/dist` back to the host, and root-owned output breaks a later host-side `pnpm build`. | `.docker/bot-runtime.Dockerfile` |
 | **The web image must not build `packages/db`.** Its `build` is `prisma generate`, which throws without a real `DATABASE_URL`, and the frontend never imports `@fox-sphere/db` - so the web image filters it out with `--filter "!@fox-sphere/db"`. Keep that filter when adding packages. | `.docker/web.Dockerfile` |
-| **No tests exist anywhere in this repo.** | whole tree |
+| **The test suite is small and deliberate.** Vitest in `apps/admin`, `apps/overlay` and `packages/backend-shared` only - pure functions plus `App.vue`'s status branches. `pnpm test` runs all of it; CI runs it on every PR. There is still **no** integration or database test, so "tests pass" means those units, nothing more. | `apps/admin/src/__tests__/`, `apps/overlay/src/utils/twitch/__tests__/`, `packages/backend-shared/src/__tests__/` |
 
 ## Verification
 
-**There is no test suite.** Never claim tests pass. `.github/workflows/ci.yml` runs this gate on every PR and on pushes to `main`/`dev` (plus a build of both deployed images). Locally the gate is:
+`.github/workflows/ci.yml` runs this gate on every PR and on pushes to `main`/`dev` (plus a build of both deployed images). The suite covers units only - never extend "tests pass" to mean the bot, the database or the socket path work. Locally the gate is:
 
 ```bash
 pnpm install
@@ -191,7 +192,7 @@ cd apps/api       && ./node_modules/.bin/tsc --noEmit && ./node_modules/.bin/esl
 cd ../bot-runtime && ./node_modules/.bin/tsc --noEmit && ./node_modules/.bin/eslint .
 cd ../overlay     && ./node_modules/.bin/vue-tsc --build && ./node_modules/.bin/oxlint . && ./node_modules/.bin/eslint .
 cd ../admin       && ./node_modules/.bin/vue-tsc --build && ./node_modules/.bin/oxlint . && ./node_modules/.bin/eslint .
-cd ../.. && pnpm build
+cd ../.. && pnpm build && pnpm test
 ```
 
 Run the raw binaries. A shell wrapper that filters tool output can report a clean run that
@@ -235,5 +236,5 @@ the rule matching the files you are about to touch.
 - Never hand-edit `pnpm-lock.yaml`.
 - Never commit a `.env`. `.env.example` at the repo root is the local-development template; `.env.prod.example` is the production one - they are different files for different jobs.
 - `/api/internal/events` is unauthenticated and fans out to every socket. Do not expose it publicly, and do not add a second route under that prefix without stating its trust model.
-- Do not claim "tests pass". There are none.
+- `pnpm test` is the only basis for saying "tests pass", and it covers units only - no database, no Twitch, no sockets. Never imply more.
 - If a change invalidates a documented gotcha, update this file in the same commit.

@@ -6,6 +6,7 @@
   "scripts": {
     "build": "pnpm --filter \"./packages/*\" build && pnpm --filter overlay build",
     "build:all": "pnpm -r build",
+    "test": "pnpm -r test",
     "build:p": "pnpm --filter \"./packages/*\" build",
     "new:pkg": "node scripts/create-package.mjs",
     "lint:f": "pnpm --filter overlay lint",

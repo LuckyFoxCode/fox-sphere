@@ -1,8 +1,8 @@
 name: ci
 
 # The verification gate from AGENTS.md, run on every PR and on the two long-lived
-# branches. There is no test suite in this repo - this is type-checking, linting,
-# the builds, and the two generated-artifact drift checks.
+# branches: type-checking, linting, the builds, the two generated-artifact drift
+# checks, and the unit tests.
 on:
   pull_request:
   push:
@@ -84,6 +84,9 @@ jobs:
 
       - name: build
         run: pnpm build
+
+      - name: test
+        run: pnpm test
 
   # Both deployed images must build from a PR too - a broken Dockerfile otherwise only
   # surfaces on main, after the merge, in the deploy job itself.

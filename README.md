@@ -109,6 +109,7 @@ exposed on `:3000` (Socket.io + REST). The admin pair is not deployed - see
 | `pnpm lint:f`     | Lint overlay (oxlint + ESLint)                     |
 | `pnpm lint:b`     | Lint bot-runtime (ESLint)                          |
 | `pnpm format:f`   | Format overlay                                     |
+| `pnpm test`       | Vitest across admin, overlay and backend-shared     |
 | `pnpm prisma:g`   | Generate Prisma client                             |
 | `pnpm prisma:m`   | Run Prisma migration (dev)                         |
 | `pnpm prisma:s`   | Open Prisma Studio                                 |
