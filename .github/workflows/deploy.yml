@@ -6,14 +6,15 @@ name: deploy
 # `qemu: uncaught target signal 4 (Illegal instruction)`. If the deployment target
 # ever becomes an Ampere shape, add linux/arm64 back together with an arm runner
 # (`runs-on: ubuntu-24.04-arm`) rather than QEMU.
-# Gated on ci.yml: both used to fire on the same push, so a red gate could not stop
-# a rollout. workflow_run fires after ci finishes; the guard below drops the run
-# unless it passed. workflow_dispatch stays for a manual re-deploy.
+# Deploy is triggered by creating a v* tag, not by a merge to main. CI (ci.yml) runs
+# on every push/PR; the tag is the explicit "ship this to prod" action and is created
+# only after ci is green, which removes the race where a tag set around a merge could
+# miss the image build (BOT_VERSION then fell back to the bare SHA). Because the deploy
+# only starts once the tag exists, `git describe --tags` in "Compute bot version" is
+# guaranteed to resolve to that tag. workflow_dispatch stays for a manual re-deploy.
 on:
-  workflow_run:
-    workflows: [ci]
-    branches: [main]
-    types: [completed]
+  push:
+    tags: ["v*"]
   workflow_dispatch: {}
 
 env:
@@ -22,8 +23,6 @@ env:
 
 jobs:
   build:
-    # A workflow_run trigger fires on failure too - only a green ci may deploy.
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -39,9 +38,6 @@ jobs:
             target: ""
     steps:
       - uses: actions/checkout@v4
-        with:
-          # workflow_run defaults to the default branch tip; build the commit ci passed on.
-          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - uses: docker/setup-buildx-action@v3
 
