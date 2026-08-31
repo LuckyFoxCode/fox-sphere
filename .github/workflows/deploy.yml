@@ -51,6 +51,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Compute bot version
+        id: version
+        # The checked-out commit carries a tag when the release was tagged on main.
+        # `git describe --tags --always` falls back to the bare SHA when no tag is
+        # present, so a build that forgets the tag still runs (and !version just
+        # reports the commit) instead of failing the pipeline.
+        run: echo "bot_version=$(git describe --tags --always)" >> "$GITHUB_OUTPUT"
+
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -61,6 +69,7 @@ jobs:
           # web overlay is same-origin (Option B) -> empty base URL.
           build-args: |
             VITE_API_BASE_URL=
+            BOT_VERSION=${{ steps.version.outputs.bot_version }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.OWNER }}/foxsphere-${{ matrix.name }}:latest
             ${{ env.REGISTRY }}/${{ env.OWNER }}/foxsphere-${{ matrix.name }}:${{ github.sha }}

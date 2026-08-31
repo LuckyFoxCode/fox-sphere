@@ -75,7 +75,9 @@ RUN pnpm --filter bot-runtime build
 # Runner: minimal production image, non-root (`node`, inherited from base)
 # ==========================================
 FROM base AS runner
+ARG BOT_VERSION=dev
 ENV NODE_ENV=production
+ENV BOT_VERSION=$BOT_VERSION
 COPY --from=build --chown=node:node /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
 # Only the deployed app plus the packages it imports. `apps/api` and `apps/admin` are
 # local-only tools - copying all of ./apps used to ship their source AND install their
