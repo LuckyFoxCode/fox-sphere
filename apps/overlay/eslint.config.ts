@@ -34,8 +34,6 @@ export default defineConfigWithVueTs(
     'eslint.config.js',
   ]),
 
-  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
-
   ...pluginVue.configs['flat/recommended'],
   vueTsConfigs.recommended,
 
