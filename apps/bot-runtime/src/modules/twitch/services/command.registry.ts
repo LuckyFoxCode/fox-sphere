@@ -1,6 +1,6 @@
+import { config, Logger } from "@fox-sphere/backend-shared";
 import { ApiClient } from "@twurple/api";
 import { ChatMessage } from "@twurple/chat";
-import { config, Logger } from "@fox-sphere/backend-shared";
 import { StreamService } from "../../stream";
 import { UserService } from "../../user";
 import { ChatbotService } from "../chatbot.service";
@@ -15,6 +15,7 @@ import {
   ProjectCommand,
   StackCommand,
   TelegramCommand,
+  VersionCommand,
 } from "../commands/general";
 import {
   LotteryCommand,
@@ -55,6 +56,7 @@ export class CommandRegisry {
       new ProjectCommand(this.chatbotService),
       new StackCommand(this.chatbotService),
       new TelegramCommand(this.chatbotService),
+      new VersionCommand(this.chatbotService),
       new TicketCommand(this.chatbotService),
       new TicketsCommand(this.chatbotService),
       new TimerCommand(this.chatbotService),
