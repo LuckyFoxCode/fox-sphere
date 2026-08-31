@@ -30,6 +30,7 @@ export const config = {
   commandPrefix: getEnv("COMMAND_PREFIX"),
   databaseUrl: getEnv("DATABASE_URL"),
   allowedOrigin: getEnv("ALLOWED_ORIGIN", "http://localhost:5173"),
+  version: getEnv("BOT_VERSION", "dev"),
 
   twitch: {
     userId: getEnv("TWITCH_USER_ID"),
