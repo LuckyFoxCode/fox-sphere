@@ -321,6 +321,14 @@ export class ChatbotService {
     });
 
     globalEventBus.on("stream:level-up", async (data) => {
+      if (config.nodeEnv === "development") {
+        Logger.debug(
+          "ChatbotService",
+          `💤[DEV] Skipped stream level-up: Level ${data.lvl}`,
+        );
+        return;
+      }
+
       try {
         const message = BOT_MESSAGES.ALERTS.LEVEL_UP_STREAM(data.lvl);
         await this.sendMessage(this.twitchConfig.channelName, message);
@@ -337,7 +345,7 @@ export class ChatbotService {
       if (config.nodeEnv === "development") {
         Logger.debug(
           "ChatbotService",
-          `💤[DEV] Скипнули авто-левел-ап для ${data.username}`,
+          `💤[DEV] Skipped auto level-up for ${data.username}`,
         );
         return;
       }
@@ -361,7 +369,7 @@ export class ChatbotService {
       if (config.nodeEnv === "development") {
         Logger.debug(
           "ChatbotService",
-          `💤[DEV] Скипнули авто-оповещение о фоллове для @${data.username}`,
+          `💤[DEV] Skipped auto follow announcement for @${data.username}`,
         );
         return;
       }

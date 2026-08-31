@@ -13,6 +13,9 @@ import { registerShutdownHandlers } from "./shared/infra";
 import { forwardEventToBackend, globalEventBus } from "./shared/services";
 import { Logger } from "@fox-sphere/backend-shared";
 
+const FOLLOW_COOLDOWN_MS = 60_000;
+const lastFollowByUser = new Map<string, number>();
+
 export async function bootstrap() {
   Logger.info("Bootstrap", "Initializing Twitch worker application...⚙️");
 
@@ -50,6 +53,16 @@ export async function bootstrap() {
 
   // Подписки на события
   await eventSubClient.subscribeToFollows(async (event) => {
+    const now = Date.now();
+    const lastFollow = lastFollowByUser.get(event.userId);
+    if (lastFollow !== undefined && now - lastFollow < FOLLOW_COOLDOWN_MS) {
+      Logger.debug(
+        "Bootstrap",
+        `Skipped duplicate follow for ${event.userDisplayName} within cooldown window`,
+      );
+      return;
+    }
+    lastFollowByUser.set(event.userId, now);
     globalEventBus.emit("twitch:follow", {
       userId: event.userId,
       username: event.userDisplayName,
