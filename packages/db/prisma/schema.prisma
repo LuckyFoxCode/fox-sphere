@@ -27,6 +27,8 @@ model User {
   coinHistories  CoinHistory[]
   lotteryContext UserLottery?
   pokemon        UserPokemon?
+  xpHistories    XpHistory[]
+  watchStreaks   WatchStreak[]
 }
 
 model UserPokemon {
@@ -57,24 +59,55 @@ model UserLottery {
   @@index([userId])
 }
 
-model CoinHistory {
-  id        Int      @id @default(autoincrement())
-  amount    Int
-  reason    String
-  createdAt DateTime @default(now())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+enum HistoryReason {
+  BOSS_REWARD
+  GIFT
+  LOTTERY
+  CHANGE_POINTS
+  WATCH_STREAK
+}
 
-  @@index([userId])
+model CoinHistory {
+  id        Int           @id @default(autoincrement())
+  amount    Int
+  reason    HistoryReason
+  details   String?
+  createdAt DateTime      @default(now())
+  userId    Int
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model XpHistory {
+  id        Int           @id @default(autoincrement())
+  userId    Int
+  amount    Int
+  reason    HistoryReason
+  details   String?
+  createdAt DateTime      @default(now())
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model WatchStreak {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  streakValue Int
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, streakValue])
 }
 
 model SystemState {
-  id                Int      @id @default(1)
-  streamLevel       Int      @default(1)
-  streamCurrentXp   Int      @default(0)
-  updatedAt         DateTime @updatedAt
-  xpBoostMultiplier Int      @default(1)
-  xpBoostExpiresAt DateTime?
+  id                Int       @id @default(1)
+  streamLevel       Int       @default(1)
+  streamCurrentXp   Int       @default(0)
+  updatedAt         DateTime  @updatedAt
+  xpBoostMultiplier Int       @default(1)
+  xpBoostExpiresAt  DateTime?
 }
 
 enum ChannelStatus {

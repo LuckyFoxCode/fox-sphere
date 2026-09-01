@@ -65,6 +65,15 @@ export interface TwitchChatMessagePayload {
   watchStreak?: TwitchWatchStreakInfo;
 }
 
+export interface TwitchWatchStreakPayload {
+  userId: string;
+  username: string;
+  displayName: string;
+  streakValue: number;
+  xpAwarded: number;
+  coinsAwarded: number;
+}
+
 export interface TwitchServerToClientEvents {
   "chat:message": (data: TwitchChatMessagePayload) => void;
   "twitch:add-vip": (data: TwitchAddVipPaylod) => void;
@@ -73,5 +82,6 @@ export interface TwitchServerToClientEvents {
   "twitch:reward-redeem": (data: TwitchRewardPayload) => void;
   "twitch:timer": (data: TwitchTimerPayload) => void;
   "twitch:timer-stop": () => void;
+  "twitch:watch-streak": (data: TwitchWatchStreakPayload) => void;
 }
 export interface TwitchClientToServerEvents {}

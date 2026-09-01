@@ -6,6 +6,7 @@ import {
   type TwitchRaidPayload,
   type TwitchRewardPayload,
   type TwitchTimerPayload,
+  type TwitchWatchStreakPayload,
 } from '@fox-sphere/types';
 import { ref, watch } from 'vue';
 import { usePokemonOverlay } from '../usePokemonOverlay';
@@ -28,6 +29,8 @@ const raid = ref<TwitchRaidPayload | null>(null);
 const reward = ref<TwitchRewardPayload | null>(null);
 const timer = ref<TwitchTimerPayload | null>(null);
 const messages = ref<TwitchChatMessagePayload[]>([]);
+const watchStreak = ref<TwitchWatchStreakPayload | null>(null);
+
 const MAX_MESSAGES = 8;
 const MESSAGE_TTL = 18000;
 
@@ -93,6 +96,12 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
     resetTimer();
   };
 
+  const handleWatchStreak = (data: TwitchWatchStreakPayload) => {
+    watchStreak.value = data;
+    playSound(SOUNDS.streak);
+    setStatusWithTimeout('watch-streak', 7000);
+  };
+
   if (!isSocketInitialized) {
     socketInstance.on('chat:message', (data) => {
       handleChatMessage(data);
@@ -104,6 +113,7 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
     socketInstance.on('twitch:reward-redeem', handleReward);
     socketInstance.on('twitch:timer', handleTimer);
     socketInstance.on('twitch:timer-stop', handleTimerStop);
+    socketInstance.on('twitch:watch-streak', handleWatchStreak);
 
     watch(timeLeft, (newTimeLeft) => {
       if (newTimeLeft === 0 && isTimerActive.value) {
@@ -126,5 +136,6 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
     reward,
     timer,
     timeDigits,
+    watchStreak,
   };
 }
