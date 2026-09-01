@@ -1,5 +1,3 @@
-import { PokemonPoolItem } from "@fox-sphere/types";
-import type { User } from "@fox-sphere/db";
 import {
   AppError,
   config,
@@ -7,10 +5,16 @@ import {
   Logger,
   prisma,
 } from "@fox-sphere/backend-shared";
+import type { User } from "@fox-sphere/db";
+import { PokemonPoolItem } from "@fox-sphere/types";
 import { globalEventBus } from "../../shared/services";
 import { LotteryService } from "../lottery";
 import { StreamService } from "../stream";
-import { COOLDOWNS, XP_REWARDS } from "./user.constants";
+import {
+  COOLDOWNS,
+  isWatchStreakRewardLevel,
+  XP_REWARDS,
+} from "./user.constants";
 
 export class UserService {
   private verifiedUsersCache = new Set<string>();
@@ -345,6 +349,79 @@ export class UserService {
       isFounder: userWithPokemon.isFounder,
       pokemon: pokemonData ?? undefined,
     };
+  }
+
+  public async awardWatchStreak(
+    twitchId: string,
+    streakValue: number,
+  ): Promise<{ xpAwarded: number; coinsAwarded: number } | null> {
+    if (!isWatchStreakRewardLevel(streakValue)) return null;
+
+    try {
+      const user = await prisma.user.findUnique({ where: { twitchId } });
+      if (!user) return null;
+
+      const existing = await prisma.watchStreak.findUnique({
+        where: {
+          userId_streakValue: { userId: user.id, streakValue },
+        },
+      });
+
+      if (existing) return null;
+
+      const xpAwarded = streakValue * 7;
+      const coinsAwarded = streakValue * 100;
+
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { twitchId },
+          data: {
+            xp: { increment: xpAwarded },
+            coins: { increment: coinsAwarded },
+          },
+        });
+
+        await tx.watchStreak.create({
+          data: { userId: user.id, streakValue },
+        });
+
+        await tx.xpHistory.create({
+          data: {
+            userId: user.id,
+            amount: xpAwarded,
+            reason: "WATCH_STREAK",
+            details: `Watch streak: ${streakValue} streams`,
+          },
+        });
+
+        await tx.coinHistory.create({
+          data: {
+            userId: user.id,
+            amount: coinsAwarded,
+            reason: "WATCH_STREAK",
+            details: `Watch streak: ${streakValue} streams`,
+          },
+        });
+      });
+
+      return { xpAwarded, coinsAwarded };
+    } catch (error) {
+      if (error instanceof Error && "code" in error && error.code === "P2002") {
+        Logger.info(
+          "UserService",
+          `Watch streak ${streakValue} already awarded for ${twitchId} skipping`,
+        );
+        return null;
+      }
+
+      Logger.error(
+        "UserService",
+        `Failed to award watch streak for ${twitchId}`,
+        error,
+      );
+
+      return null;
+    }
   }
 
   public clearCache(): void {

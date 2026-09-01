@@ -13,3 +13,8 @@ export const XP_REWARDS = {
   LOTTERY: 1,
   VIP_BONUS: 1,
 };
+
+export const isWatchStreakRewardLevel = (streak: number): boolean => {
+  if (streak === 3 || streak === 5 || streak === 7) return true;
+  return streak >= 10 && streak % 5 === 0;
+};
