@@ -1,3 +1,4 @@
+import { config, Logger } from "@fox-sphere/backend-shared";
 import { pathToFileURL } from "url";
 import { LotteryService } from "./modules/lottery";
 import { PokemonService } from "./modules/pokemon";
@@ -8,10 +9,8 @@ import { TokenService } from "./modules/twitch/token.service";
 import { TwitchAuthFactory } from "./modules/twitch/twitch-auth.factory";
 import { TwitchConfig } from "./modules/twitch/twitch.types";
 import { UserService } from "./modules/user";
-import { config } from "@fox-sphere/backend-shared";
 import { registerShutdownHandlers } from "./shared/infra";
 import { forwardEventToBackend, globalEventBus } from "./shared/services";
-import { Logger } from "@fox-sphere/backend-shared";
 
 const FOLLOW_COOLDOWN_MS = 60_000;
 const lastFollowByUser = new Map<string, number>();
@@ -213,6 +212,14 @@ export async function bootstrap() {
   globalEventBus.on("twitch:timer-stop", async () => {
     Logger.info("Bootstrap", `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding timer to overlay`);
     await forwardEventToBackend("twitch:timer-stop");
+  });
+
+  globalEventBus.on("twitch:watch-streak", async (data) => {
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding watch-streak to overlay for: ${data.username}, streak: ${data.streakValue}`,
+    );
+    await forwardEventToBackend("twitch:watch-streak", data);
   });
 
   globalEventBus.on("user:level-up", async (data) => {

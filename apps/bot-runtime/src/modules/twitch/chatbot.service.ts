@@ -1,3 +1,4 @@
+import { config, Logger, prisma } from "@fox-sphere/backend-shared";
 import {
   LotteryUserDto,
   TwitchAnnouncementColor,
@@ -7,10 +8,7 @@ import { ApiClient } from "@twurple/api";
 import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
 import { randomUUID } from "node:crypto";
-import { config } from "@fox-sphere/backend-shared";
-import { prisma } from "@fox-sphere/backend-shared";
 import { globalEventBus } from "../../shared/services/event-bus.service";
-import { Logger } from "@fox-sphere/backend-shared";
 import { LOTTERY_DELAYS, LOTTERY_MESSAGES } from "../lottery";
 import { StreamService } from "../stream";
 import { COOLDOWNS as USER_COOLDOWNS, UserService } from "../user";
@@ -578,6 +576,22 @@ export class ChatbotService {
           };
 
           globalEventBus.emit("chat:message", chatMessagePayload);
+
+          const awardResult = await this.userService.awardWatchStreak(
+            msg.userInfo.userId,
+            milestoneInfo.value ?? 0,
+          );
+
+          if (awardResult) {
+            globalEventBus.emit("twitch:watch-streak", {
+              userId: msg.userInfo.userId,
+              username: user,
+              displayName: msg.userInfo.displayName,
+              streakValue: milestoneInfo.value ?? 0,
+              xpAwarded: awardResult.xpAwarded,
+              coinsAwarded: awardResult.coinsAwarded,
+            });
+          }
         } catch (error) {
           Logger.error(
             "ChatbotService",
