@@ -3,6 +3,7 @@ export const SOUNDS = {
   follow: '/assets/sound/follow.mp3',
   levelUp: '/assets/sound/level-up.mp3',
   raid: '/assets/sound/raid.mp3',
+  streak: '/assets/sound/streak.mp3',
   ticket: '/assets/sound/ticket.mp3',
   reward: '/assets/sound/knock.wav',
   timer: 'assets/sound/timer-off.wav',
