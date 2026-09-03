@@ -1,5 +1,12 @@
-import "../zod-extensions.js";
 import { z } from "zod";
+import "../zod-extensions.js";
+
+export const ChannelStatusSchema = z.enum([
+  "PENDING",
+  "ACTIVE",
+  "PAUSED",
+  "REVOKED",
+]);
 
 export const ChannelResponseSchema = z
   .object({
@@ -7,7 +14,7 @@ export const ChannelResponseSchema = z
     twitchId: z.string().openapi({ example: "12345678" }),
     login: z.string().openapi({ example: "luckyfoxcode" }),
     displayName: z.string().openapi({ example: "LuckyFoxCode" }),
-    status: z.enum(["PENDING", "ACTIVE", "PAUSED", "REVOKED"]),
+    status: ChannelStatusSchema,
     botIsMod: z.boolean(),
   })
   .openapi("Channel");
@@ -23,3 +30,9 @@ export const GetChannelParamsSchema = z
   .openapi("GetChannelParams");
 
 export type GetChannelParams = z.infer<typeof GetChannelParamsSchema>;
+
+export const ChannelListSchema = z
+  .array(ChannelResponseSchema)
+  .openapi("ChannelList");
+
+export type ChannelList = z.infer<typeof ChannelListSchema>;
