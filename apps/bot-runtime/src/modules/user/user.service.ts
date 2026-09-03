@@ -354,7 +354,11 @@ export class UserService {
   public async awardWatchStreak(
     twitchId: string,
     streakValue: number,
-  ): Promise<{ xpAwarded: number; coinsAwarded: number } | null> {
+  ): Promise<{
+    xpAwarded: number;
+    coinsAwarded: number;
+    isRepeat: boolean;
+  } | null> {
     if (!isWatchStreakRewardLevel(streakValue)) return null;
 
     try {
@@ -367,7 +371,14 @@ export class UserService {
         },
       });
 
-      if (existing) return null;
+      if (existing) {
+        Logger.debug(
+          "UserService",
+          `Watch streak ${streakValue} already awarded for ${twitchId} — repeat, widget without rewards`,
+        );
+
+        return { xpAwarded: 0, coinsAwarded: 0, isRepeat: true };
+      }
 
       const xpAwarded = streakValue * 7;
       const coinsAwarded = streakValue * 100;
@@ -404,14 +415,14 @@ export class UserService {
         });
       });
 
-      return { xpAwarded, coinsAwarded };
+      return { xpAwarded, coinsAwarded, isRepeat: false };
     } catch (error) {
       if (error instanceof Error && "code" in error && error.code === "P2002") {
         Logger.info(
           "UserService",
-          `Watch streak ${streakValue} already awarded for ${twitchId} skipping`,
+          `Watch streak ${streakValue} already awarded for ${twitchId} — repeat, widget without rewards`,
         );
-        return null;
+        return { xpAwarded: 0, coinsAwarded: 0, isRepeat: true };
       }
 
       Logger.error(

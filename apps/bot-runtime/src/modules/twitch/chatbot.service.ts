@@ -590,6 +590,7 @@ export class ChatbotService {
               streakValue: milestoneInfo.value ?? 0,
               xpAwarded: awardResult.xpAwarded,
               coinsAwarded: awardResult.coinsAwarded,
+              isRepeat: awardResult.isRepeat,
             });
           }
         } catch (error) {
