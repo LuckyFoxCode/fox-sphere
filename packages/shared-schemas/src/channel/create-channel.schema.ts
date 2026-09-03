@@ -1,6 +1,6 @@
 import { z } from "zod";
-import "../zod-extensions.js";
-import { ChannelStatusSchema } from "./get-channel.schema.js";
+import "../zod-extensions";
+import { ChannelStatusSchema } from "./get-channel.schema";
 
 export const CreateChannelSchema = z
   .object({

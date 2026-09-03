@@ -1,29 +1,29 @@
 import {
   LotteryClientToServerEvents,
   LotteryServerToClientEvents,
-} from "./lottery/lottery.js";
+} from "./lottery";
 import {
   PokemonClientToServerEvents,
   PokemonServerToClientEvents,
-} from "./pokemon/pokemon.js";
+} from "./pokemon";
 import {
   StreamClientToServerEvents,
   StreamServerToClientEvents,
-} from "./stream/stream.js";
+} from "./stream";
 import {
   TwitchClientToServerEvents,
   TwitchServerToClientEvents,
-} from "./twitch/twitch.js";
+} from "./twitch";
 import {
   UserClientToServerEvents,
   UserServerToClientEvents,
-} from "./user/user.js";
+} from "./user";
 
-export * from "./lottery/index.js";
-export * from "./pokemon/index.js";
-export * from "./stream/index.js";
-export * from "./twitch/index.js";
-export * from "./user/index.js";
+export * from "./lottery/index";
+export * from "./pokemon/index";
+export * from "./stream/index";
+export * from "./twitch/index";
+export * from "./user/index";
 
 type IntersectionFromTuple<T extends readonly unknown[]> = T extends readonly [
   infer Head,

@@ -1,4 +1,4 @@
-import "../zod-extensions.js";
+import "../zod-extensions";
 import { z } from "zod";
 
 // The exact body `errorHandler` sends for every AppError and for an unhandled 500.

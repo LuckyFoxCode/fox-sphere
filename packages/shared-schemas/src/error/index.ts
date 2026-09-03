@@ -1,1 +1,1 @@
-export * from "./error.schema.js";
+export * from "./error.schema";

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import "../zod-extensions.js";
+import "../zod-extensions";
 
 export const ChannelStatusSchema = z.enum([
   "PENDING",
