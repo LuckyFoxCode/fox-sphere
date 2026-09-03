@@ -72,6 +72,7 @@ export interface TwitchWatchStreakPayload {
   streakValue: number;
   xpAwarded: number;
   coinsAwarded: number;
+  isRepeat: boolean;
 }
 
 export interface TwitchServerToClientEvents {
