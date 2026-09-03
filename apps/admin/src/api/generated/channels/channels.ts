@@ -6,13 +6,17 @@
  * OpenAPI spec version: 1.0.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/vue-query';
 import type {
   DataTag,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationReturnType,
   UseQueryOptions,
   UseQueryReturnType
 } from '@tanstack/vue-query';
@@ -28,6 +32,8 @@ import type {
 
 import type {
   Channel,
+  ChannelList,
+  CreateChannel,
   ErrorResponse
 } from '../schemas';
 
@@ -136,6 +142,225 @@ export function useGetChannelById<TData = Awaited<ReturnType<typeof getChannelBy
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetChannelByIdQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type createChannelResponse201 = {
+  data: Channel
+  status: 201
+}
+
+export type createChannelResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type createChannelResponse409 = {
+  data: ErrorResponse
+  status: 409
+}
+
+export type createChannelResponse500 = {
+  data: ErrorResponse
+  status: 500
+}
+
+export type createChannelResponseSuccess = (createChannelResponse201) & {
+  headers: Headers;
+};
+export type createChannelResponseError = (createChannelResponse400 | createChannelResponse409 | createChannelResponse500) & {
+  headers: Headers;
+};
+
+export type createChannelResponse = (createChannelResponseSuccess | createChannelResponseError)
+
+export const getCreateChannelUrl = () => {
+
+
+
+
+  return `/api/channels`
+}
+
+/**
+ * @summary Create a channel
+ */
+export const createChannel = async (createChannelBody?: CreateChannel, options?: RequestInit): Promise<createChannelResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+const res = await fetch(getCreateChannelUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createChannelBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createChannelResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as createChannelResponse
+}
+
+
+
+
+
+export const getCreateChannelMutationKey = () => ['createChannel'] as const;
+
+export const getCreateChannelMutationOptions = <TError = ErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createChannel>>, TError,CreateChannelMutationVariables, TContext>, fetch?: RequestInit}
+): UseMutationOptions<Awaited<ReturnType<typeof createChannel>>, TError,CreateChannelMutationVariables, TContext> => {
+
+const mutationKey = getCreateChannelMutationKey();
+const {mutation: mutationOptions, fetch: fetchOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, fetch: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createChannel>>, CreateChannelMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createChannel(data,fetchOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateChannelMutationResult = NonNullable<Awaited<ReturnType<typeof createChannel>>>
+    export type CreateChannelMutationBody = CreateChannel | undefined
+    export type CreateChannelMutationError = ErrorResponse
+    export type CreateChannelMutationVariables = {data?: CreateChannel}
+
+    /**
+ * @summary Create a channel
+ */
+export const useCreateChannel = <TError = ErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createChannel>>, TError,CreateChannelMutationVariables, TContext>, fetch?: RequestInit}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof createChannel>>,
+        TError,
+        CreateChannelMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateChannelMutationOptions(options), queryClient);
+    }
+    export type listChannelsResponse200 = {
+  data: ChannelList
+  status: 200
+}
+
+export type listChannelsResponse500 = {
+  data: ErrorResponse
+  status: 500
+}
+
+export type listChannelsResponseSuccess = (listChannelsResponse200) & {
+  headers: Headers;
+};
+export type listChannelsResponseError = (listChannelsResponse500) & {
+  headers: Headers;
+};
+
+export type listChannelsResponse = (listChannelsResponseSuccess | listChannelsResponseError)
+
+export const getListChannelsUrl = () => {
+
+
+
+
+  return `/api/channels`
+}
+
+/**
+ * @summary List channels
+ */
+export const listChannels = async ( options?: RequestInit): Promise<listChannelsResponse> => {
+
+  const res = await fetch(getListChannelsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listChannelsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as listChannelsResponse
+}
+
+
+
+
+
+export const getListChannelsQueryKey = () => {
+    return [
+    'api','channels'
+    ] as const;
+    }
+
+
+export const getListChannelsQueryOptions = <TData = Awaited<ReturnType<typeof listChannels>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChannels>>, TError, TData>>, fetch?: RequestInit}
+) => {
+
+const {query: queryOptions, fetch: fetchOptions} = options ?? {};
+
+  const queryKey =  getListChannelsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listChannels>>> = ({ signal }) => listChannels({ signal, ...fetchOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listChannels>>, TError, TData>
+}
+
+export type ListChannelsQueryResult = NonNullable<Awaited<ReturnType<typeof listChannels>>>
+export type ListChannelsQueryError = ErrorResponse
+
+
+/**
+ * @summary List channels
+ */
+
+export function useListChannels<TData = Awaited<ReturnType<typeof listChannels>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChannels>>, TError, TData>>, fetch?: RequestInit}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListChannelsQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

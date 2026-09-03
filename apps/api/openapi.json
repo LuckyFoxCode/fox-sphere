@@ -85,6 +85,49 @@
           "status",
           "message"
         ]
+      },
+      "CreateChannel": {
+        "type": "object",
+        "properties": {
+          "twitchId": {
+            "type": "string",
+            "minLength": 1,
+            "example": "99200545"
+          },
+          "login": {
+            "type": "string",
+            "minLength": 1,
+            "example": "luckyfoxcode"
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "example": "LuckyFoxCode"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACTIVE",
+              "PAUSED",
+              "REVOKED"
+            ]
+          },
+          "botIsMod": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "twitchId",
+          "login",
+          "displayName"
+        ]
+      },
+      "ChannelList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Channel"
+        }
       }
     },
     "parameters": {}
@@ -135,6 +178,95 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels": {
+      "post": {
+        "tags": [
+          "Channels"
+        ],
+        "summary": "Create a channel",
+        "operationId": "createChannel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChannel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Channel created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Channel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Channel with this twitchId already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Channels"
+        ],
+        "summary": "List channels",
+        "operationId": "listChannels",
+        "responses": {
+          "200": {
+            "description": "All channels",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelList"
                 }
               }
             }
