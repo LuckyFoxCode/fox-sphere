@@ -60,6 +60,7 @@ export interface TwitchChatMessagePayload {
   isBroadcaster: boolean;
   isBot: boolean;
   isHighlight: boolean;
+  isAction: boolean;
   isAnnouncement?: boolean;
   announceColor?: TwitchAnnouncementColor;
   watchStreak?: TwitchWatchStreakInfo;

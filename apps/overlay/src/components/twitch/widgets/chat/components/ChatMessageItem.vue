@@ -81,7 +81,7 @@ const watchStreakSummary = computed(() => {
     <p
       v-if="message.text"
       class="text-text-main leading-snug wrap-break-word"
-      :class="{ 'text-sm italic opacity-80': message.watchStreak }"
+      :class="{ 'text-sm italic opacity-80': message.watchStreak, italic: message.isAction }"
     >
       <span v-if="message.watchStreak">💬&nbsp;</span>
       <template

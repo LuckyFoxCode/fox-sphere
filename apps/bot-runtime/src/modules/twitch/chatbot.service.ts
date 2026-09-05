@@ -6,7 +6,7 @@ import {
 } from "@fox-sphere/types";
 import { ApiClient } from "@twurple/api";
 import { RefreshingAuthProvider } from "@twurple/auth";
-import { ChatClient } from "@twurple/chat";
+import { ChatClient, type ChatMessage } from "@twurple/chat";
 import { randomUUID } from "node:crypto";
 import { globalEventBus } from "../../shared/services/event-bus.service";
 import { LOTTERY_DELAYS, LOTTERY_MESSAGES } from "../lottery";
@@ -473,57 +473,74 @@ export class ChatbotService {
     }
   }
 
+  private handleChatMessage = async (
+    channel: string,
+    user: string,
+    text: string,
+    msg: ChatMessage,
+    isAction: boolean,
+  ): Promise<void> => {
+    try {
+      Logger.debug(
+        "ChatbotService",
+        `[${channel}] ${user}${isAction ? " (/me)" : ""}: ${text}`,
+      );
+      const twitchId = msg.userInfo.userId;
+
+      await this.activityService.trackActivity(user, msg);
+      await this.commandRegistry.execute(channel, user, text, msg);
+
+      const userData = await this.userService.getUserWithPokemon(
+        msg.userInfo.userId,
+      );
+      const isFollower = this.activityService.isFollower(twitchId);
+
+      const emotes: Record<string, string[]> = Object.fromEntries(
+        msg.emoteOffsets,
+      );
+      const rawBadges: Record<string, string> = Object.fromEntries(
+        msg.userInfo.badges,
+      );
+
+      const badgeUrls = this.badgeService.getBadgeUrls(rawBadges);
+
+      const chatMessagePayload: TwitchChatMessagePayload = {
+        id: msg.id,
+        userId: msg.userInfo.userId,
+        username: user,
+        displayName: msg.userInfo.displayName,
+        color: msg.userInfo.color || "#9146FF",
+        text,
+        badges: badgeUrls,
+        emotes,
+        timestamp: msg.date.getTime(),
+        userLvl: userData?.lvl ?? 1,
+        isFollower,
+        pokemon: userData?.pokemon,
+        isMod: msg.userInfo.isMod,
+        isSubscriber: msg.userInfo.isSubscriber,
+        isVip: msg.userInfo.isVip,
+        isBroadcaster: msg.userInfo.isBroadcaster,
+        isBot: msg.userInfo.userId === config.twitch.botId,
+        isPermanentVip: userData?.isPermanentVip ?? false,
+        isFounder: userData?.isFounder ?? false,
+        isHighlight: msg.isHighlight,
+        isAction,
+      };
+
+      globalEventBus.emit("chat:message", chatMessagePayload);
+    } catch (error) {
+      Logger.error("ChatbotService", "Error processing chat message", error);
+    }
+  };
+
   private setupChatClientListeners(): void {
-    this.chatClient.onMessage(async (channel, user, text, msg) => {
-      try {
-        Logger.debug("ChatbotService", `[${channel}] ${user}: ${text}`);
-        const twitchId = msg.userInfo.userId;
-
-        await this.activityService.trackActivity(user, msg);
-        await this.commandRegistry.execute(channel, user, text, msg);
-
-        const userData = await this.userService.getUserWithPokemon(
-          msg.userInfo.userId,
-        );
-        const isFollower = this.activityService.isFollower(twitchId);
-
-        const emotes: Record<string, string[]> = Object.fromEntries(
-          msg.emoteOffsets,
-        );
-        const rawBadges: Record<string, string> = Object.fromEntries(
-          msg.userInfo.badges,
-        );
-
-        const badgeUrls = this.badgeService.getBadgeUrls(rawBadges);
-
-        const chatMessagePayload: TwitchChatMessagePayload = {
-          id: msg.id,
-          userId: msg.userInfo.userId,
-          username: user,
-          displayName: msg.userInfo.displayName,
-          color: msg.userInfo.color || "#9146FF",
-          text,
-          badges: badgeUrls,
-          emotes,
-          timestamp: msg.date.getTime(),
-          userLvl: userData?.lvl ?? 1,
-          isFollower,
-          pokemon: userData?.pokemon,
-          isMod: msg.userInfo.isMod,
-          isSubscriber: msg.userInfo.isSubscriber,
-          isVip: msg.userInfo.isVip,
-          isBroadcaster: msg.userInfo.isBroadcaster,
-          isBot: msg.userInfo.userId === config.twitch.botId,
-          isPermanentVip: userData?.isPermanentVip ?? false,
-          isFounder: userData?.isFounder ?? false,
-          isHighlight: msg.isHighlight,
-        };
-
-        globalEventBus.emit("chat:message", chatMessagePayload);
-      } catch (error) {
-        Logger.error("ChatbotService", "Error processing chat message", error);
-      }
-    });
+    this.chatClient.onMessage((channel, user, text, msg) =>
+      this.handleChatMessage(channel, user, text, msg, false),
+    );
+    this.chatClient.onAction((channel, user, text, msg) =>
+      this.handleChatMessage(channel, user, text, msg, true),
+    );
 
     this.chatClient.onViewerMilestone(
       async (channel, user, milestoneInfo, msg) => {
@@ -569,6 +586,7 @@ export class ChatbotService {
             isPermanentVip: userData?.isPermanentVip ?? false,
             isFounder: userData?.isFounder ?? false,
             isHighlight: false,
+            isAction: false,
             watchStreak: {
               value: milestoneInfo.value ?? 0,
               reward: milestoneInfo.reward ?? 0,
@@ -646,6 +664,7 @@ export class ChatbotService {
         isAnnouncement: announce?.isAnnouncement,
         announceColor: announce?.announceColor,
         isHighlight: false,
+        isAction: false,
       };
 
       globalEventBus.emit("chat:message", payload);
