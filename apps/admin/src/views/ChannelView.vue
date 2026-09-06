@@ -79,12 +79,5 @@ const failure = computed(() => {
         <dd>{{ channel.botIsMod ? 'yes' : 'no' }}</dd>
       </div>
     </dl>
-    <!-- No branch may be silently false: an unhandled shape must still say something. -->
-    <p
-      v-else
-      class="text-destructive text-sm"
-    >
-      Unexpected response from the api
-    </p>
   </div>
 </template>

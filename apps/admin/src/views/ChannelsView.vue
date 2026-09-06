@@ -40,13 +40,6 @@ const failure = computed(() => {
         v-else-if="data?.status === 200"
         :channels="channels"
       />
-      <!-- No branch may be silently false: an unhandled shape must still say something. -->
-      <p
-        v-else
-        class="text-destructive text-sm"
-      >
-        Unexpected response from the api
-      </p>
     </section>
 
     <ChannelCreateForm :on-created="refetch" />
