@@ -12,6 +12,12 @@
   ],
   "components": {
     "schemas": {
+      "ChannelList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Channel"
+        }
+      },
       "Channel": {
         "type": "object",
         "properties": {
@@ -122,62 +128,25 @@
           "login",
           "displayName"
         ]
-      },
-      "ChannelList": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/Channel"
-        }
       }
     },
     "parameters": {}
   },
   "paths": {
-    "/api/channels/{id}": {
+    "/api/channels": {
       "get": {
         "tags": [
           "Channels"
         ],
-        "summary": "Get channel by ID",
-        "operationId": "getChannelById",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "example": "clx1abc123def"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
+        "summary": "List channels",
+        "operationId": "listChannels",
         "responses": {
           "200": {
-            "description": "Channel found",
+            "description": "All channels",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Channel"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid channel id",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Channel not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/ChannelList"
                 }
               }
             }
@@ -193,9 +162,7 @@
             }
           }
         }
-      }
-    },
-    "/api/channels": {
+      },
       "post": {
         "tags": [
           "Channels"
@@ -253,20 +220,53 @@
             }
           }
         }
-      },
+      }
+    },
+    "/api/channels/{id}": {
       "get": {
         "tags": [
           "Channels"
         ],
-        "summary": "List channels",
-        "operationId": "listChannels",
+        "summary": "Get channel by ID",
+        "operationId": "getChannelById",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "clx1abc123def"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "All channels",
+            "description": "Channel found",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChannelList"
+                  "$ref": "#/components/schemas/Channel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid channel id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Channel not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }

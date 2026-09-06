@@ -41,49 +41,39 @@ import type {
 
 
 
-export type getChannelByIdResponse200 = {
-  data: Channel
+export type listChannelsResponse200 = {
+  data: ChannelList
   status: 200
 }
 
-export type getChannelByIdResponse400 = {
-  data: ErrorResponse
-  status: 400
-}
-
-export type getChannelByIdResponse404 = {
-  data: ErrorResponse
-  status: 404
-}
-
-export type getChannelByIdResponse500 = {
+export type listChannelsResponse500 = {
   data: ErrorResponse
   status: 500
 }
 
-export type getChannelByIdResponseSuccess = (getChannelByIdResponse200) & {
+export type listChannelsResponseSuccess = (listChannelsResponse200) & {
   headers: Headers;
 };
-export type getChannelByIdResponseError = (getChannelByIdResponse400 | getChannelByIdResponse404 | getChannelByIdResponse500) & {
+export type listChannelsResponseError = (listChannelsResponse500) & {
   headers: Headers;
 };
 
-export type getChannelByIdResponse = (getChannelByIdResponseSuccess | getChannelByIdResponseError)
+export type listChannelsResponse = (listChannelsResponseSuccess | listChannelsResponseError)
 
-export const getGetChannelByIdUrl = (id: string,) => {
-
-
+export const getListChannelsUrl = () => {
 
 
-  return `/api/channels/${id}`
+
+
+  return `/api/channels`
 }
 
 /**
- * @summary Get channel by ID
+ * @summary List channels
  */
-export const getChannelById = async (id: string, options?: RequestInit): Promise<getChannelByIdResponse> => {
+export const listChannels = async ( options?: RequestInit): Promise<listChannelsResponse> => {
 
-  const res = await fetch(getGetChannelByIdUrl(id),
+  const res = await fetch(getListChannelsUrl(),
   {
     ...options,
     method: 'GET'
@@ -95,53 +85,53 @@ export const getChannelById = async (id: string, options?: RequestInit): Promise
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getChannelByIdResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getChannelByIdResponse
+  const data: listChannelsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as listChannelsResponse
 }
 
 
 
 
 
-export const getGetChannelByIdQueryKey = (id: MaybeRefOrGetter<string>,) => {
+export const getListChannelsQueryKey = () => {
     return [
-    'api','channels',id
+    'api','channels'
     ] as const;
     }
 
 
-export const getGetChannelByIdQueryOptions = <TData = Awaited<ReturnType<typeof getChannelById>>, TError = ErrorResponse>(id: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelById>>, TError, TData>>, fetch?: RequestInit}
+export const getListChannelsQueryOptions = <TData = Awaited<ReturnType<typeof listChannels>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChannels>>, TError, TData>>, fetch?: RequestInit}
 ) => {
 
 const {query: queryOptions, fetch: fetchOptions} = options ?? {};
 
-  const queryKey =  getGetChannelByIdQueryKey(id);
+  const queryKey =  getListChannelsQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getChannelById>>> = ({ signal }) => getChannelById(toValue(id), { signal, ...fetchOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listChannels>>> = ({ signal }) => listChannels({ signal, ...fetchOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: computed(() => toValue(id) !== null && toValue(id) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChannelById>>, TError, TData>
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listChannels>>, TError, TData>
 }
 
-export type GetChannelByIdQueryResult = NonNullable<Awaited<ReturnType<typeof getChannelById>>>
-export type GetChannelByIdQueryError = ErrorResponse
+export type ListChannelsQueryResult = NonNullable<Awaited<ReturnType<typeof listChannels>>>
+export type ListChannelsQueryError = ErrorResponse
 
 
 /**
- * @summary Get channel by ID
+ * @summary List channels
  */
 
-export function useGetChannelById<TData = Awaited<ReturnType<typeof getChannelById>>, TError = ErrorResponse>(
- id: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelById>>, TError, TData>>, fetch?: RequestInit}
+export function useListChannels<TData = Awaited<ReturnType<typeof listChannels>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChannels>>, TError, TData>>, fetch?: RequestInit}
  , queryClient?: QueryClient
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetChannelByIdQueryOptions(id,options)
+  const queryOptions = getListChannelsQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -270,39 +260,49 @@ export const useCreateChannel = <TError = ErrorResponse,
       > => {
       return useMutation(getCreateChannelMutationOptions(options), queryClient);
     }
-    export type listChannelsResponse200 = {
-  data: ChannelList
+    export type getChannelByIdResponse200 = {
+  data: Channel
   status: 200
 }
 
-export type listChannelsResponse500 = {
+export type getChannelByIdResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type getChannelByIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type getChannelByIdResponse500 = {
   data: ErrorResponse
   status: 500
 }
 
-export type listChannelsResponseSuccess = (listChannelsResponse200) & {
+export type getChannelByIdResponseSuccess = (getChannelByIdResponse200) & {
   headers: Headers;
 };
-export type listChannelsResponseError = (listChannelsResponse500) & {
+export type getChannelByIdResponseError = (getChannelByIdResponse400 | getChannelByIdResponse404 | getChannelByIdResponse500) & {
   headers: Headers;
 };
 
-export type listChannelsResponse = (listChannelsResponseSuccess | listChannelsResponseError)
+export type getChannelByIdResponse = (getChannelByIdResponseSuccess | getChannelByIdResponseError)
 
-export const getListChannelsUrl = () => {
-
-
+export const getGetChannelByIdUrl = (id: string,) => {
 
 
-  return `/api/channels`
+
+
+  return `/api/channels/${id}`
 }
 
 /**
- * @summary List channels
+ * @summary Get channel by ID
  */
-export const listChannels = async ( options?: RequestInit): Promise<listChannelsResponse> => {
+export const getChannelById = async (id: string, options?: RequestInit): Promise<getChannelByIdResponse> => {
 
-  const res = await fetch(getListChannelsUrl(),
+  const res = await fetch(getGetChannelByIdUrl(id),
   {
     ...options,
     method: 'GET'
@@ -314,53 +314,53 @@ export const listChannels = async ( options?: RequestInit): Promise<listChannels
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: listChannelsResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as listChannelsResponse
+  const data: getChannelByIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getChannelByIdResponse
 }
 
 
 
 
 
-export const getListChannelsQueryKey = () => {
+export const getGetChannelByIdQueryKey = (id: MaybeRefOrGetter<string>,) => {
     return [
-    'api','channels'
+    'api','channels',id
     ] as const;
     }
 
 
-export const getListChannelsQueryOptions = <TData = Awaited<ReturnType<typeof listChannels>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChannels>>, TError, TData>>, fetch?: RequestInit}
+export const getGetChannelByIdQueryOptions = <TData = Awaited<ReturnType<typeof getChannelById>>, TError = ErrorResponse>(id: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelById>>, TError, TData>>, fetch?: RequestInit}
 ) => {
 
 const {query: queryOptions, fetch: fetchOptions} = options ?? {};
 
-  const queryKey =  getListChannelsQueryKey();
+  const queryKey =  getGetChannelByIdQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listChannels>>> = ({ signal }) => listChannels({ signal, ...fetchOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getChannelById>>> = ({ signal }) => getChannelById(toValue(id), { signal, ...fetchOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listChannels>>, TError, TData>
+   return  { queryKey, queryFn, enabled: computed(() => toValue(id) !== null && toValue(id) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChannelById>>, TError, TData>
 }
 
-export type ListChannelsQueryResult = NonNullable<Awaited<ReturnType<typeof listChannels>>>
-export type ListChannelsQueryError = ErrorResponse
+export type GetChannelByIdQueryResult = NonNullable<Awaited<ReturnType<typeof getChannelById>>>
+export type GetChannelByIdQueryError = ErrorResponse
 
 
 /**
- * @summary List channels
+ * @summary Get channel by ID
  */
 
-export function useListChannels<TData = Awaited<ReturnType<typeof listChannels>>, TError = ErrorResponse>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChannels>>, TError, TData>>, fetch?: RequestInit}
+export function useGetChannelById<TData = Awaited<ReturnType<typeof getChannelById>>, TError = ErrorResponse>(
+ id: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelById>>, TError, TData>>, fetch?: RequestInit}
  , queryClient?: QueryClient
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getListChannelsQueryOptions(options)
+  const queryOptions = getGetChannelByIdQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
