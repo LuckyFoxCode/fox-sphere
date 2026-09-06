@@ -51,7 +51,10 @@ const streakText = computed(() => getWatchStreakMessage(props.watchStreak.streak
         {{ watchStreak.displayName }}
       </span>
 
-      <div class="flex items-center gap-2">
+      <div
+        v-if="!watchStreak.isRepeat"
+        class="flex items-center gap-2"
+      >
         <span
           class="bg-event-blue/10 border-event-blue/80 text-event-amber rounded-full border px-2.5 py-0.5 text-sm font-semibold"
         >
