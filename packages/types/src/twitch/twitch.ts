@@ -1,5 +1,5 @@
-import { PokemonPoolItem } from "../pokemon/pokemon.js";
-import { WidgetVariant } from "./variants.js";
+import { PokemonPoolItem } from "../pokemon/pokemon";
+import { WidgetVariant } from "./variants";
 
 export type TwitchAnnouncementColor = "blue" | "green" | "orange" | "purple";
 

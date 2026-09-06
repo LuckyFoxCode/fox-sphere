@@ -1,1 +1,1 @@
-export * from "./pokemon.js";
+export * from "./pokemon";

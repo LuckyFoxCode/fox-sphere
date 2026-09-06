@@ -7,7 +7,10 @@
  */
 
 export * from './channel';
+export * from './channelList';
 export * from './channelStatus';
+export * from './createChannel';
+export * from './createChannelStatus';
 export * from './errorResponse';
 export * from './errorResponseErrors';
 export * from './errorResponseStatus';
