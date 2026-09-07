@@ -1,32 +1,21 @@
 <script setup lang="ts">
 import { VueQueryDevtools } from '@tanstack/vue-query-devtools';
-import { RouterLink, RouterView } from 'vue-router';
+import { RouterView } from 'vue-router';
+import { TheSidebar } from './components/nav';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from './components/ui/sidebar';
 </script>
 
 <template>
-  <div class="bg-background text-foreground min-h-screen">
-    <header class="border-border border-b px-6 py-4">
-      <h1 class="text-lg font-semibold">Fox Sphere Admin</h1>
-      <nav class="text-muted-foreground mt-1 text-sm">
-        <RouterLink
-          to="/"
-          class="hover:text-foreground"
-        >
-          Home
-        </RouterLink>
-        <RouterLink
-          to="/channels"
-          class="hover:text-foreground"
-        >
-          Channels
-        </RouterLink>
-      </nav>
-    </header>
-
-    <main class="mx-auto max-w-4xl p-6">
-      <RouterView />
-    </main>
-
+  <SidebarProvider>
+    <TheSidebar />
+    <SidebarInset>
+      <header class="flex h-16 shrink-0 items-center gap-2 px-4">
+        <SidebarTrigger class="-ml-1" />
+      </header>
+      <main class="flex-1 px-6 pb-6">
+        <RouterView />
+      </main>
+    </SidebarInset>
     <VueQueryDevtools />
-  </div>
+  </SidebarProvider>
 </template>

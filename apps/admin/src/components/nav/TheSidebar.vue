@@ -12,6 +12,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from '@/components/ui/sidebar';
+import { Globe } from '@lucide/vue';
 import { useRoute } from 'vue-router';
 import { navItems } from './navigation';
 
@@ -23,17 +24,26 @@ const isActive = (url: string) => {
 };
 </script>
 <template>
-  <Sidebar>
-    <SidebarHeader>
-      <div class="flex flex-col gap-0.5">
-        <span class="text-sidebar-foreground text-lg font-semibold">Fox Sphere</span>
-        <span class="text-sidebar-foreground/60 text-xs">Admin</span>
-      </div>
+  <Sidebar collapsible="icon">
+    <SidebarHeader class="bg-background">
+      <SidebarMenuButton
+        as-child
+        :tooltip="'Fox Sphere'"
+      >
+        <RouterLink to="/">
+          <component :is="Globe" />
+          <span
+            class="text-sidebar-foreground text-base font-semibold transition-opacity duration-200 group-data-[collapsible=icon]:opacity-0"
+          >
+            Fox Sphere Admin
+          </span>
+        </RouterLink>
+      </SidebarMenuButton>
     </SidebarHeader>
 
-    <SidebarSeparator />
+    <SidebarSeparator class="m-0" />
 
-    <SidebarContent>
+    <SidebarContent class="bg-background">
       <SidebarGroup>
         <SidebarGroupLabel>Navigation</SidebarGroupLabel>
         <SidebarGroupContent>
@@ -45,10 +55,14 @@ const isActive = (url: string) => {
               <SidebarMenuButton
                 as-child
                 :is-active="isActive(item.url)"
+                :tooltip="item.title"
               >
                 <RouterLink :to="item.url">
                   <component :is="item.icon" />
-                  <span>{{ item.title }}</span>
+                  <span
+                    class="truncate transition-opacity duration-300 group-data-[collapsible=icon]:opacity-0"
+                    >{{ item.title }}
+                  </span>
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -57,7 +71,7 @@ const isActive = (url: string) => {
       </SidebarGroup>
     </SidebarContent>
 
-    <SidebarFooter>
+    <SidebarFooter class="bg-background">
       <p class="text-sidebar-foreground/40 text-xs">v0.1.0</p>
     </SidebarFooter>
   </Sidebar>
