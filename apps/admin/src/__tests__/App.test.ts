@@ -60,11 +60,11 @@ describe('App', () => {
     expect(hrefs).toContain('/channels');
   });
 
-  it('routes / to HomeView', async () => {
+  it('renders HomeView with nav cards', async () => {
     const wrapper = await mountApp('/');
 
-    // Distinctive HomeView content, not the nav link text.
-    expect(wrapper.text()).toContain('Manage channels and create new ones');
+    expect(wrapper.text()).toContain('Dashboard');
+    expect(wrapper.text()).toContain('Channels');
   });
 
   it('routes /channels to ChannelsView and lets the nav link reach it', async () => {
