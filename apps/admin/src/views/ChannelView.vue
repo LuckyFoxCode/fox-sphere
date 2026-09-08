@@ -33,22 +33,30 @@ const failure = computed(() => {
       ← Back to channels
     </RouterLink>
 
-    <p v-if="isPending">Loading...</p>
+    <p
+      v-if="isPending"
+      role="status"
+    >
+      Loading...
+    </p>
     <p
       v-else-if="isError"
       class="text-destructive text-sm"
+      role="alert"
     >
       Could not reach the api - is it running on :3001?
     </p>
     <p
       v-else-if="failure"
       class="text-destructive text-sm"
+      role="alert"
     >
       {{ failure }}
     </p>
     <p
       v-else-if="notFound"
-      class="text-sm text-amber-400"
+      class="text-muted-foreground text-sm"
+      role="status"
     >
       Channel not found
     </p>

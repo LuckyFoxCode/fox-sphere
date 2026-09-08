@@ -3,9 +3,9 @@ name: Fox-Sphere Admin
 description: Control-room panel for managing multi-tenant Twitch channels
 colors:
   background: "oklch(1 0 0)"
-  foreground: "oklch(0.145 0 0)"
+foreground: "oklch(0.205 0 0)"
   card: "oklch(1 0 0)"
-  card-foreground: "oklch(0.145 0 0)"
+  card-foreground: "oklch(0.205 0 0)"
   popover: "oklch(1 0 0)"
   secondary: "oklch(0.97 0 0)"
   muted: "oklch(0.97 0 0)"
@@ -18,7 +18,7 @@ colors:
   input: "oklch(0.922 0 0)"
   ring: "oklch(0.708 0 0)"
   sidebar: "oklch(0.985 0 0)"
-  sidebar-foreground: "oklch(0.145 0 0)"
+  sidebar-foreground: "oklch(0.205 0 0)"
 typography:
   body:
     fontFamily: "Rubik, sans-serif"
@@ -92,7 +92,7 @@ An achromatic, low-chroma neutral system in OKLCH, with one borrowed brand accen
 
 ### Neutral
 - **Paper** (oklch(1 0 0)): Background, cards, popovers. The default canvas.
-- **Ink** (oklch(0.145 0 0)): Foreground text — primary reading color.
+- **Ink** (oklch(0.205 0 0)): Foreground text — primary reading color.
 - **Smoke** (oklch(0.556 0 0)): Muted-foreground: secondary text, placeholders, captions.
 - **Pearl** (oklch(0.985 0 0)): Sidebar surface, slightly shaded from paper.
 - **Hairline** (oklch(0.922 0 0)): Borders, dividers, input strokes.

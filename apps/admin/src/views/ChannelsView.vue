@@ -23,16 +23,23 @@ const failure = computed(() => {
     <section>
       <h1 class="mb-4 text-xl font-semibold">Channels</h1>
 
-      <p v-if="isPending">Loading...</p>
+      <p
+        v-if="isPending"
+        role="status"
+      >
+        Loading...
+      </p>
       <p
         v-else-if="isError"
         class="text-destructive text-sm"
+        role="alert"
       >
         Could not reach the api - is it running on :3001?
       </p>
       <p
         v-else-if="failure"
         class="text-destructive text-sm"
+        role="alert"
       >
         {{ failure }}
       </p>

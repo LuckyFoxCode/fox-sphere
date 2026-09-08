@@ -113,13 +113,19 @@ const extractMessage = (response: createChannelResponse): string => {
         <form.Field name="status">
           <template #default="{ field }">
             <Field>
-              <FieldLabel :for="field.name">Status</FieldLabel>
+              <FieldLabel
+                :id="`${field.name}-label`"
+                :for="field.name"
+              >
+                Status
+              </FieldLabel>
               <Select
                 :model-value="field.state.value"
                 @update:model-value="(v) => field.handleChange(v as CreateChannelStatus)"
               >
                 <SelectTrigger
                   :id="field.name"
+                  :aria-labelledby="`${field.name}-label`"
                   class="w-40"
                 >
                   <SelectValue />

@@ -5,11 +5,13 @@ import { Label } from '@/components/ui/label'
 
 const props = defineProps<{
   class?: HTMLAttributes["class"]
+  id?: string
 }>()
 </script>
 
 <template>
   <Label
+    :id="props.id"
     data-slot="field-label"
     :class="cn(
       'group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50',

@@ -15,40 +15,42 @@ defineProps<{ channels: Channel[] }>();
     No channels yet — create the first one below.
   </div>
 
-  <table
+  <div
     v-else
-    class="w-full text-sm"
+    class="overflow-x-auto"
   >
-    <thead>
-      <tr class="border-border border-b text-left">
-        <th class="px-3 py-2 font-medium">Login</th>
-        <th class="px-3 py-2 font-medium">Display name</th>
-        <th class="px-3 py-2 font-medium">Status</th>
-        <th class="px-3 py-2 font-medium">Bot mod</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr
-        v-for="channel in channels"
-        :key="channel.id"
-        class="border-border hover:bg-accent/50 border-b transition-colors"
-      >
-        <td class="px-3 py-2">
-          <RouterLink
-            :to="`/channels/${channel.id}`"
-            class="hover:underline"
-          >
-            {{ channel.login }}
-          </RouterLink>
-        </td>
-        <td class="px-3 py-2">{{ channel.displayName }}</td>
-        <td class="px-3 py-2">
-          <Badge :variant="statusVariant[channel.status]">
-            {{ channel.status }}
-          </Badge>
-        </td>
-        <td class="px-3 py-2">{{ channel.botIsMod ? 'yes' : 'no' }}</td>
-      </tr>
-    </tbody>
-  </table>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-border border-b text-left">
+          <th class="px-3 py-2 font-medium">Login</th>
+          <th class="px-3 py-2 font-medium">Display name</th>
+          <th class="px-3 py-2 font-medium">Status</th>
+          <th class="px-3 py-2 font-medium">Bot mod</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          v-for="channel in channels"
+          :key="channel.id"
+          class="border-border hover:bg-accent/50 border-b transition-colors"
+        >
+          <td class="px-3 py-2">
+            <RouterLink
+              :to="`/channels/${channel.id}`"
+              class="hover:underline"
+            >
+              {{ channel.login }}
+            </RouterLink>
+          </td>
+          <td class="px-3 py-2">{{ channel.displayName }}</td>
+          <td class="px-3 py-2">
+            <Badge :variant="statusVariant[channel.status]">
+              {{ channel.status }}
+            </Badge>
+          </td>
+          <td class="px-3 py-2">{{ channel.botIsMod ? 'yes' : 'no' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </template>
