@@ -180,7 +180,7 @@ Two consequences for code written today:
 
 ## Verification
 
-`.github/workflows/ci.yml` runs this gate on every PR and on pushes to `main`/`dev` (plus a build of both deployed images). The suite covers units only - never extend "tests pass" to mean the bot, the database or the socket path work. Locally the gate is:
+`.github/workflows/ci.yml` runs this gate on every PR and on pushes to `main`/`dev` (plus a build of both deployed images). The suite covers units only - never extend "tests pass" to mean the bot, the database or the socket path work. The admin coverage step enforces the 90% threshold from `apps/admin/vitest.config.ts` over the admin's business-logic files. Locally the gate is:
 
 ```bash
 pnpm install
@@ -193,6 +193,7 @@ cd ../bot-runtime && ./node_modules/.bin/tsc --noEmit && ./node_modules/.bin/esl
 cd ../overlay     && ./node_modules/.bin/vue-tsc --build && ./node_modules/.bin/oxlint . && ./node_modules/.bin/eslint .
 cd ../admin       && ./node_modules/.bin/vue-tsc --build && ./node_modules/.bin/oxlint . && ./node_modules/.bin/eslint .
 cd ../.. && pnpm build && pnpm test
+cd apps/admin     && ./node_modules/.bin/vitest run --coverage           # admin coverage >= 90%
 ```
 
 Run the raw binaries. A shell wrapper that filters tool output can report a clean run that

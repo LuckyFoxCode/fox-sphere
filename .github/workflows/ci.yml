@@ -2,7 +2,7 @@ name: ci
 
 # The verification gate from AGENTS.md, run on every PR and on the two long-lived
 # branches: type-checking, linting, the builds, the two generated-artifact drift
-# checks, and the unit tests.
+# checks, the unit tests, and the admin coverage threshold.
 on:
   pull_request:
   push:
@@ -87,6 +87,12 @@ jobs:
 
       - name: test
         run: pnpm test
+
+      # The 90% threshold lives in apps/admin/vitest.config.ts; a stack below it
+      # fails here, on every PR and on pushes to main/dev.
+      - name: admin - coverage
+        working-directory: apps/admin
+        run: ./node_modules/.bin/vitest run --coverage
 
   # Both deployed images must build from a PR too - a broken Dockerfile otherwise only
   # surfaces on main, after the merge, in the deploy job itself.
