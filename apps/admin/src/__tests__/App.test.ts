@@ -71,11 +71,11 @@ describe('App', () => {
     const wrapper = await mountApp('/');
 
     // Distinctive ChannelsView content: the create-form heading.
-    expect(wrapper.text()).not.toContain('Create new channel:');
+    expect(wrapper.text()).not.toContain('Create new channel');
 
     await wrapper.find('a[href="/channels"]').trigger('click');
     await flushPromises();
 
-    expect(wrapper.text()).toContain('Create new channel:');
+    expect(wrapper.text()).toContain('Create new channel');
   });
 });

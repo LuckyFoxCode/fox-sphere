@@ -55,8 +55,8 @@ const extractMessage = (response: createChannelResponse): string => {
 </script>
 
 <template>
-  <div class="rounded-xl border-2 px-3 py-5">
-    <h2 class="mb-4">Create new channel:</h2>
+  <div class="bg-card rounded-xl border px-3 py-5">
+    <h2 class="mb-4">Create new channel</h2>
     <form
       class="flex flex-col gap-y-5"
       @submit.prevent="form.handleSubmit()"

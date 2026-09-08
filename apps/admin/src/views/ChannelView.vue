@@ -2,6 +2,7 @@
 import { useGetChannelById } from '@/api/generated/channels/channels';
 import { statusVariant } from '@/components/channels';
 import { Badge } from '@/components/ui/badge';
+import { AsyncState } from '@/components/status';
 import { computed } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 
@@ -12,7 +13,6 @@ const channelId = computed(() => String(route.params.id));
 const { data, isPending, isError } = useGetChannelById(channelId);
 
 const channel = computed(() => (data.value?.status === 200 ? data.value.data : null));
-const notFound = computed(() => data.value?.status === 404);
 const failure = computed(() => {
   const response = data.value;
 
@@ -33,35 +33,14 @@ const failure = computed(() => {
       ← Back to channels
     </RouterLink>
 
-    <p
-      v-if="isPending"
-      role="status"
-    >
-      Loading...
-    </p>
-    <p
-      v-else-if="isError"
-      class="text-destructive text-sm"
-      role="alert"
-    >
-      Could not reach the api - is it running on :3001?
-    </p>
-    <p
-      v-else-if="failure"
-      class="text-destructive text-sm"
-      role="alert"
-    >
-      {{ failure }}
-    </p>
-    <p
-      v-else-if="notFound"
-      class="text-muted-foreground text-sm"
-      role="status"
-    >
-      Channel not found
-    </p>
+    <AsyncState
+      :is-pending="isPending"
+      :is-error="isError"
+      :failure="failure"
+      not-found="Channel not found"
+    />
     <dl
-      v-else-if="channel"
+      v-if="channel"
       class="bg-card divide-border max-w-md divide-y rounded-xl border"
     >
       <div class="flex justify-between gap-4 px-4 py-2.5">

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useListChannels } from '@/api/generated/channels/channels';
 import { ChannelCreateForm, ChannelList } from '@/components/channels';
+import { AsyncState } from '@/components/status';
 import { computed } from 'vue';
 
 const { data, isPending, isError, refetch } = useListChannels();
@@ -23,28 +24,13 @@ const failure = computed(() => {
     <section>
       <h1 class="mb-4 text-xl font-semibold">Channels</h1>
 
-      <p
-        v-if="isPending"
-        role="status"
-      >
-        Loading...
-      </p>
-      <p
-        v-else-if="isError"
-        class="text-destructive text-sm"
-        role="alert"
-      >
-        Could not reach the api - is it running on :3001?
-      </p>
-      <p
-        v-else-if="failure"
-        class="text-destructive text-sm"
-        role="alert"
-      >
-        {{ failure }}
-      </p>
+      <AsyncState
+        :is-pending="isPending"
+        :is-error="isError"
+        :failure="failure"
+      />
       <ChannelList
-        v-else-if="data?.status === 200"
+        v-if="data?.status === 200"
         :channels="channels"
       />
     </section>
