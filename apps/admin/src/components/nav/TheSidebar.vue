@@ -32,10 +32,8 @@ const isActive = (url: string) => {
       >
         <RouterLink to="/">
           <component :is="Globe" />
-          <span
-            class="text-sidebar-foreground text-base font-semibold transition-opacity duration-200 group-data-[collapsible=icon]:opacity-0"
-          >
-            Fox Sphere Admin
+          <span class="text-sidebar-foreground text-base font-semibold ...">
+            Fox Sphere <span class="text-sidebar-foreground/60 font-normal">Admin</span>
           </span>
         </RouterLink>
       </SidebarMenuButton>
