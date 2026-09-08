@@ -22,7 +22,19 @@ describe('useTheme', () => {
   });
 
   it('falls back to prefers-color-scheme when nothing is stored', async () => {
-    window.matchMedia = vi.fn<() => { matches: boolean }>().mockReturnValue({ matches: true });
+    const noop = vi.fn<(...args: unknown[]) => void>();
+    window.matchMedia = vi
+      .fn<(query: string) => MediaQueryList>()
+      .mockReturnValue({
+        matches: true,
+        media: '(prefers-color-scheme: dark)',
+        onchange: null,
+        addEventListener: noop,
+        removeEventListener: noop,
+        dispatchEvent: noop,
+        addListener: noop,
+        removeListener: noop,
+      } as unknown as MediaQueryList) as unknown as typeof window.matchMedia;
     const { useTheme } = await import('../useTheme');
     expect(useTheme().isDark.value).toBe(true);
   });

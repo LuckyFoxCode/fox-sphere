@@ -2,7 +2,9 @@ import ChannelCreateForm from '@/components/channels/ChannelCreateForm.vue';
 import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mutate = vi.hoisted(() => vi.fn<() => void>());
+const mutate = vi.hoisted(() =>
+  vi.fn<(vars: unknown, opts?: { onSuccess?: (...args: unknown[]) => void }) => void>(),
+);
 
 vi.mock('@/api/generated/channels/channels', async () => {
   const { ref } = await import('vue');
