@@ -1,1 +1,2 @@
-export * from "./get-channel.schema.js";
+export * from "./create-channel.schema";
+export * from "./get-channel.schema";

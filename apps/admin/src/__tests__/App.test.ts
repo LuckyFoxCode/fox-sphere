@@ -1,8 +1,8 @@
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createMemoryHistory, createRouter } from 'vue-router';
+import { routes } from '../router';
 
-// The generated client is stubbed so each documented status can be rendered on
-// demand. What is under test is App.vue's branching, not orval's fetch wrapper.
 const query = vi.hoisted(() => ({
   data: undefined as { status: number; data?: unknown } | undefined,
   isPending: false,
@@ -15,25 +15,33 @@ vi.mock('@/api/generated/channels/channels', async () => {
   const { ref } = await import('vue');
 
   return {
+    useListChannels: () => ({
+      data: ref(query.data),
+      isPending: ref(query.isPending),
+      isError: ref(query.isError),
+      refetch: vi.fn<() => void>(),
+    }),
     useGetChannelById: () => ({
       data: ref(query.data),
       isPending: ref(query.isPending),
       isError: ref(query.isError),
     }),
+    useCreateChannel: () => ({ mutate: vi.fn<() => void>(), isPending: ref(false) }),
   };
 });
 
 const App = (await import('../App.vue')).default;
 
-const render = () => mount(App, { global: { stubs: { VueQueryDevtools: true } } });
+const mountApp = async (path = '/') => {
+  const router = createRouter({ history: createMemoryHistory(), routes });
+  await router.push(path);
+  await router.isReady();
 
-const channel = {
-  id: 'clx1abc123def',
-  twitchId: '191983746',
-  login: 'luckyfoxcode',
-  displayName: 'LuckyFoxCode',
-  status: 'ACTIVE',
-  botIsMod: true,
+  const wrapper = mount(App, {
+    global: { plugins: [router], stubs: { VueQueryDevtools: true } },
+  });
+
+  return wrapper;
 };
 
 beforeEach(() => {
@@ -43,45 +51,31 @@ beforeEach(() => {
 });
 
 describe('App', () => {
-  it('shows the channel on 200', () => {
-    query.data = { status: 200, data: channel };
+  it('renders the shell with both nav links', async () => {
+    const wrapper = await mountApp();
 
-    const text = render().text();
-    expect(text).toContain('luckyfoxcode');
-    expect(text).toContain('ACTIVE');
+    expect(wrapper.text()).toContain('Fox Sphere Admin');
+    const hrefs = wrapper.findAll('a').map((a) => a.attributes('href'));
+    expect(hrefs).toContain('/');
+    expect(hrefs).toContain('/channels');
   });
 
-  it('says so on 404 rather than showing an empty panel', () => {
-    query.data = { status: 404, data: { status: 'error', message: 'Channel not found' } };
+  it('renders HomeView with nav cards', async () => {
+    const wrapper = await mountApp('/');
 
-    expect(render().text()).toContain('Channel not found');
+    expect(wrapper.text()).toContain('Dashboard');
+    expect(wrapper.text()).toContain('Channels');
   });
 
-  // The regression this suite exists for: the fetch client resolves on every
-  // status, so a 500 used to satisfy no branch at all and render nothing.
-  it('surfaces a 500 instead of rendering nothing', () => {
-    query.data = { status: 500, data: { status: 'error', message: 'Internal server error' } };
+  it('routes /channels to ChannelsView and lets the nav link reach it', async () => {
+    const wrapper = await mountApp('/');
 
-    const text = render().text();
-    expect(text).toContain('500');
-    expect(text).toContain('Internal server error');
-  });
+    // Distinctive ChannelsView content: the create-form heading.
+    expect(wrapper.text()).not.toContain('Create new channel');
 
-  it('surfaces an undocumented status too', () => {
-    query.data = { status: 502 };
+    await wrapper.find('a[href="/channels"]').trigger('click');
+    await flushPromises();
 
-    expect(render().text()).toContain('502');
-  });
-
-  it('reports a transport failure separately from a bad response', () => {
-    query.isError = true;
-
-    expect(render().text()).toContain('Could not reach the api');
-  });
-
-  it('shows a loading state while the query is pending', () => {
-    query.isPending = true;
-
-    expect(render().text()).toContain('Loading');
+    expect(wrapper.text()).toContain('Create new channel');
   });
 });

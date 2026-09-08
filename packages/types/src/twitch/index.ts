@@ -1,2 +1,2 @@
-export * from "./twitch.js";
-export * from "./variants.js";
+export * from "./twitch";
+export * from "./variants";
