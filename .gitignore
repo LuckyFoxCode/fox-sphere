@@ -35,3 +35,13 @@ docs/superpowers/
 
 # Per-developer agent notes
 AGENTS.local.md
+
+# Impeccable design skill (machine-specific install: engine binary + per-harness copies)
+.agents/skills/impeccable/
+.agents/agents/impeccable-*.md
+.github/agents/
+.github/skills/
+.github/hooks/
+.codex/
+.claude/settings.local.json
+.impeccable/
