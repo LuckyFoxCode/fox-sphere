@@ -22,6 +22,7 @@ export interface StreamXpUpdatePayload {
 
 export type StreamSystemStateResponse = StreamXpUpdatePayload & {
   xpBoost: StreamXpBoostState | null;
+  jackpotTotal: number;
 };
 
 export type StreamGetSystemStatePayload = Record<string, never>;
