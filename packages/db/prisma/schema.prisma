@@ -65,6 +65,9 @@ enum HistoryReason {
   LOTTERY
   CHANGE_POINTS
   WATCH_STREAK
+  SPIN
+  SPIN_PRIZE
+  JACKPOT
 }
 
 model CoinHistory {
@@ -105,6 +108,7 @@ model SystemState {
   id                Int       @id @default(1)
   streamLevel       Int       @default(1)
   streamCurrentXp   Int       @default(0)
+  jackpotTotal      Int       @default(1000)
   updatedAt         DateTime  @updatedAt
   xpBoostMultiplier Int       @default(1)
   xpBoostExpiresAt  DateTime?
