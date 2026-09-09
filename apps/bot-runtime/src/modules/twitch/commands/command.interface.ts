@@ -13,6 +13,13 @@ export interface CommandContext {
   args: string[];
 }
 
+export class CommandError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CommandError";
+  }
+}
+
 export interface TwitchCommand {
   readonly name: string;
   readonly alliases?: string[];

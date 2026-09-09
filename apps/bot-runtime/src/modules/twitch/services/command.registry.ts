@@ -4,7 +4,7 @@ import { ChatMessage } from "@twurple/chat";
 import { StreamService } from "../../stream";
 import { UserService } from "../../user";
 import { ChatbotService } from "../chatbot.service";
-import { TwitchCommand } from "../commands/command.interface";
+import { CommandError, TwitchCommand } from "../commands/command.interface";
 import { CoinsCommand } from "../commands/economy";
 import {
   GitHubCommand,
@@ -155,6 +155,23 @@ export class CommandRegisry {
         }
       }
     } catch (error) {
+      if (error instanceof CommandError) {
+        Logger.debug(
+          "CommandRegistry",
+          `Command returned user-facing error: ${config.commandPrefix}${commandName}`,
+        );
+        try {
+          await this.chatbotService.sendMessage(channel, error.message);
+        } catch (sendError) {
+          Logger.error(
+            "CommandRegistry",
+            `Failed to send CommandError message for ${config.commandPrefix}${commandName}`,
+            sendError,
+          );
+        }
+        return;
+      }
+
       Logger.error(
         "CommandRegistry",
         `Error executing ${config.commandPrefix}${commandName} by ${user}`,
