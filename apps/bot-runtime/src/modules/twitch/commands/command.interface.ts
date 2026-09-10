@@ -3,6 +3,7 @@ import { ChatMessage } from "@twurple/chat";
 export interface CooldownConfig {
   time: number;
   type: "user" | "global";
+  notifyMessage?: (username: string, remainingSeconds: number) => string;
 }
 
 export interface CommandContext {

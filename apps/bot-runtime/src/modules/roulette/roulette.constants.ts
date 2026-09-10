@@ -4,7 +4,7 @@ export const ROULETTE_CONFIG = {
   PRICE: 100,
   JACKPOT_SHARE: 10,
   JACKPOT_SEED,
-  SPIN_COOLDOWN: 60_000,
+  SPIN_COOLDOWN: 30_000,
   SPIN_STATS_COOLDOWN: 5_000,
 };
 
@@ -17,12 +17,13 @@ export const ROULETTE_MESSAGES = {
     `💰 @${username} выловил ${coins} монет!`,
   XP_RESULT: (username: string, xp: number) =>
     `⚡ @${username} схватил ${xp} XP!`,
-  JACKPOT_ANNOUNCE: (username: string) =>
-    `👑 @${username} СРЫВАЕТ ДЖЕКПОТ!`,
+  JACKPOT_ANNOUNCE: (username: string) => `👑 @${username} СРЫВАЕТ ДЖЕКПОТ!`,
   JACKPOT_RESULT: (username: string, amount: number, bank: number) =>
     `🎰 @${username} забирает ${amount} монет джекпота! Банк обновлён: ${bank}`,
   SPIN_STATS_ZERO: (username: string) =>
     `@${username}, ты ещё не крутил рулетку — жми !spin! 🎰`,
+  COOLDOWN: (username: string, secondsRemaining: number) =>
+    `⏳ @${username}, не так быстро! !spin снова через ${secondsRemaining}с`,
   SPIN_STATS: (username: string, spins: number, win: number, loss: number) =>
     `🎰 @${username}: крутанул ${spins} раз, выиграл ${win}, слил ${loss}`,
 } as const;

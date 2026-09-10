@@ -34,7 +34,7 @@ import {
 export class CommandRegisry {
   private commands = new Map<string, TwitchCommand>();
   private globalCooldowns = new Set<string>();
-  private userCooldowns = new Map<string, Set<string>>();
+  private userCooldowns = new Map<string, Map<string, { expiresAt: number; notified: boolean }>>();
 
   constructor(
     private chatbotService: ChatbotService,
@@ -127,6 +127,17 @@ export class CommandRegisry {
         type === "user" &&
         this.userCooldowns.get(userId)?.has(command.name)
       ) {
+        const entry = this.userCooldowns.get(userId)!.get(command.name)!;
+        if (command.cooldown.notifyMessage && !entry.notified) {
+          const remainingSeconds = Math.ceil(
+            (entry.expiresAt - Date.now()) / 1000,
+          );
+          await this.chatbotService.sendMessage(
+            channel,
+            command.cooldown.notifyMessage(user, remainingSeconds),
+          );
+          entry.notified = true;
+        }
         Logger.debug(
           "CommandRegistry",
           `Ignored user spam for ${config.commandPrefix}${commandName} from ${user}`,
@@ -149,9 +160,12 @@ export class CommandRegisry {
           setTimeout(() => this.globalCooldowns.delete(command.name), time);
         } else if (type === "user") {
           if (!this.userCooldowns.has(userId)) {
-            this.userCooldowns.set(userId, new Set());
+            this.userCooldowns.set(userId, new Map());
           }
-          this.userCooldowns.get(userId)!.add(command.name);
+          this.userCooldowns.get(userId)!.set(command.name, {
+            expiresAt: Date.now() + time,
+            notified: false,
+          });
           setTimeout(
             () => this.userCooldowns.get(userId)?.delete(command.name),
             time,

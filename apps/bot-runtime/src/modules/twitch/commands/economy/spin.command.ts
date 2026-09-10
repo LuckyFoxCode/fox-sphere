@@ -15,6 +15,7 @@ export class SpinCommand implements TwitchCommand {
   readonly cooldown: CooldownConfig = {
     time: ROULETTE_CONFIG.SPIN_COOLDOWN,
     type: "user",
+    notifyMessage: ROULETTE_MESSAGES.COOLDOWN,
   };
 
   constructor(
