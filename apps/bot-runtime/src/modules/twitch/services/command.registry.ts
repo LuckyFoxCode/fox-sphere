@@ -1,11 +1,12 @@
 import { config, Logger } from "@fox-sphere/backend-shared";
 import { ApiClient } from "@twurple/api";
 import { ChatMessage } from "@twurple/chat";
+import { RouletteService } from "../../roulette";
 import { StreamService } from "../../stream";
 import { UserService } from "../../user";
 import { ChatbotService } from "../chatbot.service";
 import { CommandError, TwitchCommand } from "../commands/command.interface";
-import { CoinsCommand } from "../commands/economy";
+import { CoinsCommand, SpinCommand, SpinStatsCommand } from "../commands/economy";
 import {
   GitHubCommand,
   HelpCommand,
@@ -40,6 +41,7 @@ export class CommandRegisry {
     private userService: UserService,
     private streamService: StreamService,
     private apiClient: ApiClient,
+    private rouletteService: RouletteService,
   ) {
     this.registerCommands();
   }
@@ -47,6 +49,8 @@ export class CommandRegisry {
   private registerCommands(): void {
     const commandToRegister: TwitchCommand[] = [
       new CoinsCommand(this.chatbotService, this.userService),
+      new SpinCommand(this.chatbotService, this.userService, this.rouletteService),
+      new SpinStatsCommand(this.chatbotService, this.userService),
       new GitHubCommand(this.chatbotService),
       new HelpCommand(this.chatbotService),
       new LotteryCommand(this.userService),
