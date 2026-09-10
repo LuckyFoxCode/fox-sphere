@@ -140,6 +140,15 @@ export async function bootstrap() {
     await forwardEventToBackend("lottery:finished", data);
   });
 
+  globalEventBus.on("roulette:spun", async (data) => {
+    // Долг: глобальный broadcast — phase-1 multi-tenancy переведёт на per-channel rooms.
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding roulette spin result to overlay | User: ${data.username}, Prize: ${data.prizeType}`,
+    );
+    await forwardEventToBackend("roulette:spin-result", data);
+  });
+
   globalEventBus.on("pokemon:assigned", async (data) => {
     Logger.info(
       "Bootstrap",
