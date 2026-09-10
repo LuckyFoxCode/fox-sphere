@@ -1,3 +1,4 @@
+import { ROULETTE_RESULT_SHOW_MS, ROULETTE_SPIN_ANIMATION_MS } from '@fox-sphere/types';
 import { SOUNDS } from '@/constants';
 import type { RouletteSpinResultPayload } from '@fox-sphere/types';
 import { ref } from 'vue';
@@ -5,15 +6,20 @@ import { useSound } from '../useSound';
 import type { RouletteStatus, WidgetSocket } from './types';
 import { useWidgetTimer } from './useWidgetTimer';
 
-const SPIN_ANIMATION_MS = 1200;
-const SPIN_RESULT_MS = 5000;
 const JACKPOT_TAKEOVER_MS = 8000;
 
-const { currentStatus: currentRouletteStatus, setStatusWithTimeout } =
-  useWidgetTimer<RouletteStatus>('idle');
+const {
+  currentStatus: currentRouletteStatus,
+  setStatusWithTimeout,
+  clearActiveTimer,
+} = useWidgetTimer<RouletteStatus>('idle');
 
 const jackpotTotal = ref(1000);
 const spinResult = ref<RouletteSpinResultPayload | null>(null);
+
+// Колесо крутится ROULETTE_SPIN_ANIMATION_MS — тот же тайминг держит бот
+// перед отправкой чат-сообщения, поэтому ответ в чат приходит в момент остановки.
+let phaseTimer: ReturnType<typeof setTimeout> | null = null;
 
 let isSocketInitialized = false;
 
@@ -24,18 +30,21 @@ export function useRouletteSocket(socketInstance: WidgetSocket) {
     jackpotTotal.value = data.jackpotTotalAfter;
     spinResult.value = data;
 
-    if (data.jackpotWon) {
-      currentRouletteStatus.value = 'jackpot';
-      playSound(SOUNDS.jackpot);
-      setStatusWithTimeout('jackpot', JACKPOT_TAKEOVER_MS);
-      return;
-    }
+    if (phaseTimer) clearTimeout(phaseTimer);
+    clearActiveTimer();
 
     currentRouletteStatus.value = 'spinning';
-    setTimeout(() => {
+    phaseTimer = setTimeout(() => {
+      if (data.jackpotWon) {
+        currentRouletteStatus.value = 'jackpot';
+        playSound(SOUNDS.jackpot);
+        setStatusWithTimeout('jackpot', JACKPOT_TAKEOVER_MS);
+        return;
+      }
+
       currentRouletteStatus.value = 'result';
-      setStatusWithTimeout('result', SPIN_RESULT_MS);
-    }, SPIN_ANIMATION_MS);
+      setStatusWithTimeout('result', ROULETTE_RESULT_SHOW_MS);
+    }, ROULETTE_SPIN_ANIMATION_MS);
   };
 
   const fetchJackpotTotal = () => {

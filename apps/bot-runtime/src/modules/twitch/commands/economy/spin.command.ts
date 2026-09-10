@@ -1,4 +1,5 @@
 import type { RouletteSpinResultPayload } from "@fox-sphere/types";
+import { ROULETTE_SPIN_ANIMATION_MS } from "@fox-sphere/types";
 import { RouletteService, ROULETTE_CONFIG, ROULETTE_MESSAGES } from "../../../roulette";
 import { UserService } from "../../../user";
 import { ChatbotService } from "../../chatbot.service";
@@ -8,6 +9,11 @@ import {
   CooldownConfig,
   TwitchCommand,
 } from "../command.interface";
+
+// Чат-ответ (твич + чат-виджет оверлея) уходит в момент остановки колеса,
+// а не вместе с событием спина — оверлей начинает вращение раньше.
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
 
 export class SpinCommand implements TwitchCommand {
   readonly name = "spin";
@@ -43,6 +49,9 @@ export class SpinCommand implements TwitchCommand {
       username: ctx.user,
     });
 
+    // Колесо на оверлее крутится ROULETTE_SPIN_ANIMATION_MS — чат ждёт остановки.
+    await sleep(ROULETTE_SPIN_ANIMATION_MS);
+
     if (result.jackpotWon) {
       await this.chatbotService.sendAnnouncement(
         ROULETTE_MESSAGES.JACKPOT_ANNOUNCE(ctx.user),
@@ -68,7 +77,8 @@ export class SpinCommand implements TwitchCommand {
   private buildMessage(result: RouletteSpinResultPayload): string | null {
     switch (result.prizeType) {
       case "empty":
-        return ROULETTE_MESSAGES.EMPTY_RESULT(result.username);
+        // Пустой результат не идёт в чат — его показывает колесо на оверлее.
+        return null;
       case "coins":
         return ROULETTE_MESSAGES.COINS_RESULT(result.username, result.coinAmount);
       case "xp":

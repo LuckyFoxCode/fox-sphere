@@ -11,8 +11,6 @@ export const ROULETTE_CONFIG = {
 export const ROULETTE_MESSAGES = {
   NOT_ENOUGH_COINS: (username: string, need: number, have: number) =>
     `@${username}, не хватает монет: нужно ${need}, у тебя ${have}`,
-  EMPTY_RESULT: (username: string) =>
-    `🎲 @${username} крутил-крутил… и ничего 🎲`,
   COINS_RESULT: (username: string, coins: number) =>
     `💰 @${username} выловил ${coins} монет!`,
   XP_RESULT: (username: string, xp: number) =>
