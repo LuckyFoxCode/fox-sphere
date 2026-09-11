@@ -28,6 +28,8 @@ import EventEmitter from "events";
 
 interface AppEvents {
   "chat:message": TwitchChatMessagePayload;
+  "fish:bite": { channel: string; username: string };
+  "fish:expired": { channel: string; username: string };
   "lottery:started": LotteryStartedPayload;
   "lottery:participants": LotteryParticipantsPayload;
   "lottery:no-participants": LotteryNoParticipantsPayload;
