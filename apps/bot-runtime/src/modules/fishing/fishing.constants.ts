@@ -21,7 +21,7 @@ export const FISHING_MESSAGES = {
   CATCH_BANK: (username: string, bank: number) =>
     `🎣 @${username} вытянул сундук — +${bank} в банк!`,
   CAST_COOLDOWN: (username: string, remainingSeconds: number) =>
-    `⏳ @${username}, удочка ещё в воде — через ${remainingSeconds}s`,
+    `⏳ @${username}, удочка не готова — через ${remainingSeconds}s`,
   PULL_COOLDOWN: (username: string, remainingSeconds: number) =>
     `⏳ @${username}, удочка сушится — ещё ${remainingSeconds}s`,
   EMPTY_VARIANTS: [
