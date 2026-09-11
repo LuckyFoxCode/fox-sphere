@@ -14,7 +14,8 @@ const {
   clearActiveTimer,
 } = useWidgetTimer<RouletteStatus>('idle');
 
-const jackpotTotal = ref(1000);
+const jackpotTotal = ref(0);
+const isJackpotLoading = ref(true);
 const spinResult = ref<RouletteSpinResultPayload | null>(null);
 
 // Колесо крутится ROULETTE_SPIN_ANIMATION_MS — тот же тайминг держит бот
@@ -50,6 +51,7 @@ export function useRouletteSocket(socketInstance: WidgetSocket) {
   const fetchJackpotTotal = () => {
     socketInstance.emit('stream:get-system-state', {}, (response) => {
       jackpotTotal.value = response.jackpotTotal;
+      isJackpotLoading.value = false;
     });
   };
 
@@ -67,6 +69,7 @@ export function useRouletteSocket(socketInstance: WidgetSocket) {
 
   return {
     jackpotTotal,
+    isJackpotLoading,
     spinResult,
     currentRouletteStatus,
   };

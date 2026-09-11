@@ -3,7 +3,7 @@ import { IconLotteryWheel } from '@/assets/icons';
 import { useRouletteSocket } from '@/composables/sockets';
 import { socket } from '@/services';
 
-const { jackpotTotal } = useRouletteSocket(socket);
+const { jackpotTotal, isJackpotLoading } = useRouletteSocket(socket);
 </script>
 
 <template>
@@ -20,7 +20,13 @@ const { jackpotTotal } = useRouletteSocket(socket);
 
     <div class="relative flex flex-col leading-none">
       <span class="text-text-second text-xs font-bold tracking-widest uppercase">take bank</span>
+      <span
+        v-if="isJackpotLoading"
+        aria-hidden="true"
+        class="bg-event-purple/40 animate-pulse block h-4 w-14 rounded"
+      />
       <Transition
+        v-else
         name="reel"
         mode="out-in"
       >
