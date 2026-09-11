@@ -10,7 +10,7 @@ import { ChatClient, type ChatMessage } from "@twurple/chat";
 import { randomUUID } from "node:crypto";
 import { globalEventBus } from "../../shared/services/event-bus.service";
 import { LOTTERY_DELAYS, LOTTERY_MESSAGES } from "../lottery";
-import { FISHING_MESSAGES } from "../fishing";
+import { FISHING_MESSAGES, FishingService } from "../fishing";
 import { RouletteService } from "../roulette";
 import { StreamService } from "../stream";
 import { COOLDOWNS as USER_COOLDOWNS, UserService } from "../user";
@@ -62,6 +62,7 @@ export class ChatbotService {
       this.streamService,
       this.apiClient,
       new RouletteService(this.userService),
+      new FishingService(this.userService),
     );
     this.announcementService = new AnnouncementService(
       this.apiClient,
