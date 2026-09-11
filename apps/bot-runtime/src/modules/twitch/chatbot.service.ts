@@ -10,6 +10,7 @@ import { ChatClient, type ChatMessage } from "@twurple/chat";
 import { randomUUID } from "node:crypto";
 import { globalEventBus } from "../../shared/services/event-bus.service";
 import { LOTTERY_DELAYS, LOTTERY_MESSAGES } from "../lottery";
+import { FISHING_MESSAGES } from "../fishing";
 import { RouletteService } from "../roulette";
 import { StreamService } from "../stream";
 import { COOLDOWNS as USER_COOLDOWNS, UserService } from "../user";
@@ -197,6 +198,32 @@ export class ChatbotService {
         Logger.error(
           "ChatbotService",
           `Failed to send ticket alert for ${data.username}`,
+          error,
+        );
+      }
+    });
+
+    globalEventBus.on("fish:bite", async (data) => {
+      try {
+        const message = FISHING_MESSAGES.BITE(data.username);
+        await this.sendMessage(data.channel, message);
+      } catch (error) {
+        Logger.error(
+          "ChatbotService",
+          `Failed to send fishing bite for ${data.username}`,
+          error,
+        );
+      }
+    });
+
+    globalEventBus.on("fish:expired", async (data) => {
+      try {
+        const message = FISHING_MESSAGES.EXPIRED(data.username);
+        await this.sendMessage(data.channel, message);
+      } catch (error) {
+        Logger.error(
+          "ChatbotService",
+          `Failed to send fishing expiry for ${data.username}`,
           error,
         );
       }
