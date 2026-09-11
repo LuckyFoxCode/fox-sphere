@@ -282,6 +282,24 @@ export class UserService {
     );
   }
 
+  public async addXp(twitchId: string, xpAmount: number): Promise<void> {
+    try {
+      const updatedUser = await prisma.user.update({
+        where: { twitchId },
+        data: {
+          xp: {
+            increment: xpAmount,
+          },
+        },
+      });
+
+      await this.checkAndUpgradeLevel(updatedUser);
+      await this.streamService.updateStreamXp(xpAmount);
+    } catch (error) {
+      Logger.error("UserService", `Failed to add XP for user: ${twitchId}`, error);
+    }
+  }
+
   public async getUserCoins(twitchId: string): Promise<number> {
     const now = Date.now();
     const cacheData = this.coinsCache.get(twitchId);
@@ -300,6 +318,10 @@ export class UserService {
     this.coinsCache.set(twitchId, { coins: currentCoins, createdAt: now });
 
     return currentCoins;
+  }
+
+  public invalidateCoins(twitchId: string): void {
+    this.coinsCache.delete(twitchId);
   }
 
   public async getUserWithPokemon(twitchId: string) {

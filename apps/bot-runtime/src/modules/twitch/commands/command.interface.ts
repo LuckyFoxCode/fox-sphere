@@ -3,6 +3,7 @@ import { ChatMessage } from "@twurple/chat";
 export interface CooldownConfig {
   time: number;
   type: "user" | "global";
+  notifyMessage?: (username: string, remainingSeconds: number) => string;
 }
 
 export interface CommandContext {
@@ -11,6 +12,13 @@ export interface CommandContext {
   text: string;
   msg: ChatMessage;
   args: string[];
+}
+
+export class CommandError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CommandError";
+  }
 }
 
 export interface TwitchCommand {
