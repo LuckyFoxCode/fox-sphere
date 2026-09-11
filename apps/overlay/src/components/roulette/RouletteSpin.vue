@@ -18,13 +18,13 @@ const isJackpot = computed(() => currentRouletteStatus.value === 'jackpot');
 const resultMessage = computed(() => {
   const result = spinResult.value;
   if (!result) return '';
-  if (result.prizeType === 'coins') return `+${result.coinAmount} монет 🪙`;
+  if (result.prizeType === 'coins') return `+${result.coinAmount} coins 🪙`;
   if (result.prizeType === 'xp') return `+${result.xpAmount} XP ⚡`;
-  return '…и ничего 🎲';
+  return '...and nothing 🎲';
 });
 
 const formatJackpotAmount = (result: RouletteSpinResultPayload | null) =>
-  result ? result.coinAmount.toLocaleString('ru-RU') : '0';
+  result ? result.coinAmount.toLocaleString('en-US') : '0';
 
 // 4-6 полных оборотов перед торможением на выигрышном секторе.
 const pickFullTurns = () => 4 + Math.floor(Math.random() * 3);
@@ -95,12 +95,12 @@ watch(currentRouletteStatus, spinWheelToPrize, { immediate: true });
       >
         <div class="bg-event-purple/20 animate-pulse rounded-xl px-10 py-8 text-center">
           <div class="text-5xl">👑🎰</div>
-          <div class="text-event-purple mt-2 text-3xl font-black">ДЖЕКПОТ!</div>
+          <div class="text-event-purple mt-2 text-3xl font-black">JACKPOT!</div>
           <div class="text-text-main mt-1 text-xl">
-            {{ spinResult?.username }} забирает {{ formatJackpotAmount(spinResult) }} 🪙
+            {{ spinResult?.username }} takes {{ formatJackpotAmount(spinResult) }} 🪙
           </div>
           <div class="text-event-purple/80 mt-2 text-sm">
-            Банк: {{ jackpotTotal.toLocaleString('ru-RU') }}
+            Bank: {{ jackpotTotal.toLocaleString('en-US') }}
           </div>
         </div>
       </div>

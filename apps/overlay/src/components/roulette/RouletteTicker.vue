@@ -9,7 +9,7 @@ const { jackpotTotal } = useRouletteSocket(socket);
 <template>
   <div
     role="status"
-    aria-label="Забери банк рулетки — команда !spin"
+    aria-label="Take the roulette bank — command !spin"
     class="border-event-purple/40 bg-bg/90 relative flex items-center gap-x-3 rounded-2xl border-2 py-1 pr-2 pl-2.5 shadow-[0_0_3px_var(--color-event-purple)]"
   >
     <span
@@ -28,7 +28,7 @@ const { jackpotTotal } = useRouletteSocket(socket);
           :key="jackpotTotal"
           class="text-event-purple text-base font-bold tabular-nums"
         >
-          {{ jackpotTotal.toLocaleString('ru-RU') }}
+          {{ jackpotTotal.toLocaleString('en-US') }}
         </span>
       </Transition>
     </div>

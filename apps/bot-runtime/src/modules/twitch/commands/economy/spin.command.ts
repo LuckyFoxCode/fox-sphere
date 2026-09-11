@@ -17,7 +17,7 @@ const sleep = (ms: number): Promise<void> =>
 
 export class SpinCommand implements TwitchCommand {
   readonly name = "spin";
-  readonly alliases = ["крутить"];
+  readonly alliases = ["roll"];
   readonly cooldown: CooldownConfig = {
     time: ROULETTE_CONFIG.SPIN_COOLDOWN,
     type: "user",

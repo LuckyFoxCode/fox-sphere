@@ -53,7 +53,7 @@ const bulbStyle = (index: number) => ({
   <div
     class="relative size-100"
     role="img"
-    aria-label="Колесо рулетки"
+    aria-label="Roulette wheel"
   >
     <!-- Статичная рама с металлическим отблеском -->
     <div

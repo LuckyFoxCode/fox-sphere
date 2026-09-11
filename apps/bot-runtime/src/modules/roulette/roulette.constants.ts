@@ -10,18 +10,18 @@ export const ROULETTE_CONFIG = {
 
 export const ROULETTE_MESSAGES = {
   NOT_ENOUGH_COINS: (username: string, need: number, have: number) =>
-    `@${username}, не хватает монет: нужно ${need}, у тебя ${have}`,
+    `@${username}, not enough coins: you need ${need}, you have ${have}`,
   COINS_RESULT: (username: string, coins: number) =>
-    `💰 @${username} выловил ${coins} монет!`,
+    `💰 @${username} fished out ${coins} coins!`,
   XP_RESULT: (username: string, xp: number) =>
-    `⚡ @${username} схватил ${xp} XP!`,
-  JACKPOT_ANNOUNCE: (username: string) => `👑 @${username} СРЫВАЕТ ДЖЕКПОТ!`,
+    `⚡ @${username} grabbed ${xp} XP!`,
+  JACKPOT_ANNOUNCE: (username: string) => `👑 @${username} HITS THE JACKPOT!`,
   JACKPOT_RESULT: (username: string, amount: number, bank: number) =>
-    `🎰 @${username} забирает ${amount} монет джекпота! Банк обновлён: ${bank}`,
+    `🎰 @${username} takes ${amount} jackpot coins! Bank updated: ${bank}`,
   SPIN_STATS_ZERO: (username: string) =>
-    `@${username}, ты ещё не крутил рулетку — жми !spin! 🎰`,
+    `@${username}, you haven't spun yet — hit !spin! 🎰`,
   COOLDOWN: (username: string, secondsRemaining: number) =>
-    `⏳ @${username}, не так быстро! !spin снова через ${secondsRemaining}с`,
+    `⏳ @${username}, not so fast! !spin again in ${secondsRemaining}s`,
   SPIN_STATS: (username: string, spins: number, win: number, loss: number) =>
-    `🎰 @${username}: крутанул ${spins} раз, выиграл ${win}, слил ${loss}`,
+    `🎰 @${username}: spun ${spins} times, won ${win}, lost ${loss}`,
 } as const;

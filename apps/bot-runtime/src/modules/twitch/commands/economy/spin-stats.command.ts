@@ -9,7 +9,7 @@ import {
 
 export class SpinStatsCommand implements TwitchCommand {
   readonly name = "spinstats";
-  readonly alliases = ["спинстатс"];
+  readonly alliases = ["spinstats"];
   readonly cooldown: CooldownConfig = {
     time: ROULETTE_CONFIG.SPIN_STATS_COOLDOWN,
     type: "user",
