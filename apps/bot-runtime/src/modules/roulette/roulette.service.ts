@@ -5,10 +5,16 @@ import {
   secureRandomInt,
   XP_CONFIG,
 } from "@fox-sphere/backend-shared";
-import type { RouletteSpinResultPayload } from "@fox-sphere/types";
+import { ROULETTE_SPIN_ANIMATION_MS, type RouletteSpinResultPayload } from "@fox-sphere/types";
 import { globalEventBus } from "../../shared/services";
 import { UserService } from "../user";
 import { ROULETTE_CONFIG } from "./roulette.constants";
+
+// Очередь держит спин всё время вращения колеса на оверлее: следующий spinUser
+// получает ход только после остановки предыдущего. Иначе два события roulette:spun
+// прилетают на оверлей почти одновременно и второй затирает первый прямо в анимации.
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
 
 export class RouletteService {
   // Сериализация спинов: один spinUser выполняется в момент времени (очередь-цепочка).
@@ -153,6 +159,10 @@ export class RouletteService {
     };
 
     globalEventBus.emit("roulette:spun", payload);
+
+    // Чат-ответ должен прийти в момент остановки колеса, а следующему спину
+    // не дано эмититься раньше — иначе оверлей крутит одно колесо на два результата.
+    await sleep(ROULETTE_SPIN_ANIMATION_MS);
 
     return payload;
   }
