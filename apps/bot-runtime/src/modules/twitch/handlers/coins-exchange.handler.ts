@@ -1,40 +1,56 @@
 import { Logger } from "@fox-sphere/backend-shared";
 import { UserService } from "../../user";
 import { ChatbotService } from "../chatbot.service";
-import {
-  BOT_MESSAGES,
-  COINS_EXCHANGE_AMOUNT,
-  REWARD_TITLES,
-} from "../twitch.constants";
+import { BOT_MESSAGES, ExchangePackage } from "../twitch.constants";
 import { RewardContext, RewardHandler } from "./reward.interface";
 
 export class CoinExchangeHandler implements RewardHandler {
-  readonly rewardTitle = REWARD_TITLES.COIN_EXCHANGE;
+  readonly rewardTitle: string;
+  private readonly pkg: ExchangePackage;
 
   constructor(
     private chatbotService: ChatbotService,
     private userService: UserService,
-  ) {}
+    pkg: ExchangePackage,
+  ) {
+    this.pkg = pkg;
+    this.rewardTitle = pkg.rewardTitle;
+  }
 
   async execute(ctx: RewardContext): Promise<void> {
-    try {
-      await this.userService.addCoins(ctx.userId, COINS_EXCHANGE_AMOUNT);
-      const message = BOT_MESSAGES.REWARDS.COIN_EXCHANGE(
-        ctx.username,
-        COINS_EXCHANGE_AMOUNT,
-      );
-      await this.chatbotService.sendAnnouncement(message, "green");
+    const result = await this.userService.exchangeChannelPoints(
+      ctx.userId,
+      ctx.redemptionId,
+      this.pkg,
+    );
 
-      Logger.info(
-        "ChatbotService",
-        `Successfully processed coin exchange for ${ctx.username}`,
-      );
-    } catch (error) {
-      Logger.error(
+    if (result.status === "duplicate") {
+      Logger.debug(
         "CoinExchangeHandler",
-        `Failed to process reward exchange for user: ${ctx.username}`,
-        error,
+        `Skipped duplicate redemption ${ctx.redemptionId} (${this.pkg.rewardTitle})`,
       );
+      return;
     }
+
+    if (result.status === "user-not-found") {
+      Logger.warn(
+        "CoinExchangeHandler",
+        `Coin exchange for unknown user ${ctx.username} skipped (${this.pkg.rewardTitle})`,
+      );
+      return;
+    }
+
+    const message = BOT_MESSAGES.REWARDS.EXCHANGE_COMPLETED(
+      ctx.username,
+      this.pkg.channelPointsCost,
+      this.pkg.coinsAwarded,
+      this.pkg.bonusPct,
+    );
+    await this.chatbotService.sendAnnouncement(message, "green");
+
+    Logger.info(
+      "CoinExchangeHandler",
+      `Processed ${this.pkg.rewardTitle} for ${ctx.username}: +${result.awarded} coins`,
+    );
   }
 }

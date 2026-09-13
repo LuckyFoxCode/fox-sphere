@@ -12,14 +12,10 @@ export const LEADERBOARD_LIMIT = 5;
 export const REWARD_TITLES = {
   LEADERBOARD: "Flex Leaderboard",
   STATS: "Check My Stats",
-  COIN_EXCHANGE: "Coin Exchange",
   COIN_POUCH: "Coin Pouch",
   COIN_CHEST: "Coin Chest",
   POKE_MASTER_HOARD: "Poke Master's Hoard",
 } as const;
-
-// Экономика: Коины
-export const COINS_EXCHANGE_AMOUNT = 10;
 
 export interface ExchangePackage {
   rewardTitle: string;
@@ -151,8 +147,6 @@ export const BOT_MESSAGES = {
       const bonus = coins - cost;
       return `💰 @${username} exchanged ${cost} Channel Points for ${coins} Coins${bonus > 0 ? ` (+${bonusPct}% = ${bonus} bonus coins!)` : ""}! Wallet updated! 🪙`;
     },
-    COIN_EXCHANGE: (username: string, amount: number) =>
-      `💰 @${username} exchanged Channel Points for ${amount} Coins! Wallet updated! 🪙`,
     LEADERBOARD: (_username: string, topList: string) =>
       `🏆 LEADERBOARD: ➔ ${topList}`,
     USER_STATS: (
