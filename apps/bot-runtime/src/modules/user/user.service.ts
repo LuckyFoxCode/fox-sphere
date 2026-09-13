@@ -15,6 +15,12 @@ import {
   isWatchStreakRewardLevel,
   XP_REWARDS,
 } from "./user.constants";
+import type { ExchangePackage } from "../twitch/twitch.constants";
+
+type ExchangeChannelPointsResult =
+  | { status: "credited"; awarded: number }
+  | { status: "duplicate" }
+  | { status: "user-not-found" };
 
 export class UserService {
   private verifiedUsersCache = new Set<string>();
@@ -280,6 +286,81 @@ export class UserService {
       "UserService",
       `Successfully added ${amount} coins to user: ${twitchId} and cleared cache.`,
     );
+  }
+
+  public async exchangeChannelPoints(
+    twitchId: string,
+    redemptionId: string,
+    pkg: ExchangePackage,
+  ): Promise<ExchangeChannelPointsResult> {
+    const user = await prisma.user.findUnique({
+      where: { twitchId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      Logger.warn(
+        "UserService",
+        `Coin exchange skipped — user not found: ${twitchId} (redemption ${redemptionId})`,
+      );
+      return { status: "user-not-found" };
+    }
+
+    const existing = await prisma.coinHistory.findUnique({
+      where: { redemptionId },
+      select: { id: true },
+    });
+
+    if (existing) {
+      Logger.debug(
+        "UserService",
+        `Coin exchange duplicate redemption skipped: ${redemptionId}`,
+      );
+      return { status: "duplicate" };
+    }
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { twitchId },
+          data: { coins: { increment: pkg.coinsAwarded } },
+        });
+
+        await tx.coinHistory.create({
+          data: {
+            userId: user.id,
+            amount: pkg.coinsAwarded,
+            reason: "CHANGE_POINTS",
+            details: this.buildExchangeDetails(pkg),
+            redemptionId,
+          },
+        });
+      });
+    } catch (error) {
+      if (error instanceof Error && "code" in error && error.code === "P2002") {
+        Logger.debug(
+          "UserService",
+          `Coin exchange duplicate redemption (race) skipped: ${redemptionId}`,
+        );
+        return { status: "duplicate" };
+      }
+      throw error;
+    }
+
+    this.coinsCache.delete(twitchId);
+
+    Logger.debug(
+      "UserService",
+      `Coin exchange: +${pkg.coinsAwarded} coins to ${twitchId} (${pkg.rewardTitle}, redemption ${redemptionId})`,
+    );
+
+    return { status: "credited", awarded: pkg.coinsAwarded };
+  }
+
+  private buildExchangeDetails(pkg: ExchangePackage): string {
+    const bonus = pkg.coinsAwarded - pkg.channelPointsCost;
+    const bonusPart = bonus > 0 ? ` (+${pkg.bonusPct}% bonus = ${bonus})` : "";
+    return `${pkg.rewardTitle}: ${pkg.channelPointsCost} channel points → ${pkg.coinsAwarded} coins${bonusPart}`;
   }
 
   public async addXp(twitchId: string, xpAmount: number): Promise<void> {
