@@ -76,6 +76,7 @@ model CoinHistory {
   amount    Int
   reason    HistoryReason
   details   String?
+  redemptionId String?   @unique
   createdAt DateTime      @default(now())
   userId    Int
   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
