@@ -138,15 +138,8 @@ export const BOT_MESSAGES = {
   },
   // Награды за баллы канала (Channel Points)
   REWARDS: {
-    EXCHANGE_COMPLETED: (
-      username: string,
-      cost: number,
-      coins: number,
-      bonusPct: number,
-    ) => {
-      const bonus = coins - cost;
-      return `💰 @${username} exchanged ${cost} Channel Points for ${coins} Coins${bonus > 0 ? ` (+${bonusPct}% = ${bonus} bonus coins!)` : ""}! Wallet updated! 🪙`;
-    },
+    EXCHANGE_COMPLETED: (username: string, rewardTitle: string, coins: number) =>
+      `💰 @${username} claimed the ${rewardTitle} — ${coins} Coins in the wallet! 🪙`,
     LEADERBOARD: (_username: string, topList: string) =>
       `🏆 LEADERBOARD: ➔ ${topList}`,
     USER_STATS: (

@@ -42,9 +42,8 @@ export class CoinExchangeHandler implements RewardHandler {
 
     const message = BOT_MESSAGES.REWARDS.EXCHANGE_COMPLETED(
       ctx.username,
-      this.pkg.channelPointsCost,
+      this.pkg.rewardTitle,
       this.pkg.coinsAwarded,
-      this.pkg.bonusPct,
     );
     await this.chatbotService.sendAnnouncement(message, "green");
 

@@ -10,12 +10,12 @@ import { PokemonPoolItem } from "@fox-sphere/types";
 import { globalEventBus } from "../../shared/services";
 import { LotteryService } from "../lottery";
 import { StreamService } from "../stream";
+import type { ExchangePackage } from "../twitch/twitch.constants";
 import {
   COOLDOWNS,
   isWatchStreakRewardLevel,
   XP_REWARDS,
 } from "./user.constants";
-import type { ExchangePackage } from "../twitch/twitch.constants";
 
 type ExchangeChannelPointsResult =
   | { status: "credited"; awarded: number }
@@ -377,7 +377,11 @@ export class UserService {
       await this.checkAndUpgradeLevel(updatedUser);
       await this.streamService.updateStreamXp(xpAmount);
     } catch (error) {
-      Logger.error("UserService", `Failed to add XP for user: ${twitchId}`, error);
+      Logger.error(
+        "UserService",
+        `Failed to add XP for user: ${twitchId}`,
+        error,
+      );
     }
   }
 
