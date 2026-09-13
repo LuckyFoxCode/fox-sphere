@@ -438,6 +438,7 @@ export class ChatbotService {
           await handler.execute({
             userId: data.userId,
             username: data.username,
+            redemptionId: data.redemptionId,
           });
         } catch (error) {
           Logger.error(

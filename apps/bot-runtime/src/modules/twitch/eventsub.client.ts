@@ -83,6 +83,7 @@ export class TwitchEventSubClient {
       userId: string;
       userDisplayName: string;
       rewardTitle: string;
+      redemptionId: string;
     }) => void,
   ) {
     return this.listener.onChannelRedemptionAdd(
@@ -97,6 +98,7 @@ export class TwitchEventSubClient {
           userId: event.userId,
           userDisplayName: event.userDisplayName,
           rewardTitle: event.rewardTitle,
+          redemptionId: event.id,
         });
       },
     );
