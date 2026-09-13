@@ -1,11 +1,11 @@
-import { secureRandomInt } from "@fox-sphere/backend-shared";
 import type { FishCatch } from "@fox-sphere/backend-shared";
-import { ChatbotService } from "../../chatbot.service";
+import { secureRandomInt } from "@fox-sphere/backend-shared";
 import {
   FISHING_CONFIG,
   FISHING_MESSAGES,
   FishingService,
 } from "../../../fishing";
+import { ChatbotService } from "../../chatbot.service";
 import {
   CommandContext,
   CommandError,
@@ -14,8 +14,8 @@ import {
 } from "../command.interface";
 
 export class FishingPullCommand implements TwitchCommand {
-  readonly name = "тянуть";
-  readonly alliases = ["pull"];
+  readonly name = "pull";
+  readonly alliases = ["тянуть"];
   readonly cooldown: CooldownConfig = {
     time: FISHING_CONFIG.PULL_COOLDOWN_MS,
     type: "user",

@@ -1,9 +1,9 @@
-import { ChatbotService } from "../../chatbot.service";
 import {
   FISHING_CONFIG,
   FISHING_MESSAGES,
   FishingService,
 } from "../../../fishing";
+import { ChatbotService } from "../../chatbot.service";
 import {
   CommandContext,
   CommandError,
@@ -12,8 +12,8 @@ import {
 } from "../command.interface";
 
 export class FishingCastCommand implements TwitchCommand {
-  readonly name = "рыбалка";
-  readonly alliases = ["рыбачить", "fish"];
+  readonly name = "fish";
+  readonly alliases = ["рыбачить", "рыбалка"];
   readonly cooldown: CooldownConfig = {
     time: FISHING_CONFIG.CAST_COOLDOWN_MS,
     type: "user",

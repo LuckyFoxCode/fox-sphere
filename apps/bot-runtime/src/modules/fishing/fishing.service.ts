@@ -1,3 +1,4 @@
+import type { FishCatch } from "@fox-sphere/backend-shared";
 import {
   JACKPOT_SEED,
   Logger,
@@ -6,7 +7,6 @@ import {
   secureRandomInt,
   XP_CONFIG,
 } from "@fox-sphere/backend-shared";
-import type { FishCatch } from "@fox-sphere/backend-shared";
 import { globalEventBus } from "../../shared/services";
 import { UserService } from "../user";
 import { FISHING_CONFIG } from "./fishing.constants";
@@ -61,9 +61,7 @@ export class FishingService {
     const biteDelayMs =
       FISHING_CONFIG.BITE_DELAY_MIN_MS +
       secureRandomInt(
-        FISHING_CONFIG.BITE_DELAY_MAX_MS -
-          FISHING_CONFIG.BITE_DELAY_MIN_MS +
-          1,
+        FISHING_CONFIG.BITE_DELAY_MAX_MS - FISHING_CONFIG.BITE_DELAY_MIN_MS + 1,
       );
 
     state.timers.push(
@@ -109,7 +107,10 @@ export class FishingService {
       }, FISHING_CONFIG.RESPONSE_WINDOW_MS).unref(),
     );
 
-    Logger.info("FishingService", `Bite for @${state.username} — waiting for pull`);
+    Logger.info(
+      "FishingService",
+      `Bite for @${state.username} — waiting for pull`,
+    );
     globalEventBus.emit("fish:bite", {
       channel: state.channel,
       username: state.username,
@@ -189,8 +190,9 @@ export class FishingService {
   }
 
   public stop(): void {
-    for (const twitchId of [...this.pending.keys()]) {
-      this.clearPending(twitchId);
+    for (const state of this.pending.values()) {
+      for (const timer of state.timers) clearTimeout(timer);
     }
+    this.pending.clear();
   }
 }
