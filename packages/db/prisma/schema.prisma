@@ -68,6 +68,7 @@ enum HistoryReason {
   SPIN
   SPIN_PRIZE
   JACKPOT
+  FISH
 }
 
 model CoinHistory {
