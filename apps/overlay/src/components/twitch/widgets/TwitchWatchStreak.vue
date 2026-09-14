@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { getWatchStreakAchievement } from '@/constants';
 import { IconLightning } from '@/assets/icons';
 import { WidgetFrame } from '@/components/ui/widget-frame';
+import { getWatchStreakAchievement } from '@/constants';
 import type { TwitchWatchStreakPayload } from '@fox-sphere/types';
 import { computed } from 'vue';
 
@@ -30,12 +30,12 @@ const achievementSrc = computed(() => getWatchStreakAchievement(props.watchStrea
   >
     <div
       v-if="achievementSrc"
-      class="flex items-center justify-center gap-4 px-4 py-2"
+      class="flex items-center justify-center gap-12 px-4 py-2"
     >
       <img
         :src="achievementSrc"
         alt="Watch streak achievement"
-        class="size-28 shrink-0 rounded-2xl ring-2 ring-[var(--color-event-rose)]"
+        class="size-50 shrink-0"
       />
 
       <div class="flex flex-col items-center text-center">
