@@ -63,7 +63,7 @@ const achievementSrc = computed(() => getWatchStreakAchievement(props.watchStrea
         </span>
 
         <div
-          v-if="!watchStreak.isRepeat"
+          v-if="watchStreak.xpAwarded > 0"
           class="flex items-center gap-2"
         >
           <span
@@ -110,7 +110,7 @@ const achievementSrc = computed(() => getWatchStreakAchievement(props.watchStrea
       </span>
 
       <div
-        v-if="!watchStreak.isRepeat"
+        v-if="watchStreak.xpAwarded > 0"
         class="flex items-center gap-2"
       >
         <span
