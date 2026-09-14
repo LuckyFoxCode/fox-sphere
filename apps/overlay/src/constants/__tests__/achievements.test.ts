@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getWatchStreakAchievement } from '../achievements';
 
-const url = (milestone: number) =>
-  `/assets/achievements/watch-streak/streak-${milestone}.webp`;
+const url = (milestone: number) => `/assets/achievements/watch-streak/streak-${milestone}.webp`;
 
 describe('getWatchStreakAchievement', () => {
   it('returns the exact image for each milestone', () => {
@@ -21,6 +20,11 @@ describe('getWatchStreakAchievement', () => {
   it('repeats the top image past 100', () => {
     expect(getWatchStreakAchievement(101)).toBe(url(100));
     expect(getWatchStreakAchievement(150)).toBe(url(100));
+  });
+
+  it('returns null for non-finite values', () => {
+    expect(getWatchStreakAchievement(NaN)).toBeNull();
+    expect(getWatchStreakAchievement(Number.POSITIVE_INFINITY)).toBeNull();
   });
 
   it('returns null below the first milestone', () => {
