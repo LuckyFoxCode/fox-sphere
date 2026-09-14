@@ -81,6 +81,7 @@ export async function bootstrap() {
       userId: data.userId,
       username: data.userDisplayName,
       rewardTitle: data.rewardTitle,
+      redemptionId: data.redemptionId,
     });
   });
 

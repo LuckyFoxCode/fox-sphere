@@ -26,7 +26,7 @@ import {
   TwitchActivityService,
   TwitchBadgeService,
 } from "./services";
-import { BOT_MESSAGES } from "./twitch.constants";
+import { BOT_MESSAGES, EXCHANGE_PACKAGES } from "./twitch.constants";
 import { TwitchConfig } from "./twitch.types";
 
 export class ChatbotService {
@@ -175,7 +175,13 @@ export class ChatbotService {
   }
 
   private registerRewardHandler(): void {
-    const coinExchange = new CoinExchangeHandler(this, this.userService);
+    for (const pkg of EXCHANGE_PACKAGES) {
+      this.rewardHandlers.set(
+        pkg.rewardTitle,
+        new CoinExchangeHandler(this, this.userService, pkg),
+      );
+    }
+
     const leaderboard = new LeaderboardHandler(
       this,
       this.userService,
@@ -183,7 +189,6 @@ export class ChatbotService {
     );
     const stats = new StatsHandler(this, this.userService, this.twitchConfig);
 
-    this.rewardHandlers.set(coinExchange.rewardTitle, coinExchange);
     this.rewardHandlers.set(leaderboard.rewardTitle, leaderboard);
     this.rewardHandlers.set(stats.rewardTitle, stats);
   }
@@ -438,6 +443,7 @@ export class ChatbotService {
           await handler.execute({
             userId: data.userId,
             username: data.username,
+            redemptionId: data.redemptionId,
           });
         } catch (error) {
           Logger.error(
