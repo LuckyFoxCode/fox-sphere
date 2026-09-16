@@ -176,7 +176,7 @@ Two consequences for code written today:
 | **Packages build before apps.** Root `build` runs `--filter "./packages/*" build` first; the backend build needs `packages/*/dist` to exist. | `package.json`, `.docker/bot-runtime.Dockerfile` |
 | **The backend image runs as uid 1000 (`node`) deliberately.** Dev bind-mounts write `src/generated/` and `packages/*/dist` back to the host, and root-owned output breaks a later host-side `pnpm build`. | `.docker/bot-runtime.Dockerfile` |
 | **The web image must not build `packages/db`.** Its `build` is `prisma generate`, which throws without a real `DATABASE_URL`, and the frontend never imports `@fox-sphere/db` - so the web image filters it out with `--filter "!@fox-sphere/db"`. Keep that filter when adding packages. | `.docker/web.Dockerfile` |
-| **The test suite is small and deliberate.** Vitest in `apps/admin`, `apps/overlay` and `packages/backend-shared` only - pure functions plus `App.vue`'s status branches. `pnpm test` runs all of it; CI runs it on every PR. There is still **no** integration or database test, so "tests pass" means those units, nothing more. | `apps/admin/src/__tests__/`, `apps/overlay/src/utils/twitch/__tests__/`, `packages/backend-shared/src/__tests__/` |
+| **The test suite is small and deliberate.** Vitest in `apps/admin` (`App.vue` status branches), `apps/overlay` (pure functions + `RouletteSpin` status smoke test) and `packages/backend-shared` (pure functions) only. `pnpm test` runs all of it; CI runs it on every PR. There is still **no** integration or database test, so "tests pass" means those units, nothing more. | `apps/admin/src/__tests__/`, `apps/overlay/src/{constants,utils,components}/**/__tests__/`, `packages/backend-shared/src/__tests__/` |
 
 ## Verification
 
