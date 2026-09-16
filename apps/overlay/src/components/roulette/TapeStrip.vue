@@ -29,12 +29,28 @@ onMounted(() => {
   });
 });
 
-const stripStyle = computed(() => ({
-  transform: `translateX(${offset.value}px)`,
-  transitionProperty: 'transform',
-  transitionDuration: `${durationMs}ms`,
-  transitionTimingFunction: 'cubic-bezier(0.12, 0.6, 0.08, 1)',
-}));
+const prefersReducedMotion = computed(
+  () =>
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+);
+
+const stripStyle = computed(() => {
+  if (prefersReducedMotion.value) {
+    return {
+      transform: `translateX(${offset.value}px)`,
+      transitionProperty: 'none',
+      transitionDuration: '0ms',
+    };
+  }
+  return {
+    transform: `translateX(${offset.value}px)`,
+    transitionProperty: 'transform',
+    transitionDuration: `${durationMs}ms`,
+    transitionTimingFunction: 'cubic-bezier(0.12, 0.6, 0.08, 1)',
+  };
+});
 
 const isWinnerCard = (index: number): boolean => index === TAPE_WINNER_INDEX && reveal;
 </script>
