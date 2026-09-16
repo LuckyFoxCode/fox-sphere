@@ -45,7 +45,7 @@ export const buildTapeStrip = (
   winnerId: RouletteSegmentId,
   random: () => number = Math.random,
 ): RouletteWheelSegment[] => {
-  const strip: RouletteSegmentId[] = new Array<RouletteSegmentId>(TAPE_STRIP_LENGTH);
+  const strip: RouletteSegmentId[] = Array.from<RouletteSegmentId>({ length: TAPE_STRIP_LENGTH });
   strip[TAPE_WINNER_INDEX] = winnerId;
 
   for (let i = 0; i < TAPE_WINNER_INDEX; i++) {
