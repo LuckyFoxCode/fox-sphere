@@ -10,6 +10,8 @@ import { ChatClient, type ChatMessage } from "@twurple/chat";
 import { randomUUID } from "node:crypto";
 import { globalEventBus } from "../../shared/services/event-bus.service";
 import { LOTTERY_DELAYS, LOTTERY_MESSAGES } from "../lottery";
+import { FISHING_MESSAGES, FishingService } from "../fishing";
+import { RouletteService } from "../roulette";
 import { StreamService } from "../stream";
 import { COOLDOWNS as USER_COOLDOWNS, UserService } from "../user";
 import {
@@ -24,7 +26,7 @@ import {
   TwitchActivityService,
   TwitchBadgeService,
 } from "./services";
-import { BOT_MESSAGES } from "./twitch.constants";
+import { BOT_MESSAGES, EXCHANGE_PACKAGES } from "./twitch.constants";
 import { TwitchConfig } from "./twitch.types";
 
 export class ChatbotService {
@@ -59,6 +61,8 @@ export class ChatbotService {
       this.userService,
       this.streamService,
       this.apiClient,
+      new RouletteService(this.userService),
+      new FishingService(this.userService),
     );
     this.announcementService = new AnnouncementService(
       this.apiClient,
@@ -171,7 +175,13 @@ export class ChatbotService {
   }
 
   private registerRewardHandler(): void {
-    const coinExchange = new CoinExchangeHandler(this, this.userService);
+    for (const pkg of EXCHANGE_PACKAGES) {
+      this.rewardHandlers.set(
+        pkg.rewardTitle,
+        new CoinExchangeHandler(this, this.userService, pkg),
+      );
+    }
+
     const leaderboard = new LeaderboardHandler(
       this,
       this.userService,
@@ -179,7 +189,6 @@ export class ChatbotService {
     );
     const stats = new StatsHandler(this, this.userService, this.twitchConfig);
 
-    this.rewardHandlers.set(coinExchange.rewardTitle, coinExchange);
     this.rewardHandlers.set(leaderboard.rewardTitle, leaderboard);
     this.rewardHandlers.set(stats.rewardTitle, stats);
   }
@@ -195,6 +204,32 @@ export class ChatbotService {
         Logger.error(
           "ChatbotService",
           `Failed to send ticket alert for ${data.username}`,
+          error,
+        );
+      }
+    });
+
+    globalEventBus.on("fish:bite", async (data) => {
+      try {
+        const message = FISHING_MESSAGES.BITE(data.username);
+        await this.sendMessage(data.channel, message);
+      } catch (error) {
+        Logger.error(
+          "ChatbotService",
+          `Failed to send fishing bite for ${data.username}`,
+          error,
+        );
+      }
+    });
+
+    globalEventBus.on("fish:expired", async (data) => {
+      try {
+        const message = FISHING_MESSAGES.EXPIRED(data.username);
+        await this.sendMessage(data.channel, message);
+      } catch (error) {
+        Logger.error(
+          "ChatbotService",
+          `Failed to send fishing expiry for ${data.username}`,
           error,
         );
       }
@@ -408,6 +443,7 @@ export class ChatbotService {
           await handler.execute({
             userId: data.userId,
             username: data.username,
+            redemptionId: data.redemptionId,
           });
         } catch (error) {
           Logger.error(

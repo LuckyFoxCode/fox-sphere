@@ -1,0 +1,27 @@
+import { JACKPOT_SEED } from "@fox-sphere/backend-shared";
+
+export const ROULETTE_CONFIG = {
+  PRICE: 100,
+  JACKPOT_SHARE: 10,
+  JACKPOT_SEED,
+  SPIN_COOLDOWN: 30_000,
+  SPIN_STATS_COOLDOWN: 5_000,
+};
+
+export const ROULETTE_MESSAGES = {
+  NOT_ENOUGH_COINS: (username: string, need: number, have: number) =>
+    `@${username}, not enough coins: you need ${need}, you have ${have}`,
+  COINS_RESULT: (username: string, coins: number) =>
+    `💰 @${username} fished out ${coins} coins!`,
+  XP_RESULT: (username: string, xp: number) =>
+    `⚡ @${username} grabbed ${xp} XP!`,
+  JACKPOT_ANNOUNCE: (username: string) => `👑 @${username} HITS THE JACKPOT!`,
+  JACKPOT_RESULT: (username: string, amount: number, bank: number) =>
+    `🎰 @${username} takes ${amount} jackpot coins! Bank updated: ${bank}`,
+  SPIN_STATS_ZERO: (username: string) =>
+    `@${username}, you haven't spun yet — hit !spin! 🎰`,
+  COOLDOWN: (username: string, secondsRemaining: number) =>
+    `⏳ @${username}, not so fast! !spin again in ${secondsRemaining}s`,
+  SPIN_STATS: (username: string, spins: number, win: number, loss: number) =>
+    `🎰 @${username}: spun ${spins} times, won ${win}, lost ${loss}`,
+} as const;

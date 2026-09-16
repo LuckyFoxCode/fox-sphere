@@ -8,7 +8,7 @@
 
   "compilerOptions": {
     "lib": [],
-    "types": ["node"],
+    "types": ["node", "jsdom"],
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.tsbuildinfo"
   }
 }

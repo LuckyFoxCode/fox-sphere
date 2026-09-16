@@ -7,7 +7,9 @@ import {
   LotteryUserDto,
   LotteryWinnerDrawnPayload,
   PokemonAssignedPayload,
+  RouletteSpinResultPayload,
   StreamGetSystemStatePayload,
+  StreamJackpotUpdatePayload,
   StreamLevelUpPayload,
   StreamSystemStateResponse,
   StreamXpBoostPayload,
@@ -27,6 +29,8 @@ import EventEmitter from "events";
 
 interface AppEvents {
   "chat:message": TwitchChatMessagePayload;
+  "fish:bite": { channel: string; username: string };
+  "fish:expired": { channel: string; username: string };
   "lottery:started": LotteryStartedPayload;
   "lottery:participants": LotteryParticipantsPayload;
   "lottery:no-participants": LotteryNoParticipantsPayload;
@@ -39,9 +43,11 @@ interface AppEvents {
   "lottery:winner-drawn": LotteryWinnerDrawnPayload;
   "lottery:finished": LotteryFinishedPayload;
   "pokemon:assigned": PokemonAssignedPayload;
+  "roulette:spun": RouletteSpinResultPayload;
   "stream:xp-updated": StreamXpUpdatePayload;
   "stream:xp-boost": StreamXpBoostPayload;
   "stream:level-up": StreamLevelUpPayload;
+  "stream:jackpot-updated": StreamJackpotUpdatePayload;
   "stream:get-system-state": {
     data: StreamGetSystemStatePayload;
     callback: (response: StreamSystemStateResponse) => void;

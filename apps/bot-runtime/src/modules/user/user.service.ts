@@ -10,11 +10,17 @@ import { PokemonPoolItem } from "@fox-sphere/types";
 import { globalEventBus } from "../../shared/services";
 import { LotteryService } from "../lottery";
 import { StreamService } from "../stream";
+import type { ExchangePackage } from "../twitch/twitch.constants";
 import {
   COOLDOWNS,
   isWatchStreakRewardLevel,
   XP_REWARDS,
 } from "./user.constants";
+
+type ExchangeChannelPointsResult =
+  | { status: "credited"; awarded: number }
+  | { status: "duplicate" }
+  | { status: "user-not-found" };
 
 export class UserService {
   private verifiedUsersCache = new Set<string>();
@@ -282,6 +288,103 @@ export class UserService {
     );
   }
 
+  public async exchangeChannelPoints(
+    twitchId: string,
+    redemptionId: string,
+    pkg: ExchangePackage,
+  ): Promise<ExchangeChannelPointsResult> {
+    const user = await prisma.user.findUnique({
+      where: { twitchId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      Logger.warn(
+        "UserService",
+        `Coin exchange skipped — user not found: ${twitchId} (redemption ${redemptionId})`,
+      );
+      return { status: "user-not-found" };
+    }
+
+    const existing = await prisma.coinHistory.findUnique({
+      where: { redemptionId },
+      select: { id: true },
+    });
+
+    if (existing) {
+      Logger.debug(
+        "UserService",
+        `Coin exchange duplicate redemption skipped: ${redemptionId}`,
+      );
+      return { status: "duplicate" };
+    }
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { twitchId },
+          data: { coins: { increment: pkg.coinsAwarded } },
+        });
+
+        await tx.coinHistory.create({
+          data: {
+            userId: user.id,
+            amount: pkg.coinsAwarded,
+            reason: "CHANGE_POINTS",
+            details: this.buildExchangeDetails(pkg),
+            redemptionId,
+          },
+        });
+      });
+    } catch (error) {
+      if (error instanceof Error && "code" in error && error.code === "P2002") {
+        Logger.debug(
+          "UserService",
+          `Coin exchange duplicate redemption (race) skipped: ${redemptionId}`,
+        );
+        return { status: "duplicate" };
+      }
+      throw error;
+    }
+
+    this.coinsCache.delete(twitchId);
+
+    Logger.debug(
+      "UserService",
+      `Coin exchange: +${pkg.coinsAwarded} coins to ${twitchId} (${pkg.rewardTitle}, redemption ${redemptionId})`,
+    );
+
+    return { status: "credited", awarded: pkg.coinsAwarded };
+  }
+
+  private buildExchangeDetails(pkg: ExchangePackage): string {
+    const bonus = pkg.coinsAwarded - pkg.channelPointsCost;
+    const bonusPart = bonus > 0 ? ` (+${pkg.bonusPct}% bonus = ${bonus})` : "";
+    return `${pkg.rewardTitle}: ${pkg.channelPointsCost} channel points → ${pkg.coinsAwarded} coins${bonusPart}`;
+  }
+
+  public async addXp(twitchId: string, xpAmount: number): Promise<void> {
+    try {
+      const updatedUser = await prisma.user.update({
+        where: { twitchId },
+        data: {
+          xp: {
+            increment: xpAmount,
+          },
+        },
+      });
+
+      await this.checkAndUpgradeLevel(updatedUser);
+      await this.streamService.updateStreamXp(xpAmount);
+    } catch (error) {
+      Logger.error(
+        "UserService",
+        `Failed to add XP for user: ${twitchId}`,
+        error,
+      );
+    }
+  }
+
   public async getUserCoins(twitchId: string): Promise<number> {
     const now = Date.now();
     const cacheData = this.coinsCache.get(twitchId);
@@ -300,6 +403,10 @@ export class UserService {
     this.coinsCache.set(twitchId, { coins: currentCoins, createdAt: now });
 
     return currentCoins;
+  }
+
+  public invalidateCoins(twitchId: string): void {
+    this.coinsCache.delete(twitchId);
   }
 
   public async getUserWithPokemon(twitchId: string) {
@@ -372,47 +479,41 @@ export class UserService {
       });
 
       if (existing) {
-        Logger.debug(
-          "UserService",
-          `Watch streak ${streakValue} already awarded for ${twitchId} — repeat, widget without rewards`,
+        const halfXp = Math.floor((streakValue * 7) / 2);
+        const halfCoins = Math.floor((streakValue * 100) / 2);
+
+        await this.awardWatchStreakRewards(
+          twitchId,
+          user.id,
+          halfXp,
+          halfCoins,
+          streakValue,
         );
 
-        return { xpAwarded: 0, coinsAwarded: 0, isRepeat: true };
+        Logger.debug(
+          "UserService",
+          `Watch streak ${streakValue} already awarded for ${twitchId} — repeat, half reward`,
+        );
+
+        return { xpAwarded: halfXp, coinsAwarded: halfCoins, isRepeat: true };
       }
 
       const xpAwarded = streakValue * 7;
       const coinsAwarded = streakValue * 100;
 
       await prisma.$transaction(async (tx) => {
-        await tx.user.update({
-          where: { twitchId },
-          data: {
-            xp: { increment: xpAwarded },
-            coins: { increment: coinsAwarded },
-          },
-        });
-
         await tx.watchStreak.create({
           data: { userId: user.id, streakValue },
         });
 
-        await tx.xpHistory.create({
-          data: {
-            userId: user.id,
-            amount: xpAwarded,
-            reason: "WATCH_STREAK",
-            details: `Watch streak: ${streakValue} streams`,
-          },
-        });
-
-        await tx.coinHistory.create({
-          data: {
-            userId: user.id,
-            amount: coinsAwarded,
-            reason: "WATCH_STREAK",
-            details: `Watch streak: ${streakValue} streams`,
-          },
-        });
+        await this.awardWatchStreakRewards(
+          twitchId,
+          user.id,
+          xpAwarded,
+          coinsAwarded,
+          streakValue,
+          tx,
+        );
       });
 
       return { xpAwarded, coinsAwarded, isRepeat: false };
@@ -432,6 +533,51 @@ export class UserService {
       );
 
       return null;
+    }
+  }
+
+  private async awardWatchStreakRewards(
+    twitchId: string,
+    userId: number,
+    xpAwarded: number,
+    coinsAwarded: number,
+    streakValue: number,
+    tx?: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+  ): Promise<void> {
+    const run = async (
+      t: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+    ) => {
+      await t.user.update({
+        where: { twitchId },
+        data: {
+          xp: { increment: xpAwarded },
+          coins: { increment: coinsAwarded },
+        },
+      });
+
+      await t.xpHistory.create({
+        data: {
+          userId,
+          amount: xpAwarded,
+          reason: "WATCH_STREAK",
+          details: `Watch streak: ${streakValue} streams`,
+        },
+      });
+
+      await t.coinHistory.create({
+        data: {
+          userId,
+          amount: coinsAwarded,
+          reason: "WATCH_STREAK",
+          details: `Watch streak: ${streakValue} streams`,
+        },
+      });
+    };
+
+    if (tx) {
+      await run(tx);
+    } else {
+      await prisma.$transaction(run);
     }
   }
 

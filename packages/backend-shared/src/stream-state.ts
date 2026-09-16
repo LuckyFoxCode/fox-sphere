@@ -1,3 +1,4 @@
+import { JACKPOT_SEED } from "./roulette";
 import { XP_CONFIG } from "./stream-constants";
 import { prisma } from "./prisma";
 import { getXpThresholdForLevel, resolveActiveXpBoost } from "./xp";
@@ -23,6 +24,7 @@ export async function getStreamStatePrepared() {
         XP_CONFIG.BASE_STREAM_STEP,
       ),
       xpBoost,
+      jackpotTotal: state?.jackpotTotal ?? JACKPOT_SEED,
     };
   } catch (error) {
     Logger.error(
@@ -36,6 +38,7 @@ export async function getStreamStatePrepared() {
       maxXp: XP_CONFIG.BASE_STREAM_STEP,
       startXp: 0,
       xpBoost: null,
+      jackpotTotal: JACKPOT_SEED,
     };
   }
 }

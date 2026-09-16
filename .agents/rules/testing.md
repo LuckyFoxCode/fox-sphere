@@ -18,6 +18,9 @@ Vitest, in three members only:
 |---|---|---|
 | `packages/backend-shared` | `src/__tests__/xp.spec.ts` | `getXpThresholdForLevel`, `resolveActiveXpBoost` |
 | `apps/overlay` | `src/utils/twitch/__tests__/parseTwitchEmotes.test.ts` | emote positions (code points, not UTF-16), urls, malformed emote maps |
+| `apps/overlay` | `src/constants/__tests__/rouletteSegments.test.ts` | segment catalog, rarity tiers, and tape strip constants |
+| `apps/overlay` | `src/utils/roulette/__tests__/tapeFill.test.ts` | tape strip fill algorithm - center winner, no adjacent duplicates, weights match backend |
+| `apps/overlay` | `src/components/roulette/__tests__/RouletteSpin.test.ts` | roulette widget status smoke test (idle/spinning/jackpot takeover) |
 | `apps/admin` | `src/__tests__/App.test.ts` | every documented status branch, including the 500 that used to render nothing |
 
 `pnpm test` runs all of it (`pnpm -r test`); CI runs it in the gate. Everything is a pure

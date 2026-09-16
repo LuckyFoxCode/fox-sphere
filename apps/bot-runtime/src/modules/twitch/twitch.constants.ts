@@ -12,11 +12,39 @@ export const LEADERBOARD_LIMIT = 5;
 export const REWARD_TITLES = {
   LEADERBOARD: "Flex Leaderboard",
   STATS: "Check My Stats",
-  COIN_EXCHANGE: "Coin Exchange",
+  COIN_POUCH: "Coin Pouch",
+  COIN_CHEST: "Coin Chest",
+  POKE_MASTER_HOARD: "Poke Master's Hoard",
 } as const;
 
-// Экономика: Коины
-export const COINS_EXCHANGE_AMOUNT = 10;
+export interface ExchangePackage {
+  rewardTitle: string;
+  channelPointsCost: number;
+  bonusPct: number;
+  coinsAwarded: number;
+}
+
+// Прогрессивные пакеты обмена баллов канала (тариф выше — курс лучше)
+export const EXCHANGE_PACKAGES: readonly ExchangePackage[] = [
+  {
+    rewardTitle: REWARD_TITLES.COIN_POUCH,
+    channelPointsCost: 1000,
+    bonusPct: 0,
+    coinsAwarded: 1000,
+  },
+  {
+    rewardTitle: REWARD_TITLES.COIN_CHEST,
+    channelPointsCost: 3000,
+    bonusPct: 30,
+    coinsAwarded: 3900,
+  },
+  {
+    rewardTitle: REWARD_TITLES.POKE_MASTER_HOARD,
+    channelPointsCost: 5000,
+    bonusPct: 50,
+    coinsAwarded: 7500,
+  },
+];
 
 // Таймеры и задержки (в миллисекундах)
 export const COOLDOWNS = {
@@ -110,8 +138,8 @@ export const BOT_MESSAGES = {
   },
   // Награды за баллы канала (Channel Points)
   REWARDS: {
-    COIN_EXCHANGE: (username: string, amount: number) =>
-      `💰 @${username} exchanged Channel Points for ${amount} Coins! Wallet updated! 🪙`,
+    EXCHANGE_COMPLETED: (username: string, rewardTitle: string, coins: number) =>
+      `💰 @${username} claimed the ${rewardTitle} — ${coins} Coins in the wallet! 🪙`,
     LEADERBOARD: (_username: string, topList: string) =>
       `🏆 LEADERBOARD: ➔ ${topList}`,
     USER_STATS: (

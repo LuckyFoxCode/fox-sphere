@@ -15,3 +15,4 @@ export type TwitchEventType =
   | 'timer'
   | 'watch-streak';
 export type UserEventType = 'idle' | 'level-up';
+export type RouletteStatus = 'idle' | 'spinning' | 'result' | 'jackpot';

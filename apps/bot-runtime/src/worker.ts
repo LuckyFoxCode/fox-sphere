@@ -81,6 +81,7 @@ export async function bootstrap() {
       userId: data.userId,
       username: data.userDisplayName,
       rewardTitle: data.rewardTitle,
+      redemptionId: data.redemptionId,
     });
   });
 
@@ -140,6 +141,15 @@ export async function bootstrap() {
     await forwardEventToBackend("lottery:finished", data);
   });
 
+  globalEventBus.on("roulette:spun", async (data) => {
+    // Долг: глобальный broadcast — phase-1 multi-tenancy переведёт на per-channel rooms.
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding roulette spin result to overlay | User: ${data.username}, Prize: ${data.prizeType}`,
+    );
+    await forwardEventToBackend("roulette:spin-result", data);
+  });
+
   globalEventBus.on("pokemon:assigned", async (data) => {
     Logger.info(
       "Bootstrap",
@@ -170,6 +180,15 @@ export async function bootstrap() {
       `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding xp boost to overlay | Multiplier: ×${data.multiplier}`,
     );
     await forwardEventToBackend("stream:xp-boost", data);
+  });
+
+  globalEventBus.on("stream:jackpot-updated", async (data) => {
+    // Долг: глобальный broadcast — phase-1 multi-tenancy переведёт на per-channel rooms.
+    Logger.info(
+      "Bootstrap",
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding jackpot update to overlay | New total: ${data.jackpotTotal}`,
+    );
+    await forwardEventToBackend("stream:jackpot-updated", data);
   });
 
   globalEventBus.on("twitch:add-vip", async (data) => {

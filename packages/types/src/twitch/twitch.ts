@@ -31,6 +31,7 @@ export interface TwitchRewardPayload {
   userId: string;
   username: string;
   rewardTitle: string;
+  redemptionId: string;
 }
 
 export interface TwitchTimerPayload {

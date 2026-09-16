@@ -22,7 +22,12 @@ export interface StreamXpUpdatePayload {
 
 export type StreamSystemStateResponse = StreamXpUpdatePayload & {
   xpBoost: StreamXpBoostState | null;
+  jackpotTotal: number;
 };
+
+export interface StreamJackpotUpdatePayload {
+  jackpotTotal: number;
+}
 
 export type StreamGetSystemStatePayload = Record<string, never>;
 
@@ -32,6 +37,7 @@ export interface StreamServerToClientEvents {
   "stream:xp-updated": (data: StreamXpUpdatePayload) => void;
   "stream:level-up": (data: StreamLevelUpPayload) => void;
   "stream:xp-boost": (data: StreamXpBoostPayload) => void;
+  "stream:jackpot-updated": (data: StreamJackpotUpdatePayload) => void;
 }
 
 export interface StreamClientToServerEvents {
