@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { IconLightning } from '@/assets/icons';
 import { WidgetFrame } from '@/components/ui/widget-frame';
+import { getWatchStreakAchievement } from '@/constants';
 import type { TwitchWatchStreakPayload } from '@fox-sphere/types';
 import { computed } from 'vue';
 
@@ -18,6 +19,8 @@ function getWatchStreakMessage(streak: number): string {
 }
 
 const streakText = computed(() => getWatchStreakMessage(props.watchStreak.streakValue));
+
+const achievementSrc = computed(() => getWatchStreakAchievement(props.watchStreak.streakValue));
 </script>
 
 <template>
@@ -25,46 +28,62 @@ const streakText = computed(() => getWatchStreakMessage(props.watchStreak.streak
     variant="rose"
     position-x="100"
   >
-    <div class="flex flex-col items-center justify-center px-4 py-2 text-center">
+    <div
+      v-if="achievementSrc"
+      class="relative flex items-center justify-center gap-12 px-4 py-2"
+    >
       <span
-        class="text-event-rose mb-4 flex items-center gap-1.5 text-xs font-medium tracking-[0.35em] uppercase"
+        v-if="!watchStreak.isRepeat"
+        class="border-event-blue bg-event-blue/15 text-lime absolute top-1 right-1 flex w-fit rounded-lg border-2 px-1.5 py-1 text-xs font-semibold tracking-wider uppercase"
       >
-        <IconLightning class="size-4" />
-        Stream Streak
+        new
       </span>
 
-      <div class="mb-3 flex items-end justify-center gap-2">
+      <img
+        :src="achievementSrc"
+        alt="Watch streak achievement"
+        class="size-50 shrink-0"
+      />
+
+      <div class="flex flex-col items-center text-center">
         <span
-          class="text-event-amber text-7xl leading-none font-semibold drop-shadow-[0_0_7px_var(--color-event-amber)]"
+          class="text-event-rose mb-2 flex items-center gap-1.5 text-xs font-medium tracking-[0.35em] uppercase"
+        >
+          <IconLightning class="size-4" />
+          Stream Streak
+        </span>
+
+        <span
+          class="text-event-amber text-6xl leading-none font-semibold drop-shadow-[0_0_7px_var(--color-event-amber)]"
         >
           {{ watchStreak.streakValue }}
         </span>
-      </div>
 
-      <p class="text-text-main/80 mb-4 text-base font-medium">
-        {{ streakText }}
-      </p>
+        <p class="text-text-main/80 mt-2 mb-2 text-sm font-medium">
+          {{ streakText }}
+        </p>
 
-      <span
-        class="text-event-amber mb-2 text-lg font-semibold drop-shadow-[0_0_5px_var(--color-event-amber)]"
-      >
-        {{ watchStreak.displayName }}
-      </span>
-
-      <div
-        v-if="!watchStreak.isRepeat"
-        class="flex items-center gap-2"
-      >
         <span
-          class="bg-event-blue/10 border-event-blue/80 text-event-amber rounded-full border px-2.5 py-0.5 text-sm font-semibold"
+          class="text-event-amber mb-2 text-base font-semibold drop-shadow-[0_0_5px_var(--color-event-amber)]"
         >
-          +{{ watchStreak.xpAwarded }} XP
+          {{ watchStreak.displayName }}
         </span>
-        <span
-          class="bg-event-blue/10 border-event-blue/80 text-event-amber rounded-full border px-2.5 py-0.5 text-sm font-semibold"
+
+        <div
+          v-if="watchStreak.xpAwarded > 0"
+          class="flex items-center gap-2"
         >
-          🪙 +{{ watchStreak.coinsAwarded }}
-        </span>
+          <span
+            class="bg-event-blue/10 border-event-blue/80 text-event-amber rounded-full border px-2.5 py-0.5 text-sm font-semibold"
+          >
+            +{{ watchStreak.xpAwarded }} XP
+          </span>
+          <span
+            class="bg-event-blue/10 border-event-blue/80 text-event-amber rounded-full border px-2.5 py-0.5 text-sm font-semibold"
+          >
+            🪙 +{{ watchStreak.coinsAwarded }}
+          </span>
+        </div>
       </div>
     </div>
   </WidgetFrame>

@@ -479,47 +479,41 @@ export class UserService {
       });
 
       if (existing) {
-        Logger.debug(
-          "UserService",
-          `Watch streak ${streakValue} already awarded for ${twitchId} — repeat, widget without rewards`,
+        const halfXp = Math.floor((streakValue * 7) / 2);
+        const halfCoins = Math.floor((streakValue * 100) / 2);
+
+        await this.awardWatchStreakRewards(
+          twitchId,
+          user.id,
+          halfXp,
+          halfCoins,
+          streakValue,
         );
 
-        return { xpAwarded: 0, coinsAwarded: 0, isRepeat: true };
+        Logger.debug(
+          "UserService",
+          `Watch streak ${streakValue} already awarded for ${twitchId} — repeat, half reward`,
+        );
+
+        return { xpAwarded: halfXp, coinsAwarded: halfCoins, isRepeat: true };
       }
 
       const xpAwarded = streakValue * 7;
       const coinsAwarded = streakValue * 100;
 
       await prisma.$transaction(async (tx) => {
-        await tx.user.update({
-          where: { twitchId },
-          data: {
-            xp: { increment: xpAwarded },
-            coins: { increment: coinsAwarded },
-          },
-        });
-
         await tx.watchStreak.create({
           data: { userId: user.id, streakValue },
         });
 
-        await tx.xpHistory.create({
-          data: {
-            userId: user.id,
-            amount: xpAwarded,
-            reason: "WATCH_STREAK",
-            details: `Watch streak: ${streakValue} streams`,
-          },
-        });
-
-        await tx.coinHistory.create({
-          data: {
-            userId: user.id,
-            amount: coinsAwarded,
-            reason: "WATCH_STREAK",
-            details: `Watch streak: ${streakValue} streams`,
-          },
-        });
+        await this.awardWatchStreakRewards(
+          twitchId,
+          user.id,
+          xpAwarded,
+          coinsAwarded,
+          streakValue,
+          tx,
+        );
       });
 
       return { xpAwarded, coinsAwarded, isRepeat: false };
@@ -539,6 +533,51 @@ export class UserService {
       );
 
       return null;
+    }
+  }
+
+  private async awardWatchStreakRewards(
+    twitchId: string,
+    userId: number,
+    xpAwarded: number,
+    coinsAwarded: number,
+    streakValue: number,
+    tx?: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+  ): Promise<void> {
+    const run = async (
+      t: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+    ) => {
+      await t.user.update({
+        where: { twitchId },
+        data: {
+          xp: { increment: xpAwarded },
+          coins: { increment: coinsAwarded },
+        },
+      });
+
+      await t.xpHistory.create({
+        data: {
+          userId,
+          amount: xpAwarded,
+          reason: "WATCH_STREAK",
+          details: `Watch streak: ${streakValue} streams`,
+        },
+      });
+
+      await t.coinHistory.create({
+        data: {
+          userId,
+          amount: coinsAwarded,
+          reason: "WATCH_STREAK",
+          details: `Watch streak: ${streakValue} streams`,
+        },
+      });
+    };
+
+    if (tx) {
+      await run(tx);
+    } else {
+      await prisma.$transaction(run);
     }
   }
 
