@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import type { RouletteWheelSegment } from '@/constants/rouletteSegments';
-import {
-  TAPE_CARD_WIDTH_PX,
-  TAPE_VIEWPORT_WIDTH_PX,
-  TAPE_WINNER_INDEX,
-} from '@/constants/tapeStrip';
+import { TAPE_CARD_WIDTH_PX, TAPE_VIEWPORT_WIDTH_PX, TAPE_WINNER_INDEX } from '@/constants';
+import type { RouletteWheelSegment } from '@/constants';
 import { computed, onMounted, ref } from 'vue';
 import TapeCard from './TapeCard.vue';
 
-const { segments, durationMs, reveal = false } = defineProps<{
+const {
+  segments,
+  durationMs,
+  reveal = false,
+} = defineProps<{
   segments: readonly RouletteWheelSegment[];
   durationMs: number;
   reveal?: boolean;
@@ -16,11 +16,7 @@ const { segments, durationMs, reveal = false } = defineProps<{
 
 const targetOffset = computed(
   () =>
-    -(
-      TAPE_WINNER_INDEX * TAPE_CARD_WIDTH_PX +
-      TAPE_CARD_WIDTH_PX / 2 -
-      TAPE_VIEWPORT_WIDTH_PX / 2
-    ),
+    -(TAPE_WINNER_INDEX * TAPE_CARD_WIDTH_PX + TAPE_CARD_WIDTH_PX / 2 - TAPE_VIEWPORT_WIDTH_PX / 2),
 );
 
 const offset = ref(0);
@@ -40,8 +36,7 @@ const stripStyle = computed(() => ({
   transitionTimingFunction: 'cubic-bezier(0.12, 0.6, 0.08, 1)',
 }));
 
-const isWinnerCard = (index: number): boolean =>
-  index === TAPE_WINNER_INDEX && reveal;
+const isWinnerCard = (index: number): boolean => index === TAPE_WINNER_INDEX && reveal;
 </script>
 
 <template>
@@ -61,8 +56,12 @@ const isWinnerCard = (index: number): boolean =>
     </div>
 
     <!-- Затухание краёв — намёк на продолжение ленты -->
-    <div class="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-bg/70 to-transparent" />
-    <div class="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-bg/70 to-transparent" />
+    <div
+      class="from-bg/70 pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r to-transparent"
+    />
+    <div
+      class="from-bg/70 pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l to-transparent"
+    />
 
     <!-- Ряд карточек -->
     <div

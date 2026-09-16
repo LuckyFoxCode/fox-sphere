@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { useRouletteSocket } from '@/composables/sockets';
-import type { RouletteStatus } from '@/composables/sockets/types';
-import { ROULETTE_WHEEL_SEGMENTS, prizeToSegmentId } from '@/constants';
+import { prizeToSegmentId } from '@/constants';
 import { socket } from '@/services';
-import { computeWheelRotation, pickSegmentIndex } from '@/utils/roulette';
+import { buildTapeStrip } from '@/utils/roulette';
 import { ROULETTE_SPIN_ANIMATION_MS, type RouletteSpinResultPayload } from '@fox-sphere/types';
-import { computed, nextTick, ref, watch } from 'vue';
-import RouletteWheel from './RouletteWheel.vue';
+import { computed, ref, watch } from 'vue';
+import TapeStrip from './TapeStrip.vue';
+
+const JACKPOT_TAPE_PREVIEW_MS = 1000;
 
 const { currentRouletteStatus, spinResult, jackpotTotal } = useRouletteSocket(socket);
 
@@ -14,6 +15,35 @@ const isIdle = computed(() => currentRouletteStatus.value === 'idle');
 const isSpinning = computed(() => currentRouletteStatus.value === 'spinning');
 const isResult = computed(() => currentRouletteStatus.value === 'result');
 const isJackpot = computed(() => currentRouletteStatus.value === 'jackpot');
+
+// Джекпот: ~1с лента с пульсацией легендарки, затем takeover-оверлей.
+const showJackpotTape = ref(false);
+let jackpotPreviewTimer: ReturnType<typeof setTimeout> | null = null;
+
+watch(currentRouletteStatus, (status) => {
+  if (status === 'jackpot') {
+    showJackpotTape.value = true;
+    jackpotPreviewTimer = setTimeout(() => {
+      showJackpotTape.value = false;
+    }, JACKPOT_TAPE_PREVIEW_MS);
+  } else {
+    if (jackpotPreviewTimer) {
+      clearTimeout(jackpotPreviewTimer);
+      jackpotPreviewTimer = null;
+    }
+    showJackpotTape.value = false;
+  }
+});
+
+const showTape = computed(
+  () => isSpinning.value || isResult.value || (isJackpot.value && showJackpotTape.value),
+);
+
+const tapeRevealed = computed(() => isResult.value || (isJackpot.value && showJackpotTape.value));
+
+const stripSegments = computed(() =>
+  spinResult.value ? buildTapeStrip(prizeToSegmentId(spinResult.value)) : [],
+);
 
 const resultMessage = computed(() => {
   const result = spinResult.value;
@@ -25,36 +55,6 @@ const resultMessage = computed(() => {
 
 const formatJackpotAmount = (result: RouletteSpinResultPayload | null) =>
   result ? result.coinAmount.toLocaleString('en-US') : '0';
-
-// 4-6 полных оборотов перед торможением на выигрышном секторе.
-const pickFullTurns = () => 4 + Math.floor(Math.random() * 3);
-
-const rotation = ref(0);
-
-const spinWheelToPrize = (status: RouletteStatus) => {
-  const result = spinResult.value;
-  if (status !== 'spinning' || !result) return;
-
-  // Двойной rAF: сначала кадр со стартовой позицией, потом целевой угол —
-  // иначе transition не сработает и колесо прыгнет на сектор мгновенно.
-  nextTick(() => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const segmentIndex = pickSegmentIndex(ROULETTE_WHEEL_SEGMENTS, prizeToSegmentId(result));
-        if (segmentIndex === null) return;
-
-        rotation.value = computeWheelRotation(
-          rotation.value,
-          segmentIndex,
-          ROULETTE_WHEEL_SEGMENTS.length,
-          pickFullTurns(),
-        );
-      });
-    });
-  });
-};
-
-watch(currentRouletteStatus, spinWheelToPrize, { immediate: true });
 </script>
 
 <template>
@@ -67,14 +67,14 @@ watch(currentRouletteStatus, spinWheelToPrize, { immediate: true });
       mode="out-in"
     >
       <div
-        v-if="isSpinning || isResult"
-        key="wheel"
+        v-if="showTape"
+        key="tape"
         class="flex flex-col items-center gap-4"
       >
-        <RouletteWheel
-          :segments="ROULETTE_WHEEL_SEGMENTS"
-          :rotation="rotation"
+        <TapeStrip
+          :segments="stripSegments"
           :duration-ms="ROULETTE_SPIN_ANIMATION_MS"
+          :reveal="tapeRevealed"
         />
 
         <div class="bg-card/90 border-line rounded-xl border px-6 py-2 text-center">

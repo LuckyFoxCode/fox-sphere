@@ -1,10 +1,11 @@
-import { SEGMENT_CATALOG, type RouletteSegmentId, type RouletteWheelSegment } from '@/constants/rouletteSegments';
 import {
+  SEGMENT_CATALOG,
   TAPE_PRIZE_WEIGHT_LIST,
   TAPE_SEGMENT_IDS,
   TAPE_STRIP_LENGTH,
   TAPE_WINNER_INDEX,
-} from '@/constants/tapeStrip';
+} from '@/constants';
+import type { RouletteSegmentId, RouletteWheelSegment } from '@/constants';
 
 // Клиентский аналог pickWeighted из packages/backend-shared: кумулятивный выбор.
 export const pickWeighted = <T>(

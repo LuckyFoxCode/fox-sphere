@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { RouletteWheelSegment } from '@/constants/rouletteSegments';
-import { RARITY_STYLES, SEGMENT_RARITY } from '@/constants/rarityTiers';
+import { RARITY_STYLES, SEGMENT_RARITY } from '@/constants';
+import type { RouletteWheelSegment } from '@/constants';
 import { computed } from 'vue';
 
 const { segment, isWinner = false } = defineProps<{
@@ -12,9 +12,7 @@ const rarity = computed(() => RARITY_STYLES[SEGMENT_RARITY[segment.id]]);
 
 const cardStyle = computed(() => ({
   borderColor: rarity.value.color,
-  boxShadow: isWinner
-    ? `0 0 ${rarity.value.glowSize}px ${rarity.value.glow}`
-    : 'none',
+  boxShadow: isWinner ? `0 0 ${rarity.value.glowSize}px ${rarity.value.glow}` : 'none',
 }));
 </script>
 
