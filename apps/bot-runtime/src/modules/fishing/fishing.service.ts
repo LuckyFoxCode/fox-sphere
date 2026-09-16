@@ -169,7 +169,7 @@ export class FishingService {
 
     if (caught.catchType === "bank") {
       // Банк-улов: монеты в SystemState.jackpotTotal, записи юзеру не создаём.
-      await prisma.systemState.upsert({
+      const state = await prisma.systemState.upsert({
         where: { id: XP_CONFIG.STREAM_STATE_ID },
         update: { jackpotTotal: { increment: caught.bankAmount } },
         create: {
@@ -178,6 +178,10 @@ export class FishingService {
           streamCurrentXp: 0,
           jackpotTotal: JACKPOT_SEED + caught.bankAmount,
         },
+      });
+
+      globalEventBus.emit("stream:jackpot-updated", {
+        jackpotTotal: state.jackpotTotal,
       });
     }
   }

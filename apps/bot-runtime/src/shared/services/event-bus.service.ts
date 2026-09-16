@@ -9,6 +9,7 @@ import {
   PokemonAssignedPayload,
   RouletteSpinResultPayload,
   StreamGetSystemStatePayload,
+  StreamJackpotUpdatePayload,
   StreamLevelUpPayload,
   StreamSystemStateResponse,
   StreamXpBoostPayload,
@@ -46,6 +47,7 @@ interface AppEvents {
   "stream:xp-updated": StreamXpUpdatePayload;
   "stream:xp-boost": StreamXpBoostPayload;
   "stream:level-up": StreamLevelUpPayload;
+  "stream:jackpot-updated": StreamJackpotUpdatePayload;
   "stream:get-system-state": {
     data: StreamGetSystemStatePayload;
     callback: (response: StreamSystemStateResponse) => void;

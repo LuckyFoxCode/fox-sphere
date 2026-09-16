@@ -1,6 +1,6 @@
 import { ROULETTE_RESULT_SHOW_MS, ROULETTE_SPIN_ANIMATION_MS } from '@fox-sphere/types';
 import { SOUNDS } from '@/constants';
-import type { RouletteSpinResultPayload } from '@fox-sphere/types';
+import type { RouletteSpinResultPayload, StreamJackpotUpdatePayload } from '@fox-sphere/types';
 import { ref } from 'vue';
 import { useSound } from '../useSound';
 import type { RouletteStatus, WidgetSocket } from './types';
@@ -48,6 +48,10 @@ export function useRouletteSocket(socketInstance: WidgetSocket) {
     }, ROULETTE_SPIN_ANIMATION_MS);
   };
 
+  const handleJackpotUpdated = (data: StreamJackpotUpdatePayload) => {
+    jackpotTotal.value = data.jackpotTotal;
+  };
+
   const fetchJackpotTotal = () => {
     socketInstance.emit('stream:get-system-state', {}, (response) => {
       jackpotTotal.value = response.jackpotTotal;
@@ -57,6 +61,7 @@ export function useRouletteSocket(socketInstance: WidgetSocket) {
 
   if (!isSocketInitialized) {
     socketInstance.on('roulette:spin-result', handleSpinResult);
+    socketInstance.on('stream:jackpot-updated', handleJackpotUpdated);
 
     if (socketInstance.connected) {
       fetchJackpotTotal();
