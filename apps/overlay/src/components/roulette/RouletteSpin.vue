@@ -4,7 +4,7 @@ import { prizeToSegmentId } from '@/constants';
 import { socket } from '@/services';
 import { buildTapeStrip } from '@/utils/roulette';
 import { ROULETTE_SPIN_ANIMATION_MS, type RouletteSpinResultPayload } from '@fox-sphere/types';
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import TapeStrip from './TapeStrip.vue';
 
 const JACKPOT_TAPE_PREVIEW_MS = 1000;
@@ -19,6 +19,10 @@ const isJackpot = computed(() => currentRouletteStatus.value === 'jackpot');
 // Джекпот: ~1с лента с пульсацией легендарки, затем takeover-оверлей.
 const showJackpotTape = ref(false);
 let jackpotPreviewTimer: ReturnType<typeof setTimeout> | null = null;
+
+onBeforeUnmount(() => {
+  if (jackpotPreviewTimer) clearTimeout(jackpotPreviewTimer);
+});
 
 watch(currentRouletteStatus, (status) => {
   if (status === 'jackpot') {
