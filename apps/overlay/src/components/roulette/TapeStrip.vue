@@ -1,6 +1,11 @@
 <script setup lang="ts">
-import { TAPE_CARD_WIDTH_PX, TAPE_VIEWPORT_WIDTH_PX, TAPE_WINNER_INDEX } from '@/constants';
 import type { RouletteWheelSegment } from '@/constants';
+import {
+  TAPE_CARD_GAP_PX,
+  TAPE_CARD_WIDTH_PX,
+  TAPE_VIEWPORT_WIDTH_PX,
+  TAPE_WINNER_INDEX,
+} from '@/constants';
 import { computed, onMounted, ref } from 'vue';
 import TapeCard from './TapeCard.vue';
 
@@ -14,9 +19,12 @@ const {
   reveal?: boolean;
 }>();
 
+// Цель: центр выигрышной карточки совпадает с центром вьюпорта.
+// Шаг между карточками = ширина + зазор.
+const cardStride = TAPE_CARD_WIDTH_PX + TAPE_CARD_GAP_PX;
+
 const targetOffset = computed(
-  () =>
-    -(TAPE_WINNER_INDEX * TAPE_CARD_WIDTH_PX + TAPE_CARD_WIDTH_PX / 2 - TAPE_VIEWPORT_WIDTH_PX / 2),
+  () => -(TAPE_WINNER_INDEX * cardStride + TAPE_CARD_WIDTH_PX / 2 - TAPE_VIEWPORT_WIDTH_PX / 2),
 );
 
 const offset = ref(0);
@@ -39,12 +47,14 @@ const prefersReducedMotion = computed(
 const stripStyle = computed(() => {
   if (prefersReducedMotion.value) {
     return {
+      gap: `${TAPE_CARD_GAP_PX}px`,
       transform: `translateX(${offset.value}px)`,
       transitionProperty: 'none',
       transitionDuration: '0ms',
     };
   }
   return {
+    gap: `${TAPE_CARD_GAP_PX}px`,
     transform: `translateX(${offset.value}px)`,
     transitionProperty: 'transform',
     transitionDuration: `${durationMs}ms`,
@@ -73,15 +83,15 @@ const isWinnerCard = (index: number): boolean => index === TAPE_WINNER_INDEX && 
 
     <!-- Затухание краёв — намёк на продолжение ленты -->
     <div
-      class="from-bg/70 pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r to-transparent"
+      class="from-bg/70 pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-linear-to-r to-transparent"
     />
     <div
-      class="from-bg/70 pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l to-transparent"
+      class="from-bg/70 pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-linear-to-l to-transparent"
     />
 
     <!-- Ряд карточек -->
     <div
-      class="flex w-max will-change-transform motion-reduce:transition-none"
+      class="flex w-max py-3 will-change-transform motion-reduce:transition-none"
       :style="stripStyle"
     >
       <TapeCard

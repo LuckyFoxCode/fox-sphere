@@ -81,7 +81,7 @@ const formatJackpotAmount = (result: RouletteSpinResultPayload | null) =>
           :reveal="tapeRevealed"
         />
 
-        <div class="bg-card/90 border-line rounded-xl border px-6 py-2 text-center">
+        <div class="bg-card/90 border-line rounded-xl border px-6 py-4 text-center">
           <div class="text-text-main font-bold">{{ spinResult?.username }}</div>
           <div
             v-if="isResult"

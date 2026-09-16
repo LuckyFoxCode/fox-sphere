@@ -29,23 +29,23 @@ export const RARITY_STYLES: Record<RouletteRarity, RarityStyle> = {
     glowSize: 0,
   },
   uncommon: {
-    color: 'var(--color-lime)',
-    glow: 'color-mix(in oklab, var(--color-lime) 45%, transparent)',
-    glowSize: 10,
+    color: 'var(--color-event-cyan)',
+    glow: 'color-mix(in oklab, var(--color-event-cyan) 45%, transparent)',
+    glowSize: 12,
   },
   rare: {
     color: 'var(--color-event-blue)',
     glow: 'color-mix(in oklab, var(--color-event-blue) 45%, transparent)',
-    glowSize: 14,
+    glowSize: 16,
   },
   epic: {
     color: 'var(--color-event-purple)',
     glow: 'color-mix(in oklab, var(--color-event-purple) 50%, transparent)',
-    glowSize: 18,
+    glowSize: 20,
   },
   legendary: {
     color: 'var(--color-event-amber)',
     glow: 'color-mix(in oklab, var(--color-event-amber) 60%, transparent)',
-    glowSize: 22,
+    glowSize: 26,
   },
 };

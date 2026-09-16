@@ -3,8 +3,11 @@ import type { RouletteSegmentId } from './rouletteSegments';
 export const TAPE_STRIP_LENGTH = 21;
 export const TAPE_WINNER_INDEX = 10;
 export const TAPE_VISIBLE_COUNT = 5;
-export const TAPE_CARD_WIDTH_PX = 72;
-export const TAPE_VIEWPORT_WIDTH_PX = TAPE_CARD_WIDTH_PX * TAPE_VISIBLE_COUNT;
+export const TAPE_CARD_WIDTH_PX = 144;
+export const TAPE_CARD_HEIGHT_PX = 110;
+export const TAPE_CARD_GAP_PX = 12;
+export const TAPE_VIEWPORT_WIDTH_PX =
+  (TAPE_CARD_WIDTH_PX + TAPE_CARD_GAP_PX) * TAPE_VISIBLE_COUNT - TAPE_CARD_GAP_PX;
 
 // Веса ленты = зеркало ROULETTE_PRIZE_WEIGHTS из packages/backend-shared (сумма 1000).
 export const TAPE_PRIZE_WEIGHTS: Record<RouletteSegmentId, number> = {
