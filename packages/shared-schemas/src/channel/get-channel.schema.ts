@@ -1,12 +1,9 @@
 import { z } from "zod";
 import "../zod-extensions";
 
-export const ChannelStatusSchema = z.enum([
-  "PENDING",
-  "ACTIVE",
-  "PAUSED",
-  "REVOKED",
-]);
+export const ChannelStatusSchema = z
+  .enum(["PENDING", "ACTIVE", "PAUSED", "REVOKED"])
+  .openapi("ChannelStatus");
 
 export const ChannelResponseSchema = z
   .object({

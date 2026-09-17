@@ -25,8 +25,11 @@ vi.mock('@/api/generated/channels/channels', async () => {
       data: ref(query.data),
       isPending: ref(query.isPending),
       isError: ref(query.isError),
+      refetch: vi.fn<() => void>(),
     }),
     useCreateChannel: () => ({ mutate: vi.fn<() => void>(), isPending: ref(false) }),
+    usePatchChannel: () => ({ mutate: vi.fn<() => void>(), isPending: ref(false) }),
+    useDeleteChannel: () => ({ mutate: vi.fn<() => void>(), isPending: ref(false) }),
   };
 });
 

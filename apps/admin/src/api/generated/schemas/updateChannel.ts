@@ -5,9 +5,9 @@
  * REST API for the Fox Sphere Twitch bot platform
  * OpenAPI spec version: 1.0.0
  */
-import type { UpdateChannelStatus } from './updateChannelStatus';
+import type { ChannelStatus } from './channelStatus';
 
 export interface UpdateChannel {
-  status?: UpdateChannelStatus;
+  status?: ChannelStatus;
   botIsMod?: boolean;
 }

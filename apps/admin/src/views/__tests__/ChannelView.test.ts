@@ -8,6 +8,11 @@ const query = vi.hoisted(() => ({
   isPending: false,
   isError: false,
   ids: [] as unknown[],
+  refetch: vi.fn<() => void>(),
+  patchMutate: vi.fn<(variables: unknown, config: unknown) => void>(),
+  patchPending: false,
+  deleteMutate: vi.fn<(variables: { id: string }) => void>(),
+  deletePending: false,
 }));
 
 vi.mock('@/api/generated/channels/channels', async () => {
@@ -23,8 +28,11 @@ vi.mock('@/api/generated/channels/channels', async () => {
         data: ref(query.data),
         isPending: ref(query.isPending),
         isError: ref(query.isError),
+        refetch: query.refetch,
       };
     },
+    usePatchChannel: () => ({ mutate: query.patchMutate, isPending: ref(query.patchPending) }),
+    useDeleteChannel: () => ({ mutate: query.deleteMutate, isPending: ref(query.deletePending) }),
   };
 });
 
@@ -52,7 +60,15 @@ beforeEach(() => {
   query.isPending = false;
   query.isError = false;
   query.ids = [];
+  query.refetch.mockClear();
+  query.patchMutate.mockClear();
+  query.deleteMutate.mockClear();
 });
+
+type MountedView = Awaited<ReturnType<typeof mountView>>;
+
+const deleteButton = (wrapper: MountedView) =>
+  wrapper.findAll('button').find((b) => b.text().includes('Delete channel'));
 
 describe('ChannelsView', () => {
   it('passes the route id to the query hook', async () => {
@@ -94,5 +110,73 @@ describe('ChannelsView', () => {
     expect(text).toContain('luckyfoxcode');
     expect(text).toContain('LuckyFoxCode');
     expect(text).toContain('191983746');
+  });
+
+  it('renders the edit form once the channel is loaded', async () => {
+    query.data = { status: 200, data: channel };
+
+    const text = (await mountView()).text();
+    expect(text).toContain('Edit channel');
+    expect(text).toContain('Status');
+    expect(text).toContain('Bot is moderator');
+    expect(text).toContain('Save');
+  });
+
+  it('patches the channel and refetches on success', async () => {
+    query.data = { status: 200, data: channel };
+    const wrapper = await mountView();
+
+    const form = wrapper.find('form').element as HTMLFormElement;
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(query.patchMutate).toHaveBeenCalledTimes(1);
+
+    const callbacks = query.patchMutate.mock.calls[0]?.[1] as {
+      onSuccess?: (response: { status: number; data: unknown }) => void;
+    };
+    callbacks?.onSuccess?.({ status: 200, data: channel });
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(query.refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the server message when the patch fails', async () => {
+    query.data = { status: 200, data: channel };
+    const wrapper = await mountView();
+
+    const form = wrapper.find('form').element as HTMLFormElement;
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    const callbacks = query.patchMutate.mock.calls[0]?.[1] as {
+      onSuccess?: (response: { status: number; data: { message?: string } }) => void;
+    };
+    callbacks?.onSuccess?.({ status: 400, data: { message: 'Channel not found' } });
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(wrapper.text()).toContain('Channel not found');
+    expect(query.refetch).not.toHaveBeenCalled();
+  });
+
+  it('deletes the channel after confirming and navigates to the list', async () => {
+    query.data = { status: 200, data: channel };
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    const wrapper = await mountView();
+    await deleteButton(wrapper)?.trigger('click');
+
+    expect(query.deleteMutate).toHaveBeenCalledTimes(1);
+    expect(query.deleteMutate.mock.calls[0]?.[0]).toMatchObject({ id: 'clx1' });
+  });
+
+  it('does not delete when the user cancels the confirm dialog', async () => {
+    query.data = { status: 200, data: channel };
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    const wrapper = await mountView();
+    await deleteButton(wrapper)?.trigger('click');
+
+    expect(query.deleteMutate).not.toHaveBeenCalled();
   });
 });

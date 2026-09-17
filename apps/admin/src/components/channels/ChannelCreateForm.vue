@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCreateChannel, type createChannelResponse } from '@/api/generated/channels/channels';
-import { CreateChannelStatus, type CreateChannel } from '@/api/generated/schemas';
+import { ChannelStatus, type CreateChannel } from '@/api/generated/schemas';
 import { useForm } from '@tanstack/vue-form';
 import { ref } from 'vue';
 import { Button } from '../ui/button';
@@ -15,13 +15,13 @@ const props = defineProps<{
 
 const { mutate, isPending } = useCreateChannel();
 
-const statuses = Object.values(CreateChannelStatus);
+const statuses = Object.values(ChannelStatus);
 
 const defaultValues: CreateChannel = {
   twitchId: '',
   login: '',
   displayName: '',
-  status: CreateChannelStatus.ACTIVE,
+  status: ChannelStatus.ACTIVE,
   botIsMod: false,
 };
 
@@ -121,7 +121,7 @@ const extractMessage = (response: createChannelResponse): string => {
               </FieldLabel>
               <Select
                 :model-value="field.state.value"
-                @update:model-value="(v) => field.handleChange(v as CreateChannelStatus)"
+                @update:model-value="(v) => field.handleChange(v as ChannelStatus)"
               >
                 <SelectTrigger
                   :id="field.name"

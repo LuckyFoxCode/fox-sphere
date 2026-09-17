@@ -38,13 +38,7 @@
             "example": "LuckyFoxCode"
           },
           "status": {
-            "type": "string",
-            "enum": [
-              "PENDING",
-              "ACTIVE",
-              "PAUSED",
-              "REVOKED"
-            ]
+            "$ref": "#/components/schemas/ChannelStatus"
           },
           "botIsMod": {
             "type": "boolean"
@@ -57,6 +51,15 @@
           "displayName",
           "status",
           "botIsMod"
+        ]
+      },
+      "ChannelStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "ACTIVE",
+          "PAUSED",
+          "REVOKED"
         ]
       },
       "ErrorResponse": {
@@ -111,13 +114,7 @@
             "example": "LuckyFoxCode"
           },
           "status": {
-            "type": "string",
-            "enum": [
-              "PENDING",
-              "ACTIVE",
-              "PAUSED",
-              "REVOKED"
-            ]
+            "$ref": "#/components/schemas/ChannelStatus"
           },
           "botIsMod": {
             "type": "boolean"
@@ -133,13 +130,7 @@
         "type": "object",
         "properties": {
           "status": {
-            "type": "string",
-            "enum": [
-              "PENDING",
-              "ACTIVE",
-              "PAUSED",
-              "REVOKED"
-            ]
+            "$ref": "#/components/schemas/ChannelStatus"
           },
           "botIsMod": {
             "type": "boolean"
