@@ -29,9 +29,18 @@ vi.mock('@/api/generated/channels/channels', async () => {
     }),
     useCreateChannel: () => ({ mutate: vi.fn<() => void>(), isPending: ref(false) }),
     usePatchChannel: () => ({ mutate: vi.fn<() => void>(), isPending: ref(false) }),
-    useDeleteChannel: () => ({ mutate: vi.fn<() => void>(), isPending: ref(false) }),
+    useDeleteChannel: () => ({
+      mutate: vi.fn<() => void>(),
+      mutateAsync: vi.fn<() => Promise<unknown>>(),
+      isPending: ref(false),
+    }),
   };
 });
+
+vi.mock('vue-sonner', () => ({
+  Toaster: { name: 'Toaster', template: '<div />' },
+  toast: { error: vi.fn<(message: string) => void>(), success: vi.fn<() => void>() },
+}));
 
 const App = (await import('../App.vue')).default;
 

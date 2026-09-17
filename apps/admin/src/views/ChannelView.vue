@@ -7,7 +7,9 @@ import {
 } from '@/api/generated/channels/channels';
 import { ChannelStatus } from '@/api/generated/schemas';
 import { statusVariant } from '@/components/channels';
+import { ConfirmDialog } from '@/components/dialogs/confirm-dialog';
 import { AsyncState } from '@/components/status';
+import { useToast } from '@/composables/useToast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -54,7 +56,9 @@ watchEffect(() => {
 });
 
 const { mutate: patchMutate, isPending: patchPending } = usePatchChannel();
-const { mutate: deleteMutate, isPending: deletePending } = useDeleteChannel();
+const { mutateAsync: deleteChannelAsync } = useDeleteChannel();
+
+const { toastSuccess } = useToast();
 
 const serverError = ref<string | null>(null);
 
@@ -72,6 +76,7 @@ const handleSave = () => {
       onSuccess: (response) => {
         if (response.status === 200) {
           serverError.value = null;
+          toastSuccess('Channel updated');
           refetch();
           isEditing.value = false;
         } else {
@@ -82,24 +87,20 @@ const handleSave = () => {
   );
 };
 
-const handleDelete = () => {
-  if (!confirm('Delete this channel?')) return;
+const handleDelete = async () => {
+  const response = await deleteChannelAsync({ id: channelId.value });
 
-  deleteMutate(
-    { id: channelId.value },
-    {
-      onSuccess: (response) => {
-        if (response.status === 204) {
-          router.push('/channels');
-        } else {
-          serverError.value =
-            'message' in response.data
-              ? (response.data as { message: string }).message
-              : `Request failed (HTTP ${response.status})`;
-        }
-      },
-    },
-  );
+  if (response.status !== 204) {
+    const message =
+      'message' in response.data && typeof response.data.message === 'string'
+        ? response.data.message
+        : `Request failed (HTTP ${response.status})`;
+
+    throw new Error(message);
+  }
+
+  toastSuccess('Channel deleted');
+  router.push('/channels');
 };
 </script>
 
@@ -146,81 +147,90 @@ const handleDelete = () => {
           </div>
         </dl>
 
-        <div
-          v-if="isEditing"
-          class="bg-card w-full max-w-3xs rounded-xl border px-3 py-3"
+        <Transition
+          enter-active-class="animate-in fade-in-0 zoom-in-95 duration-200"
+          leave-active-class="animate-out fade-out-0 zoom-out-95 duration-200"
         >
-          <h2 class="mb-4">Edit channel</h2>
-          <form
-            class="flex flex-col gap-y-5"
-            @submit.prevent="handleSave"
+          <div
+            v-if="isEditing"
+            class="bg-card w-full max-w-3xs rounded-xl border px-3 py-3"
           >
-            <FieldGroup>
-              <Field>
-                <FieldLabel>Status</FieldLabel>
-                <Select
-                  v-model="editStatus"
-                  class="w-40"
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem
-                      v-for="s in statuses"
-                      :key="s"
-                      :value="s"
-                    >
-                      {{ s }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-            </FieldGroup>
-            <FieldGroup>
-              <Field orientation="horizontal">
-                <FieldLabel>
-                  <Checkbox v-model:checked="editBotIsMod" />
-                  Bot is moderator
-                </FieldLabel>
-              </Field>
-            </FieldGroup>
-
-            <Button
-              type="submit"
-              :disabled="patchPending"
-              class="cursor-pointer"
+            <h2 class="mb-4">Edit channel</h2>
+            <form
+              class="flex flex-col gap-y-5"
+              @submit.prevent="handleSave"
             >
-              {{ patchPending ? 'Saving...' : 'Save' }}
-            </Button>
+              <FieldGroup>
+                <Field>
+                  <FieldLabel>Status</FieldLabel>
+                  <Select
+                    v-model="editStatus"
+                    class="w-40"
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="s in statuses"
+                        :key="s"
+                        :value="s"
+                      >
+                        {{ s }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </FieldGroup>
+              <FieldGroup>
+                <Field orientation="horizontal">
+                  <FieldLabel>
+                    <Checkbox v-model:checked="editBotIsMod" />
+                    Bot is moderator
+                  </FieldLabel>
+                </Field>
+              </FieldGroup>
 
-            <p
-              v-if="serverError"
-              class="text-destructive text-sm"
-            >
-              {{ serverError }}
-            </p>
-          </form>
-        </div>
+              <Button
+                type="submit"
+                :disabled="patchPending"
+                class="cursor-pointer"
+              >
+                {{ patchPending ? 'Saving...' : 'Save' }}
+              </Button>
+
+              <p
+                v-if="serverError"
+                class="text-destructive text-sm"
+              >
+                {{ serverError }}
+              </p>
+            </form>
+          </div>
+        </Transition>
       </div>
 
       <div class="flex gap-x-2">
         <Button
           variant="outline"
-          :disabled="deletePending"
           class="cursor-pointer"
           @click="() => (isEditing = !isEditing)"
         >
           {{ isEditing ? 'Cancel' : 'Edit channel' }}
         </Button>
-        <Button
-          variant="destructive"
-          :disabled="deletePending"
-          class="cursor-pointer"
-          @click="handleDelete"
+        <ConfirmDialog
+          :on-confirm="handleDelete"
+          confirm-text="Delete"
+          description="This will remove the channel. This action cannot be undone."
+          title="Delete channel?"
         >
-          {{ deletePending ? 'Deleting...' : 'Delete channel' }}
-        </Button>
+          <Button
+            variant="destructive"
+            class="cursor-pointer"
+          >
+            Delete channel
+          </Button>
+        </ConfirmDialog>
       </div>
     </template>
   </div>

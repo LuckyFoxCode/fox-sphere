@@ -1,6 +1,7 @@
-import { mount } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createMemoryHistory, createRouter } from 'vue-router';
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { nextTick } from 'vue';
+import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import { routes } from '../../router';
 
 const query = vi.hoisted(() => ({
@@ -12,8 +13,13 @@ const query = vi.hoisted(() => ({
   patchMutate: vi.fn<(variables: unknown, config: unknown) => void>(),
   patchPending: false,
   deleteMutate: vi.fn<(variables: { id: string }) => void>(),
-  deletePending: false,
+  deleteMutateAsync: vi.fn<(variables: { id: string }) => Promise<unknown>>(),
 }));
+
+// useToast calls vue-sonner's toast.error/success; asserting on this mock
+// proves the error/success reached the toast without depending on its format.
+const toastError = vi.hoisted(() => vi.fn<(message: string) => void>());
+const toastSuccess = vi.hoisted(() => vi.fn<(message: string) => void>());
 
 vi.mock('@/api/generated/channels/channels', async () => {
   const { ref, toValue } = await import('vue');
@@ -32,9 +38,16 @@ vi.mock('@/api/generated/channels/channels', async () => {
       };
     },
     usePatchChannel: () => ({ mutate: query.patchMutate, isPending: ref(query.patchPending) }),
-    useDeleteChannel: () => ({ mutate: query.deleteMutate, isPending: ref(query.deletePending) }),
+    useDeleteChannel: () => ({
+      mutate: query.deleteMutate,
+      mutateAsync: query.deleteMutateAsync,
+    }),
   };
 });
+
+vi.mock('vue-sonner', () => ({
+  toast: { error: toastError, success: toastSuccess },
+}));
 
 const ChannelView = (await import('../ChannelView.vue')).default;
 
@@ -47,12 +60,22 @@ const channel = {
   botIsMod: true,
 };
 
+let wrapper: VueWrapper | undefined;
+let router: Router | undefined;
+
 const mountView = async () => {
-  const router = createRouter({ history: createMemoryHistory(), routes });
+  router = createRouter({ history: createMemoryHistory(), routes });
   await router.push('/channels/clx1');
   await router.isReady();
 
-  return mount(ChannelView, { global: { plugins: [router] } });
+  // Attached to document.body so the ConfirmDialog content (teleported there by
+  // the reka-ui AlertDialogPortal) is reachable through document queries.
+  wrapper = mount(ChannelView, {
+    attachTo: document.body,
+    global: { plugins: [router] },
+  });
+
+  return wrapper;
 };
 
 beforeEach(() => {
@@ -63,12 +86,47 @@ beforeEach(() => {
   query.refetch.mockClear();
   query.patchMutate.mockClear();
   query.deleteMutate.mockClear();
+  query.deleteMutateAsync.mockClear();
+  toastError.mockClear();
+  toastSuccess.mockClear();
+});
+
+afterEach(() => {
+  wrapper?.unmount();
+  wrapper = undefined;
+  router = undefined;
+  document.body.innerHTML = '';
 });
 
 type MountedView = Awaited<ReturnType<typeof mountView>>;
 
-const deleteButton = (wrapper: MountedView) =>
-  wrapper.findAll('button').find((b) => b.text().includes('Delete channel'));
+const deleteButton = (view: MountedView) =>
+  view.findAll('button').find((b) => b.text().includes('Delete channel'));
+
+// The edit form is gated behind isEditing; enter edit mode before asserting on it.
+const editButton = (view: MountedView) =>
+  view.findAll('button').find((b) => b.text().trim() === 'Edit channel');
+
+const enterEditMode = async (view: MountedView) => {
+  await editButton(view)?.trigger('click');
+};
+
+// The dialog content is portaled to document.body, so it lives outside the
+// wrapper. Exact text match: 'Delete' ('Delete channel' is the trigger).
+const dialogContent = () =>
+  document.querySelector('[data-slot="alert-dialog-content"]') as HTMLElement | null;
+
+const dialogButton = (text: string) =>
+  [...document.querySelectorAll<HTMLButtonElement>('button')].find(
+    (b) => b.textContent?.trim() === text,
+  );
+
+const openDeleteDialog = async (view: MountedView) => {
+  await deleteButton(view)?.trigger('click');
+  await flushPromises();
+  await nextTick();
+  expect(dialogContent()).not.toBeNull();
+};
 
 describe('ChannelsView', () => {
   it('passes the route id to the query hook', async () => {
@@ -114,8 +172,10 @@ describe('ChannelsView', () => {
 
   it('renders the edit form once the channel is loaded', async () => {
     query.data = { status: 200, data: channel };
+    const wrapper = await mountView();
+    await enterEditMode(wrapper);
 
-    const text = (await mountView()).text();
+    const text = wrapper.text();
     expect(text).toContain('Edit channel');
     expect(text).toContain('Status');
     expect(text).toContain('Bot is moderator');
@@ -125,6 +185,7 @@ describe('ChannelsView', () => {
   it('patches the channel and refetches on success', async () => {
     query.data = { status: 200, data: channel };
     const wrapper = await mountView();
+    await enterEditMode(wrapper);
 
     const form = wrapper.find('form').element as HTMLFormElement;
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
@@ -139,11 +200,13 @@ describe('ChannelsView', () => {
     await new Promise((resolve) => setImmediate(resolve));
 
     expect(query.refetch).toHaveBeenCalledTimes(1);
+    expect(toastSuccess).toHaveBeenCalledWith('Channel updated');
   });
 
   it('shows the server message when the patch fails', async () => {
     query.data = { status: 200, data: channel };
     const wrapper = await mountView();
+    await enterEditMode(wrapper);
 
     const form = wrapper.find('form').element as HTMLFormElement;
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
@@ -157,26 +220,62 @@ describe('ChannelsView', () => {
 
     expect(wrapper.text()).toContain('Channel not found');
     expect(query.refetch).not.toHaveBeenCalled();
+    expect(toastSuccess).not.toHaveBeenCalled();
   });
 
   it('deletes the channel after confirming and navigates to the list', async () => {
     query.data = { status: 200, data: channel };
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    query.deleteMutateAsync.mockResolvedValue({ status: 204, data: undefined });
 
     const wrapper = await mountView();
-    await deleteButton(wrapper)?.trigger('click');
+    await openDeleteDialog(wrapper);
 
-    expect(query.deleteMutate).toHaveBeenCalledTimes(1);
-    expect(query.deleteMutate.mock.calls[0]?.[0]).toMatchObject({ id: 'clx1' });
+    const confirm = dialogButton('Delete');
+    expect(confirm).toBeDefined();
+
+    await confirm?.click();
+    await flushPromises();
+    await nextTick();
+
+    expect(query.deleteMutateAsync).toHaveBeenCalledTimes(1);
+    expect(query.deleteMutateAsync.mock.calls[0]?.[0]).toMatchObject({ id: 'clx1' });
+    expect(toastSuccess).toHaveBeenCalledWith('Channel deleted');
+    expect(router?.currentRoute.value.path).toBe('/channels');
   });
 
   it('does not delete when the user cancels the confirm dialog', async () => {
     query.data = { status: 200, data: channel };
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
 
     const wrapper = await mountView();
-    await deleteButton(wrapper)?.trigger('click');
+    await openDeleteDialog(wrapper);
 
-    expect(query.deleteMutate).not.toHaveBeenCalled();
+    const cancel = dialogButton('Cancel');
+    expect(cancel).toBeDefined();
+
+    await cancel?.click();
+    await flushPromises();
+    await nextTick();
+    await nextTick();
+
+    expect(query.deleteMutateAsync).not.toHaveBeenCalled();
+    expect(dialogContent()).toBeNull();
+  });
+
+  it('keeps the dialog open and toasts the server message when the delete fails', async () => {
+    query.data = { status: 200, data: channel };
+    query.deleteMutateAsync.mockResolvedValue({
+      status: 404,
+      data: { status: 404, message: 'Channel not found' },
+    });
+
+    const wrapper = await mountView();
+    await openDeleteDialog(wrapper);
+
+    await dialogButton('Delete')?.click();
+    await flushPromises();
+
+    expect(query.deleteMutateAsync).toHaveBeenCalledTimes(1);
+    expect(toastError).toHaveBeenCalledWith('Channel not found');
+    expect(dialogContent()).not.toBeNull();
   });
 });
