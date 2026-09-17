@@ -1,8 +1,13 @@
-import { ConflictError, prisma } from "@fox-sphere/backend-shared";
+import {
+  ConflictError,
+  NotFoundError,
+  prisma,
+} from "@fox-sphere/backend-shared";
 import type {
   ChannelList,
   ChannelResponse,
   CreateChannelDto,
+  UpdateChannelDto,
 } from "@fox-sphere/shared-schemas";
 
 const channelSelect = {
@@ -42,6 +47,37 @@ export const createChannel = async (
   } catch (error) {
     if (error instanceof Error && "code" in error && error.code === "P2002") {
       throw new ConflictError("Channel with this twitchId already exists");
+    }
+    throw error;
+  }
+};
+
+export const patchChannel = async (
+  id: string,
+  data: UpdateChannelDto,
+): Promise<ChannelResponse> => {
+  try {
+    return await prisma.channel.update({
+      where: { id },
+      data: { ...data },
+      select: channelSelect,
+    });
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "P2025") {
+      throw new NotFoundError("Channel not found");
+    }
+    throw error;
+  }
+};
+
+export const deleteChannel = async (id: string): Promise<void> => {
+  try {
+    await prisma.channel.delete({
+      where: { id },
+    });
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "P2025") {
+      throw new NotFoundError("Channel not found");
     }
     throw error;
   }

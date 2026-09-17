@@ -5,9 +5,17 @@ import {
   CreateChannelDto,
   CreateChannelSchema,
   GetChannelParamsSchema,
+  UpdateChannelDto,
+  UpdateChannelSchema,
 } from "@fox-sphere/shared-schemas";
 import { createModule } from "../../shared/openapi";
-import { createChannel, getChannelById, listChannels } from "./channel.service";
+import {
+  createChannel,
+  deleteChannel,
+  getChannelById,
+  listChannels,
+  patchChannel,
+} from "./channel.service";
 
 const { router, route } = createModule("Channels");
 
@@ -66,6 +74,46 @@ route(
     const channel = await getChannelById(id);
     if (!channel) throw new NotFoundError("Channel not found");
     res.json(channel);
+  },
+);
+
+route(
+  {
+    method: "patch",
+    path: "/channels/:id",
+    summary: "Update a channel",
+    operationId: "patchChannel",
+    request: { params: GetChannelParamsSchema, body: UpdateChannelSchema },
+    responses: {
+      200: { description: "Channel updated", schema: ChannelResponseSchema },
+      400: { description: "Validation failed" },
+      404: { description: "Channel not found" },
+      500: { description: "Unexpected server error" },
+    },
+  },
+  async (req, res) => {
+    res.json(
+      await patchChannel(req.params.id as string, req.body as UpdateChannelDto),
+    );
+  },
+);
+
+route(
+  {
+    method: "delete",
+    path: "/channels/:id",
+    summary: "Delete a channel",
+    operationId: "deleteChannel",
+    request: { params: GetChannelParamsSchema },
+    responses: {
+      204: { description: "Channel deleted" },
+      404: { description: "Channel not found" },
+      500: { description: "Unexpected server error" },
+    },
+  },
+  async (req, res) => {
+    await deleteChannel(req.params.id as string);
+    res.status(204).end();
   },
 );
 

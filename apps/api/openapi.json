@@ -128,6 +128,23 @@
           "login",
           "displayName"
         ]
+      },
+      "UpdateChannel": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACTIVE",
+              "PAUSED",
+              "REVOKED"
+            ]
+          },
+          "botIsMod": {
+            "type": "boolean"
+          }
+        }
       }
     },
     "parameters": {}
@@ -260,6 +277,118 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Channel not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Channels"
+        ],
+        "summary": "Update a channel",
+        "operationId": "patchChannel",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "clx1abc123def"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChannel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Channel updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Channel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Channel not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Channels"
+        ],
+        "summary": "Delete a channel",
+        "operationId": "deleteChannel",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "clx1abc123def"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Channel deleted"
           },
           "404": {
             "description": "Channel not found",

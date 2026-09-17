@@ -14,3 +14,5 @@ export * from './createChannelStatus';
 export * from './errorResponse';
 export * from './errorResponseErrors';
 export * from './errorResponseStatus';
+export * from './updateChannel';
+export * from './updateChannelStatus';
