@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { PrimitiveProps } from 'reka-ui';
-import type { HTMLAttributes } from 'vue';
-import { Loader2 } from '@lucide/vue';
 import type { ButtonVariants } from '@/components/ui/button';
 import { Button } from '@/components/ui/button';
+import { Loader2 } from '@lucide/vue';
+import type { PrimitiveProps } from 'reka-ui';
+import type { HTMLAttributes } from 'vue';
 
 defineOptions({
   inheritAttrs: false,
@@ -19,6 +19,9 @@ interface Props extends PrimitiveProps {
 const props = withDefaults(defineProps<Props>(), {
   as: 'button',
   loading: false,
+  variant: 'default',
+  size: 'default',
+  class: '',
 });
 </script>
 
@@ -32,7 +35,10 @@ const props = withDefaults(defineProps<Props>(), {
     :disabled="loading || ($attrs.disabled !== undefined && $attrs.disabled !== false)"
     :class="props.class"
   >
-    <Loader2 v-if="loading" class="animate-spin" />
+    <Loader2
+      v-if="loading"
+      class="animate-spin"
+    />
     <slot />
   </Button>
 </template>

@@ -10,7 +10,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { LoadingButton } from '@/components/ui/loading-button';
+import { LoadingButton } from '@/components/custom-ui/loading-button';
 import { useToast } from '@/composables/useToast';
 
 interface Props {
