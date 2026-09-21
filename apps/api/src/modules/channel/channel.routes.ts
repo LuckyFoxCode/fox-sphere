@@ -58,20 +58,20 @@ route(
 route(
   {
     method: "get",
-    path: "/channels/:id",
-    summary: "Get channel by ID",
+    path: "/channels/:login",
+    summary: "Get channel by login",
     operationId: "getChannelById",
     request: { params: GetChannelParamsSchema },
     responses: {
       200: { description: "Channel found", schema: ChannelResponseSchema },
-      400: { description: "Invalid channel id" },
+      400: { description: "Invalid channel login" },
       404: { description: "Channel not found" },
       500: { description: "Unexpected server error" },
     },
   },
   async (req, res) => {
-    const id = req.params.id as string;
-    const channel = await getChannelById(id);
+    const login = req.params.login as string;
+    const channel = await getChannelById(login);
     if (!channel) throw new NotFoundError("Channel not found");
     res.json(channel);
   },
@@ -80,7 +80,7 @@ route(
 route(
   {
     method: "patch",
-    path: "/channels/:id",
+    path: "/channels/:login",
     summary: "Update a channel",
     operationId: "patchChannel",
     request: { params: GetChannelParamsSchema, body: UpdateChannelSchema },
@@ -93,7 +93,10 @@ route(
   },
   async (req, res) => {
     res.json(
-      await patchChannel(req.params.id as string, req.body as UpdateChannelDto),
+      await patchChannel(
+        req.params.login as string,
+        req.body as UpdateChannelDto,
+      ),
     );
   },
 );
@@ -101,7 +104,7 @@ route(
 route(
   {
     method: "delete",
-    path: "/channels/:id",
+    path: "/channels/:login",
     summary: "Delete a channel",
     operationId: "deleteChannel",
     request: { params: GetChannelParamsSchema },
@@ -112,7 +115,7 @@ route(
     },
   },
   async (req, res) => {
-    await deleteChannel(req.params.id as string);
+    await deleteChannel(req.params.login as string);
     res.status(204).end();
   },
 );

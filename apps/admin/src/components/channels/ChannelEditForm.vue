@@ -38,7 +38,7 @@ const extractMessage = (response: patchChannelResponse): string => {
 
 const handleSave = () => {
   patchMutate(
-    { id: props.channel.id, data: { status: editStatus.value, botIsMod: editBotIsMod.value } },
+    { login: props.channel.login, data: { status: editStatus.value, botIsMod: editBotIsMod.value } },
     {
       onSuccess: (response) => {
         if (response.status === 200) {

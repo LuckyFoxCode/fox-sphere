@@ -4,7 +4,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 export const routes = [
   { path: '/', component: HomeView },
   { path: '/channels', component: ChannelsView },
-  { path: '/channels/:id', component: ChannelView },
+  { path: '/channels/:login', component: ChannelView },
 ];
 
 export const router = createRouter({ history: createWebHistory(), routes });

@@ -20,9 +20,9 @@ export type ChannelResponse = z.infer<typeof ChannelResponseSchema>;
 
 export const GetChannelParamsSchema = z
   .object({
-    id: z
+    login: z
       .string()
-      .openapi({ example: "clx1abc123def", param: { name: "id", in: "path" } }),
+      .openapi({ example: "luckyfoxcode", param: { name: "login", in: "path" } }),
   })
   .openapi("GetChannelParams");
 

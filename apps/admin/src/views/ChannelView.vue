@@ -12,9 +12,9 @@ import { RouterLink, useRoute, useRouter } from 'vue-router';
 const route = useRoute();
 const router = useRouter();
 
-const channelId = computed(() => String(route.params.id));
+const channelLogin = computed(() => String(route.params.login));
 
-const { data, isPending, isError, refetch } = useGetChannelById(channelId);
+const { data, isPending, isError, refetch } = useGetChannelById(channelLogin);
 
 const isEditing = ref(false);
 const channel = computed(() => (data.value?.status === 200 ? data.value.data : null));
@@ -39,7 +39,7 @@ const handleSaved = () => {
 };
 
 const handleDelete = async () => {
-  const response = await deleteChannelAsync({ id: channelId.value });
+  const response = await deleteChannelAsync({ login: channelLogin.value });
 
   if (response.status !== 204) {
     const message =
@@ -121,7 +121,7 @@ const handleDelete = async () => {
             variant="destructive"
             class="cursor-pointer"
           >
-            Delete
+            Delete channel
           </Button>
         </ConfirmDialog>
         <Button
@@ -129,7 +129,7 @@ const handleDelete = async () => {
           class="cursor-pointer"
           @click="() => (isEditing = !isEditing)"
         >
-          {{ isEditing ? 'Cancel' : 'Edit' }}
+          {{ isEditing ? 'Cancel' : 'Edit channel' }}
         </Button>
       </div>
     </template>

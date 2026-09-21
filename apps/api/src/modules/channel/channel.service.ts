@@ -20,10 +20,10 @@ const channelSelect = {
 } as const;
 
 export const getChannelById = async (
-  id: string,
+  login: string,
 ): Promise<ChannelResponse | null> => {
   const channel = await prisma.channel.findUnique({
-    where: { id },
+    where: { login },
     select: channelSelect,
   });
 
@@ -53,12 +53,12 @@ export const createChannel = async (
 };
 
 export const patchChannel = async (
-  id: string,
+  login: string,
   data: UpdateChannelDto,
 ): Promise<ChannelResponse> => {
   try {
     return await prisma.channel.update({
-      where: { id },
+      where: { login },
       data: { ...data },
       select: channelSelect,
     });
@@ -70,10 +70,10 @@ export const patchChannel = async (
   }
 };
 
-export const deleteChannel = async (id: string): Promise<void> => {
+export const deleteChannel = async (login: string): Promise<void> => {
   try {
     await prisma.channel.delete({
-      where: { id },
+      where: { login },
     });
   } catch (error) {
     if (error instanceof Error && "code" in error && error.code === "P2025") {

@@ -230,21 +230,21 @@
         }
       }
     },
-    "/api/channels/{id}": {
+    "/api/channels/{login}": {
       "get": {
         "tags": [
           "Channels"
         ],
-        "summary": "Get channel by ID",
+        "summary": "Get channel by login",
         "operationId": "getChannelById",
         "parameters": [
           {
             "schema": {
               "type": "string",
-              "example": "clx1abc123def"
+              "example": "luckyfoxcode"
             },
             "required": true,
-            "name": "id",
+            "name": "login",
             "in": "path"
           }
         ],
@@ -260,7 +260,7 @@
             }
           },
           "400": {
-            "description": "Invalid channel id",
+            "description": "Invalid channel login",
             "content": {
               "application/json": {
                 "schema": {
@@ -301,10 +301,10 @@
           {
             "schema": {
               "type": "string",
-              "example": "clx1abc123def"
+              "example": "luckyfoxcode"
             },
             "required": true,
-            "name": "id",
+            "name": "login",
             "in": "path"
           }
         ],
@@ -370,10 +370,10 @@
           {
             "schema": {
               "type": "string",
-              "example": "clx1abc123def"
+              "example": "luckyfoxcode"
             },
             "required": true,
-            "name": "id",
+            "name": "login",
             "in": "path"
           }
         ],

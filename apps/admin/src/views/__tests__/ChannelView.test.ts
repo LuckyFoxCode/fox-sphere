@@ -8,12 +8,12 @@ const query = vi.hoisted(() => ({
   data: undefined as { status: number; data?: unknown } | undefined,
   isPending: false,
   isError: false,
-  ids: [] as unknown[],
+  logins: [] as unknown[],
   refetch: vi.fn<() => void>(),
   patchMutate: vi.fn<(variables: unknown, config: unknown) => void>(),
   patchPending: false,
-  deleteMutate: vi.fn<(variables: { id: string }) => void>(),
-  deleteMutateAsync: vi.fn<(variables: { id: string }) => Promise<unknown>>(),
+  deleteMutate: vi.fn<(variables: { login: string }) => void>(),
+  deleteMutateAsync: vi.fn<(variables: { login: string }) => Promise<unknown>>(),
 }));
 
 // useToast calls vue-sonner's toast.error/success; asserting on this mock
@@ -25,10 +25,10 @@ vi.mock('@/api/generated/channels/channels', async () => {
   const { ref, toValue } = await import('vue');
 
   return {
-    useGetChannelById: (id: unknown) => {
-      // Record the RESOLVED id: the view passes a computed, and we want to
+    useGetChannelById: (login: unknown) => {
+      // Record the RESOLVED login: the view passes a computed, and we want to
       // assert the route param reached the hook, not the ref object itself.
-      query.ids.push(toValue(id));
+      query.logins.push(toValue(login));
 
       return {
         data: ref(query.data),
@@ -65,7 +65,7 @@ let router: Router | undefined;
 
 const mountView = async () => {
   router = createRouter({ history: createMemoryHistory(), routes });
-  await router.push('/channels/clx1');
+  await router.push('/channels/luckyfoxcode');
   await router.isReady();
 
   // Attached to document.body so the ConfirmDialog content (teleported there by
@@ -82,7 +82,7 @@ beforeEach(() => {
   query.data = undefined;
   query.isPending = false;
   query.isError = false;
-  query.ids = [];
+  query.logins = [];
   query.refetch.mockClear();
   query.patchMutate.mockClear();
   query.deleteMutate.mockClear();
@@ -129,10 +129,10 @@ const openDeleteDialog = async (view: MountedView) => {
 };
 
 describe('ChannelsView', () => {
-  it('passes the route id to the query hook', async () => {
+  it('passes the route login to the query hook', async () => {
     await mountView();
 
-    expect(query.ids).toEqual(['clx1']);
+    expect(query.logins).toEqual(['luckyfoxcode']);
   });
 
   it('shows a loading state while the query is pending', async () => {
@@ -239,7 +239,7 @@ describe('ChannelsView', () => {
     await nextTick();
 
     expect(query.deleteMutateAsync).toHaveBeenCalledTimes(1);
-    expect(query.deleteMutateAsync.mock.calls[0]?.[0]).toMatchObject({ id: 'clx1' });
+    expect(query.deleteMutateAsync.mock.calls[0]?.[0]).toMatchObject({ login: 'luckyfoxcode' });
     expect(toastSuccess).toHaveBeenCalledWith('Channel deleted');
     expect(router?.currentRoute.value.path).toBe('/channels');
   });

@@ -36,7 +36,7 @@ defineProps<{ channels: Channel[] }>();
         >
           <td class="px-3 py-2">
             <RouterLink
-              :to="`/channels/${channel.id}`"
+              :to="`/channels/${channel.login}`"
               class="hover:underline"
             >
               {{ channel.login }}
