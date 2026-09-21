@@ -168,6 +168,7 @@ describe('ChannelsView', () => {
     expect(text).toContain('luckyfoxcode');
     expect(text).toContain('LuckyFoxCode');
     expect(text).toContain('191983746');
+    expect(text).not.toContain('Channel not found');
   });
 
   it('renders the edit form once the channel is loaded', async () => {

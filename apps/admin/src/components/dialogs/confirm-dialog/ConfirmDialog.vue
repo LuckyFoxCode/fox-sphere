@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { LoadingButton } from '@/components/custom-ui/loading-button';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -10,8 +10,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { LoadingButton } from '@/components/custom-ui/loading-button';
 import { useToast } from '@/composables/useToast';
+import { ref } from 'vue';
 
 interface Props {
   title?: string;
@@ -58,7 +58,7 @@ const handleConfirm = async () => {
         <AlertDialogDescription>{{ description }}</AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogCancel>{{ cancelText }}</AlertDialogCancel>
+        <AlertDialogCancel class="cursor-pointer">{{ cancelText }}</AlertDialogCancel>
         <LoadingButton
           variant="destructive"
           :loading="isPending"

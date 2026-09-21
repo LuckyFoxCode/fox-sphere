@@ -1,27 +1,12 @@
 <script setup lang="ts">
-import {
-  useDeleteChannel,
-  useGetChannelById,
-  usePatchChannel,
-  type patchChannelResponse,
-} from '@/api/generated/channels/channels';
-import { ChannelStatus } from '@/api/generated/schemas';
-import { statusVariant } from '@/components/channels';
+import { useDeleteChannel, useGetChannelById } from '@/api/generated/channels/channels';
+import { ChannelEditForm, statusVariant } from '@/components/channels';
 import { ConfirmDialog } from '@/components/dialogs/confirm-dialog';
 import { AsyncState } from '@/components/status';
-import { useToast } from '@/composables/useToast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { computed, ref, watchEffect } from 'vue';
+import { useToast } from '@/composables/useToast';
+import { computed, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 
 const route = useRoute();
@@ -43,48 +28,14 @@ const failure = computed(() => {
   return `Request failed (HTTP ${response.status})${body?.message ? `: ${body.message}` : ''}`;
 });
 
-const statuses = Object.values(ChannelStatus);
-
-const editStatus = ref<ChannelStatus>(ChannelStatus.ACTIVE);
-const editBotIsMod = ref(false);
-
-watchEffect(() => {
-  if (channel.value) {
-    editStatus.value = channel.value.status;
-    editBotIsMod.value = channel.value.botIsMod;
-  }
-});
-
-const { mutate: patchMutate, isPending: patchPending } = usePatchChannel();
 const { mutateAsync: deleteChannelAsync } = useDeleteChannel();
 
 const { toastSuccess } = useToast();
 
-const serverError = ref<string | null>(null);
-
-const extractMessage = (response: patchChannelResponse): string => {
-  if (response.status >= 400 && 'message' in response.data) {
-    return (response.data as { message: string }).message;
-  }
-  return `Request failed (HTTP ${response.status})`;
-};
-
-const handleSave = () => {
-  patchMutate(
-    { id: channelId.value, data: { status: editStatus.value, botIsMod: editBotIsMod.value } },
-    {
-      onSuccess: (response) => {
-        if (response.status === 200) {
-          serverError.value = null;
-          toastSuccess('Channel updated');
-          refetch();
-          isEditing.value = false;
-        } else {
-          serverError.value = extractMessage(response);
-        }
-      },
-    },
-  );
+const handleSaved = () => {
+  toastSuccess('Channel updated');
+  refetch();
+  isEditing.value = false;
 };
 
 const handleDelete = async () => {
@@ -117,7 +68,7 @@ const handleDelete = async () => {
       :is-pending="isPending"
       :is-error="isError"
       :failure="failure"
-      not-found="Channel not found"
+      :not-found="data?.status === 404 ? 'Channel not found' : undefined"
     />
 
     <template v-if="channel">
@@ -151,73 +102,15 @@ const handleDelete = async () => {
           enter-active-class="animate-in fade-in-0 zoom-in-95 duration-200"
           leave-active-class="animate-out fade-out-0 zoom-out-95 duration-200"
         >
-          <div
+          <ChannelEditForm
             v-if="isEditing"
-            class="bg-card w-full max-w-3xs rounded-xl border px-3 py-3"
-          >
-            <h2 class="mb-4">Edit channel</h2>
-            <form
-              class="flex flex-col gap-y-5"
-              @submit.prevent="handleSave"
-            >
-              <FieldGroup>
-                <Field>
-                  <FieldLabel>Status</FieldLabel>
-                  <Select
-                    v-model="editStatus"
-                    class="w-40"
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem
-                        v-for="s in statuses"
-                        :key="s"
-                        :value="s"
-                      >
-                        {{ s }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </FieldGroup>
-              <FieldGroup>
-                <Field orientation="horizontal">
-                  <FieldLabel>
-                    <Checkbox v-model:checked="editBotIsMod" />
-                    Bot is moderator
-                  </FieldLabel>
-                </Field>
-              </FieldGroup>
-
-              <Button
-                type="submit"
-                :disabled="patchPending"
-                class="cursor-pointer"
-              >
-                {{ patchPending ? 'Saving...' : 'Save' }}
-              </Button>
-
-              <p
-                v-if="serverError"
-                class="text-destructive text-sm"
-              >
-                {{ serverError }}
-              </p>
-            </form>
-          </div>
+            :channel="channel"
+            @saved="handleSaved"
+          />
         </Transition>
       </div>
 
       <div class="flex gap-x-2">
-        <Button
-          variant="outline"
-          class="cursor-pointer"
-          @click="() => (isEditing = !isEditing)"
-        >
-          {{ isEditing ? 'Cancel' : 'Edit channel' }}
-        </Button>
         <ConfirmDialog
           :on-confirm="handleDelete"
           confirm-text="Delete"
@@ -228,9 +121,16 @@ const handleDelete = async () => {
             variant="destructive"
             class="cursor-pointer"
           >
-            Delete channel
+            Delete
           </Button>
         </ConfirmDialog>
+        <Button
+          variant="outline"
+          class="cursor-pointer"
+          @click="() => (isEditing = !isEditing)"
+        >
+          {{ isEditing ? 'Cancel' : 'Edit' }}
+        </Button>
       </div>
     </template>
   </div>

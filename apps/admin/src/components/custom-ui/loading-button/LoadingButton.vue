@@ -34,6 +34,7 @@ const props = withDefaults(defineProps<Props>(), {
     :size="size"
     :disabled="loading || ($attrs.disabled !== undefined && $attrs.disabled !== false)"
     :class="props.class"
+    class="cursor-pointer"
   >
     <Loader2
       v-if="loading"

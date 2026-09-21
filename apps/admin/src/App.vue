@@ -2,8 +2,11 @@
 import { VueQueryDevtools } from '@tanstack/vue-query-devtools';
 import { RouterView } from 'vue-router';
 import { Toaster } from 'vue-sonner';
+import { useTheme } from '@/composables/useTheme';
 import { TheHeader, TheSidebar } from './components/nav';
 import { SidebarInset, SidebarProvider } from './components/ui/sidebar';
+
+const { isDark } = useTheme();
 </script>
 
 <template>
@@ -16,6 +19,6 @@ import { SidebarInset, SidebarProvider } from './components/ui/sidebar';
       </main>
     </SidebarInset>
     <VueQueryDevtools />
-    <Toaster />
+    <Toaster :theme="isDark ? 'dark' : 'light'" />
   </SidebarProvider>
 </template>
