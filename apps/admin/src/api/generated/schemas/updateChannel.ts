@@ -5,11 +5,9 @@
  * REST API for the Fox Sphere Twitch bot platform
  * OpenAPI spec version: 1.0.0
  */
+import type { ChannelStatus } from './channelStatus';
 
-export enum CreateChannelStatus {
-  PENDING= 'PENDING',
-  ACTIVE= 'ACTIVE',
-  PAUSED= 'PAUSED',
-  REVOKED= 'REVOKED',
-
+export interface UpdateChannel {
+  status?: ChannelStatus;
+  botIsMod?: boolean;
 }

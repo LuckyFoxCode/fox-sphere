@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ThemeToggle } from '@/components/custom-ui/theme-toggle';
 </script>
 
 <template>

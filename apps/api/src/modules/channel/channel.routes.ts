@@ -5,9 +5,17 @@ import {
   CreateChannelDto,
   CreateChannelSchema,
   GetChannelParamsSchema,
+  UpdateChannelDto,
+  UpdateChannelSchema,
 } from "@fox-sphere/shared-schemas";
 import { createModule } from "../../shared/openapi";
-import { createChannel, getChannelById, listChannels } from "./channel.service";
+import {
+  createChannel,
+  deleteChannel,
+  getChannelById,
+  listChannels,
+  patchChannel,
+} from "./channel.service";
 
 const { router, route } = createModule("Channels");
 
@@ -50,22 +58,65 @@ route(
 route(
   {
     method: "get",
-    path: "/channels/:id",
-    summary: "Get channel by ID",
+    path: "/channels/:login",
+    summary: "Get channel by login",
     operationId: "getChannelById",
     request: { params: GetChannelParamsSchema },
     responses: {
       200: { description: "Channel found", schema: ChannelResponseSchema },
-      400: { description: "Invalid channel id" },
+      400: { description: "Invalid channel login" },
       404: { description: "Channel not found" },
       500: { description: "Unexpected server error" },
     },
   },
   async (req, res) => {
-    const id = req.params.id as string;
-    const channel = await getChannelById(id);
+    const login = req.params.login as string;
+    const channel = await getChannelById(login);
     if (!channel) throw new NotFoundError("Channel not found");
     res.json(channel);
+  },
+);
+
+route(
+  {
+    method: "patch",
+    path: "/channels/:login",
+    summary: "Update a channel",
+    operationId: "patchChannel",
+    request: { params: GetChannelParamsSchema, body: UpdateChannelSchema },
+    responses: {
+      200: { description: "Channel updated", schema: ChannelResponseSchema },
+      400: { description: "Validation failed" },
+      404: { description: "Channel not found" },
+      500: { description: "Unexpected server error" },
+    },
+  },
+  async (req, res) => {
+    res.json(
+      await patchChannel(
+        req.params.login as string,
+        req.body as UpdateChannelDto,
+      ),
+    );
+  },
+);
+
+route(
+  {
+    method: "delete",
+    path: "/channels/:login",
+    summary: "Delete a channel",
+    operationId: "deleteChannel",
+    request: { params: GetChannelParamsSchema },
+    responses: {
+      204: { description: "Channel deleted" },
+      404: { description: "Channel not found" },
+      500: { description: "Unexpected server error" },
+    },
+  },
+  async (req, res) => {
+    await deleteChannel(req.params.login as string);
+    res.status(204).end();
   },
 );
 

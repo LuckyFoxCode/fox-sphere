@@ -126,7 +126,7 @@ enum ChannelStatus {
 model Channel {
   id          String        @id @default(cuid())
   twitchId    String        @unique
-  login       String
+  login       String        @unique
   displayName String
   status      ChannelStatus @default(PENDING)
   botIsMod    Boolean       @default(false)
