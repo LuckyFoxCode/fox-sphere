@@ -5,7 +5,7 @@
  * REST API for the Fox Sphere Twitch bot platform
  * OpenAPI spec version: 1.0.0
  */
-import type { CreateChannelStatus } from './createChannelStatus';
+import type { ChannelStatus } from './channelStatus';
 
 export interface CreateChannel {
   /** @minLength 1 */
@@ -14,6 +14,6 @@ export interface CreateChannel {
   login: string;
   /** @minLength 1 */
   displayName: string;
-  status?: CreateChannelStatus;
+  status?: ChannelStatus;
   botIsMod?: boolean;
 }

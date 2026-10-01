@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { TwitchEmote } from '@/components/ui';
+import { LevelPill, TwitchEmote } from '@/components/ui';
 import type { ActivePokemon } from '@/composables';
+import { getRankConfigByLevel } from '@/constants';
 import { parseTwitchEmotes } from '@/utils/twitch';
 import { computed } from 'vue';
-import { getRankConfigByLevel, RANK_BADGES } from '@/constants';
 
 const props = defineProps<{ activePokemon: ActivePokemon }>();
 
@@ -30,8 +30,6 @@ const currentRank = computed(() =>
     props.activePokemon.isBot,
   ),
 );
-
-const currentIcon = computed(() => RANK_BADGES[Math.min(currentRank.value.tier, 9)]);
 
 const MAX_MESSAGE_CHARS = 48;
 
@@ -84,12 +82,12 @@ const bubbleTokens = computed(() => {
         </div>
       </Transition>
       <div
-        class="bg-line/15 flex items-center gap-x-0.5 rounded-md border-r-2 pr-2"
+        class="bg-line/15 flex items-center gap-x-2 rounded-md border-r-2 px-2"
         :style="{ borderColor: `${roleBorderClass}` }"
       >
-        <component
-          :is="currentIcon"
-          class="size-10"
+        <LevelPill
+          v-if="!activePokemon.isBot && !activePokemon.isBroadcaster"
+          :level="activePokemon.userLvl"
         />
         <div class="flex h-full flex-col items-center justify-around leading-none">
           <span

@@ -34,7 +34,8 @@ import type {
   Channel,
   ChannelList,
   CreateChannel,
-  ErrorResponse
+  ErrorResponse,
+  UpdateChannel
 } from '../schemas';
 
 
@@ -289,20 +290,20 @@ export type getChannelByIdResponseError = (getChannelByIdResponse400 | getChanne
 
 export type getChannelByIdResponse = (getChannelByIdResponseSuccess | getChannelByIdResponseError)
 
-export const getGetChannelByIdUrl = (id: string,) => {
+export const getGetChannelByIdUrl = (login: string,) => {
 
 
 
 
-  return `/api/channels/${id}`
+  return `/api/channels/${login}`
 }
 
 /**
- * @summary Get channel by ID
+ * @summary Get channel by login
  */
-export const getChannelById = async (id: string, options?: RequestInit): Promise<getChannelByIdResponse> => {
+export const getChannelById = async (login: string, options?: RequestInit): Promise<getChannelByIdResponse> => {
 
-  const res = await fetch(getGetChannelByIdUrl(id),
+  const res = await fetch(getGetChannelByIdUrl(login),
   {
     ...options,
     method: 'GET'
@@ -322,29 +323,29 @@ export const getChannelById = async (id: string, options?: RequestInit): Promise
 
 
 
-export const getGetChannelByIdQueryKey = (id: MaybeRefOrGetter<string>,) => {
+export const getGetChannelByIdQueryKey = (login: MaybeRefOrGetter<string>,) => {
     return [
-    'api','channels',id
+    'api','channels',login
     ] as const;
     }
 
 
-export const getGetChannelByIdQueryOptions = <TData = Awaited<ReturnType<typeof getChannelById>>, TError = ErrorResponse>(id: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelById>>, TError, TData>>, fetch?: RequestInit}
+export const getGetChannelByIdQueryOptions = <TData = Awaited<ReturnType<typeof getChannelById>>, TError = ErrorResponse>(login: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelById>>, TError, TData>>, fetch?: RequestInit}
 ) => {
 
 const {query: queryOptions, fetch: fetchOptions} = options ?? {};
 
-  const queryKey =  getGetChannelByIdQueryKey(id);
+  const queryKey =  getGetChannelByIdQueryKey(login);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getChannelById>>> = ({ signal }) => getChannelById(toValue(id), { signal, ...fetchOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getChannelById>>> = ({ signal }) => getChannelById(toValue(login), { signal, ...fetchOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: computed(() => toValue(id) !== null && toValue(id) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChannelById>>, TError, TData>
+   return  { queryKey, queryFn, enabled: computed(() => toValue(login) !== null && toValue(login) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChannelById>>, TError, TData>
 }
 
 export type GetChannelByIdQueryResult = NonNullable<Awaited<ReturnType<typeof getChannelById>>>
@@ -352,15 +353,15 @@ export type GetChannelByIdQueryError = ErrorResponse
 
 
 /**
- * @summary Get channel by ID
+ * @summary Get channel by login
  */
 
 export function useGetChannelById<TData = Awaited<ReturnType<typeof getChannelById>>, TError = ErrorResponse>(
- id: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelById>>, TError, TData>>, fetch?: RequestInit}
+ login: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelById>>, TError, TData>>, fetch?: RequestInit}
  , queryClient?: QueryClient
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetChannelByIdQueryOptions(id,options)
+  const queryOptions = getGetChannelByIdQueryOptions(login,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -374,3 +375,223 @@ export function useGetChannelById<TData = Awaited<ReturnType<typeof getChannelBy
 
 
 
+export type patchChannelResponse200 = {
+  data: Channel
+  status: 200
+}
+
+export type patchChannelResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type patchChannelResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type patchChannelResponse500 = {
+  data: ErrorResponse
+  status: 500
+}
+
+export type patchChannelResponseSuccess = (patchChannelResponse200) & {
+  headers: Headers;
+};
+export type patchChannelResponseError = (patchChannelResponse400 | patchChannelResponse404 | patchChannelResponse500) & {
+  headers: Headers;
+};
+
+export type patchChannelResponse = (patchChannelResponseSuccess | patchChannelResponseError)
+
+export const getPatchChannelUrl = (login: string,) => {
+
+
+
+
+  return `/api/channels/${login}`
+}
+
+/**
+ * @summary Update a channel
+ */
+export const patchChannel = async (login: string,
+    updateChannel?: UpdateChannel, options?: RequestInit): Promise<patchChannelResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+const res = await fetch(getPatchChannelUrl(login),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateChannel)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: patchChannelResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as patchChannelResponse
+}
+
+
+
+
+
+export const getPatchChannelMutationKey = () => ['patchChannel'] as const;
+
+export const getPatchChannelMutationOptions = <TError = ErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchChannel>>, TError,PatchChannelMutationVariables, TContext>, fetch?: RequestInit}
+): UseMutationOptions<Awaited<ReturnType<typeof patchChannel>>, TError,PatchChannelMutationVariables, TContext> => {
+
+const mutationKey = getPatchChannelMutationKey();
+const {mutation: mutationOptions, fetch: fetchOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, fetch: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchChannel>>, PatchChannelMutationVariables> = (props) => {
+          const {login,data} = props ?? {};
+
+          return  patchChannel(login,data,fetchOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchChannelMutationResult = NonNullable<Awaited<ReturnType<typeof patchChannel>>>
+    export type PatchChannelMutationBody = UpdateChannel | undefined
+    export type PatchChannelMutationError = ErrorResponse
+    export type PatchChannelMutationVariables = {login: string;data?: UpdateChannel}
+
+    /**
+ * @summary Update a channel
+ */
+export const usePatchChannel = <TError = ErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchChannel>>, TError,PatchChannelMutationVariables, TContext>, fetch?: RequestInit}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof patchChannel>>,
+        TError,
+        PatchChannelMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPatchChannelMutationOptions(options), queryClient);
+    }
+    export type deleteChannelResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteChannelResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type deleteChannelResponse500 = {
+  data: ErrorResponse
+  status: 500
+}
+
+export type deleteChannelResponseSuccess = (deleteChannelResponse204) & {
+  headers: Headers;
+};
+export type deleteChannelResponseError = (deleteChannelResponse404 | deleteChannelResponse500) & {
+  headers: Headers;
+};
+
+export type deleteChannelResponse = (deleteChannelResponseSuccess | deleteChannelResponseError)
+
+export const getDeleteChannelUrl = (login: string,) => {
+
+
+
+
+  return `/api/channels/${login}`
+}
+
+/**
+ * @summary Delete a channel
+ */
+export const deleteChannel = async (login: string, options?: RequestInit): Promise<deleteChannelResponse> => {
+
+  const res = await fetch(getDeleteChannelUrl(login),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteChannelResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as deleteChannelResponse
+}
+
+
+
+
+
+export const getDeleteChannelMutationKey = () => ['deleteChannel'] as const;
+
+export const getDeleteChannelMutationOptions = <TError = ErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteChannel>>, TError,DeleteChannelMutationVariables, TContext>, fetch?: RequestInit}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteChannel>>, TError,DeleteChannelMutationVariables, TContext> => {
+
+const mutationKey = getDeleteChannelMutationKey();
+const {mutation: mutationOptions, fetch: fetchOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, fetch: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteChannel>>, DeleteChannelMutationVariables> = (props) => {
+          const {login} = props ?? {};
+
+          return  deleteChannel(login,fetchOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteChannelMutationResult = NonNullable<Awaited<ReturnType<typeof deleteChannel>>>
+
+    export type DeleteChannelMutationError = ErrorResponse
+    export type DeleteChannelMutationVariables = {login: string}
+
+    /**
+ * @summary Delete a channel
+ */
+export const useDeleteChannel = <TError = ErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteChannel>>, TError,DeleteChannelMutationVariables, TContext>, fetch?: RequestInit}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof deleteChannel>>,
+        TError,
+        DeleteChannelMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteChannelMutationOptions(options), queryClient);
+    }

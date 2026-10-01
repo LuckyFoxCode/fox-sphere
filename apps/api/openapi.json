@@ -38,13 +38,7 @@
             "example": "LuckyFoxCode"
           },
           "status": {
-            "type": "string",
-            "enum": [
-              "PENDING",
-              "ACTIVE",
-              "PAUSED",
-              "REVOKED"
-            ]
+            "$ref": "#/components/schemas/ChannelStatus"
           },
           "botIsMod": {
             "type": "boolean"
@@ -57,6 +51,15 @@
           "displayName",
           "status",
           "botIsMod"
+        ]
+      },
+      "ChannelStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "ACTIVE",
+          "PAUSED",
+          "REVOKED"
         ]
       },
       "ErrorResponse": {
@@ -111,13 +114,7 @@
             "example": "LuckyFoxCode"
           },
           "status": {
-            "type": "string",
-            "enum": [
-              "PENDING",
-              "ACTIVE",
-              "PAUSED",
-              "REVOKED"
-            ]
+            "$ref": "#/components/schemas/ChannelStatus"
           },
           "botIsMod": {
             "type": "boolean"
@@ -128,6 +125,17 @@
           "login",
           "displayName"
         ]
+      },
+      "UpdateChannel": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ChannelStatus"
+          },
+          "botIsMod": {
+            "type": "boolean"
+          }
+        }
       }
     },
     "parameters": {}
@@ -222,21 +230,21 @@
         }
       }
     },
-    "/api/channels/{id}": {
+    "/api/channels/{login}": {
       "get": {
         "tags": [
           "Channels"
         ],
-        "summary": "Get channel by ID",
+        "summary": "Get channel by login",
         "operationId": "getChannelById",
         "parameters": [
           {
             "schema": {
               "type": "string",
-              "example": "clx1abc123def"
+              "example": "luckyfoxcode"
             },
             "required": true,
-            "name": "id",
+            "name": "login",
             "in": "path"
           }
         ],
@@ -252,7 +260,7 @@
             }
           },
           "400": {
-            "description": "Invalid channel id",
+            "description": "Invalid channel login",
             "content": {
               "application/json": {
                 "schema": {
@@ -260,6 +268,118 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Channel not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Channels"
+        ],
+        "summary": "Update a channel",
+        "operationId": "patchChannel",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "luckyfoxcode"
+            },
+            "required": true,
+            "name": "login",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChannel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Channel updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Channel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Channel not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Channels"
+        ],
+        "summary": "Delete a channel",
+        "operationId": "deleteChannel",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "luckyfoxcode"
+            },
+            "required": true,
+            "name": "login",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Channel deleted"
           },
           "404": {
             "description": "Channel not found",
