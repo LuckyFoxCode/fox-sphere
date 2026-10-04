@@ -7,7 +7,7 @@ export interface MovementTarget {
 
 const MIN_X = 5;
 const MAX_X = 95;
-const SPEED_FACTOR = 0.45;
+export const SPEED_FACTOR = 0.45;
 
 export function getRandomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;

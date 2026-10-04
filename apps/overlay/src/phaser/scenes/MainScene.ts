@@ -1,7 +1,13 @@
+import { getRandomInt } from '@/components/pokemon/utils';
 import Phaser from 'phaser';
+import { WANDER_START_X } from './walk-decision';
+import { WanderController } from './wander';
+
+const HERO_SCALE = 0.25;
 
 export class MainScene extends Phaser.Scene {
-  private player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+  private player!: Phaser.GameObjects.Sprite;
+  private wander: WanderController | null = null;
 
   constructor() {
     super({ key: 'MainScene' });
@@ -38,48 +44,29 @@ export class MainScene extends Phaser.Scene {
       repeat: -1,
     });
 
-    this.physics.world.setBounds(0, 0, window.innerWidth, window.innerHeight + 15);
+    // Origin at the feet so the sprite stands on the bottom edge of the canvas, and the
+    // walker owns the vertical placement - no physics, no fall on spawn.
+    this.player = this.add.sprite(0, this.scale.height, 'hero_idle').setOrigin(0.5, 1);
+    this.player.setScale(HERO_SCALE);
 
-    this.player = this.physics.add.sprite(700, 1250, 'hero_idle');
-    this.player.setScale(0.25);
-    this.player.setCollideWorldBounds(true);
+    this.wander = new WanderController(
+      this,
+      this.player,
+      getRandomInt(WANDER_START_X.min, WANDER_START_X.max),
+    );
+    this.wander.start();
 
-    this.player.body.setSize(200, 300);
-    this.player.body.setOffset(140, 150);
-
-    this.startWandering();
+    this.scale.on(Phaser.Scale.Events.RESIZE, this.handleResize, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
   }
 
-  private startWandering(): void {
-    const makeDecision = () => {
-      // Расширяем кубик: 0 = стоять, 1 = идти, 2 = бежать
-      const action = Phaser.Math.Between(0, 1);
+  private handleResize(): void {
+    this.wander?.reanchor();
+  }
 
-      if (action === 0) {
-        // --- СОСТОЯНИЕ: СТОИМ НА МЕСТЕ ---
-        this.player.setVelocityX(0);
-        this.player.play('idle', true);
-      } else {
-        // Выбираем направление: -1 (влево) или 1 (вправо)
-        const direction = Phaser.Math.Between(0, 1) === 0 ? -1 : 1;
-        this.player.setFlipX(direction === 1);
-
-        if (action === 1) {
-          // --- СОСТОЯНИЕ: ХОДЬБА ---
-          const walkSpeed = Phaser.Math.Between(40, 80);
-          this.player.setVelocityX(walkSpeed * direction);
-          this.player.play('walk', true);
-        }
-      }
-
-      // Выбираем задержку до следующего решения (от 2 до 5 секунд)
-      const nextDelay = Phaser.Math.Between(2000, 5000);
-
-      // Запускаем таймер на следующий шаг
-      this.time.delayedCall(nextDelay, makeDecision);
-    };
-
-    // Запускаем первый шаг
-    makeDecision();
+  private handleShutdown(): void {
+    this.scale.off(Phaser.Scale.Events.RESIZE, this.handleResize, this);
+    this.wander?.stop();
+    this.wander = null;
   }
 }
