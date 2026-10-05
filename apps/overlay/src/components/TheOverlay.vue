@@ -21,8 +21,7 @@ onMounted(() => {
     transparent: true,
     backgroundColor: 'rgba(0,0,0,0)',
     scale: {
-      mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.CENTER_BOTH,
+      mode: Phaser.Scale.NONE,
     },
     scene: [MainScene],
   });

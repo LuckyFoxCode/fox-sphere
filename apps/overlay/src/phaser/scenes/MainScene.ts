@@ -1,7 +1,7 @@
 import { getRandomInt } from '@/components/pokemon/utils';
 import Phaser from 'phaser';
 import { WANDER_START_X } from './walk-decision';
-import { WanderController } from './wander';
+import { HERO_Y_OFFSET, WanderController } from './wander';
 
 const HERO_SCALE = 0.25;
 
@@ -46,7 +46,9 @@ export class MainScene extends Phaser.Scene {
 
     // Origin at the feet so the sprite stands on the bottom edge of the canvas, and the
     // walker owns the vertical placement - no physics, no fall on spawn.
-    this.player = this.add.sprite(0, this.scale.height, 'hero_idle').setOrigin(0.5, 1);
+    this.player = this.add
+      .sprite(0, this.scale.height + HERO_Y_OFFSET, 'hero_idle')
+      .setOrigin(0.5, 1);
     this.player.setScale(HERO_SCALE);
 
     this.wander = new WanderController(
@@ -56,16 +58,10 @@ export class MainScene extends Phaser.Scene {
     );
     this.wander.start();
 
-    this.scale.on(Phaser.Scale.Events.RESIZE, this.handleResize, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
   }
 
-  private handleResize(): void {
-    this.wander?.reanchor();
-  }
-
   private handleShutdown(): void {
-    this.scale.off(Phaser.Scale.Events.RESIZE, this.handleResize, this);
     this.wander?.stop();
     this.wander = null;
   }

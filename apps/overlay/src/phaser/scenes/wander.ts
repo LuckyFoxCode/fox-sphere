@@ -11,14 +11,15 @@ import {
 const IDLE_ANIMATION = 'idle';
 const WALK_ANIMATION = 'walk';
 
+export const HERO_Y_OFFSET = 22;
+
 const toPixels = (width: number, xPercent: number) => (width * xPercent) / 100;
 
 /**
  * Moves one sprite around the bottom lane in steps, driven by tweens instead of a velocity.
  *
  * The horizontal position is kept as a percentage of the canvas width and converted to pixels
- * only when a step starts, which is what makes a resize survivable - `reanchor` re-derives the
- * pixel position from the percentage instead of trusting the old one.
+ * only when a step starts.
  */
 export class WanderController {
   private readonly scene: Phaser.Scene;
@@ -37,7 +38,7 @@ export class WanderController {
   }
 
   start(): void {
-    this.reanchor();
+    this.placeAtStart();
     this.sprite.setFlipX(this.direction === 1);
     this.playIdle();
     this.schedule(getRandomInt(WANDER_INITIAL_DELAY.min, WANDER_INITIAL_DELAY.max));
@@ -51,19 +52,11 @@ export class WanderController {
     this.tween = null;
   }
 
-  /** Re-anchors the sprite after a canvas resize. A step in flight is cut short. */
-  reanchor(): void {
+  private placeAtStart(): void {
     this.sprite.setPosition(
       toPixels(this.scene.scale.width, this.xPercent),
-      this.scene.scale.height,
+      this.scene.scale.height + HERO_Y_OFFSET,
     );
-
-    if (!this.tween) return;
-
-    this.tween.remove();
-    this.tween = null;
-    this.playIdle();
-    this.schedule(getRandomInt(WANDER_STEP_PAUSE.min, WANDER_STEP_PAUSE.max));
   }
 
   private schedule(delay: number): void {
