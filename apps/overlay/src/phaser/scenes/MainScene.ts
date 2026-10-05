@@ -1,68 +1,101 @@
-import { getRandomInt } from '@/components/pokemon/utils';
+import { HEROES } from '@fox-sphere/types';
+import { getRandomInt, WANDER_START_X } from '@/utils/wander';
 import Phaser from 'phaser';
-import { WANDER_START_X } from './walk-decision';
-import { HERO_Y_OFFSET, WanderController } from './wander';
-
-const HERO_SCALE = 0.25;
+import { setHeroLaneHost } from '../hero-lane';
+import { HeroAgent, heroIdleKey, heroWalkKey } from './hero-agent';
 
 export class MainScene extends Phaser.Scene {
-  private player!: Phaser.GameObjects.Sprite;
-  private wander: WanderController | null = null;
+  private readonly agents = new Map<string, HeroAgent>();
 
   constructor() {
     super({ key: 'MainScene' });
   }
 
   preload(): void {
-    this.load.spritesheet('hero_idle', 'assets/sprites/assassin-idle.png', {
-      frameWidth: 480,
-      frameHeight: 480,
-    });
-    this.load.spritesheet('hero_walk', 'assets/sprites/assassin-walking.png', {
-      frameWidth: 480,
-      frameHeight: 480,
-    });
+    for (const hero of HEROES) {
+      const frameSize = { frameWidth: hero.frameWidth, frameHeight: hero.frameHeight };
+
+      this.load.spritesheet(heroIdleKey(hero.id), hero.idle.path, frameSize);
+      this.load.spritesheet(heroWalkKey(hero.id), hero.walk.path, frameSize);
+    }
   }
 
   create(): void {
-    this.anims.create({
-      key: 'idle',
-      frames: this.anims.generateFrameNumbers('hero_idle', {
-        start: 0,
-        end: 15,
-      }),
-      frameRate: 12,
-      repeat: -1,
+    for (const hero of HEROES) {
+      this.anims.create({
+        key: heroIdleKey(hero.id),
+        frames: this.anims.generateFrameNumbers(heroIdleKey(hero.id), {
+          start: 0,
+          end: hero.idle.frames - 1,
+        }),
+        frameRate: hero.idle.frameRate,
+        repeat: -1,
+      });
+
+      this.anims.create({
+        key: heroWalkKey(hero.id),
+        frames: this.anims.generateFrameNumbers(heroWalkKey(hero.id), {
+          start: 0,
+          end: hero.walk.frames - 1,
+        }),
+        frameRate: hero.walk.frameRate,
+        repeat: -1,
+      });
+    }
+
+    setHeroLaneHost({
+      addHero: (userId, heroId) => this.addHero(userId, heroId),
+      attachLabel: (userId, label) => this.agents.get(userId)?.setLabel(label),
+      removeHero: (userId) => this.removeHero(userId),
     });
-    this.anims.create({
-      key: 'walk',
-      frames: this.anims.generateFrameNumbers('hero_walk', {
-        start: 0,
-        end: 19,
-      }),
-      frameRate: 16,
-      repeat: -1,
-    });
 
-    // Origin at the feet so the sprite stands on the bottom edge of the canvas, and the
-    // walker owns the vertical placement - no physics, no fall on spawn.
-    this.player = this.add
-      .sprite(0, this.scale.height + HERO_Y_OFFSET, 'hero_idle')
-      .setOrigin(0.5, 1);
-    this.player.setScale(HERO_SCALE);
-
-    this.wander = new WanderController(
-      this,
-      this.player,
-      getRandomInt(WANDER_START_X.min, WANDER_START_X.max),
-    );
-    this.wander.start();
-
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
+    this.events.on(Phaser.Scenes.Events.UPDATE, this.handleUpdate, this);
+    this.events.on(Phaser.Scenes.Events.SHUTDOWN, this.handleTeardown, this);
+    this.events.on(Phaser.Scenes.Events.DESTROY, this.handleTeardown, this);
+    this.scale.on(Phaser.Scale.Events.RESIZE, this.handleResize, this);
   }
 
-  private handleShutdown(): void {
-    this.wander?.stop();
-    this.wander = null;
+  private addHero(userId: string, heroId: string): void {
+    this.removeHero(userId);
+
+    const startX = getRandomInt(WANDER_START_X.min, WANDER_START_X.max);
+
+    this.agents.set(userId, new HeroAgent(this, heroId, startX));
+  }
+
+  private removeHero(userId: string): void {
+    const agent = this.agents.get(userId);
+
+    if (!agent) return;
+
+    agent.destroy();
+    this.agents.delete(userId);
+  }
+
+  private handleUpdate(): void {
+    for (const agent of this.agents.values()) {
+      agent.syncLabel();
+    }
+  }
+
+  private handleResize(): void {
+    for (const agent of this.agents.values()) {
+      agent.reposition();
+    }
+  }
+
+  /**
+   * Releases the bridge and every agent. Runs on both SHUTDOWN and DESTROY because
+   * `Game.destroy()` only emits DESTROY — and it nulls `scene.add` straight after, so a
+   * bridge still bound to a destroyed scene would throw on its next spawn. Idempotent:
+   * either event alone is enough, and both can fire.
+   */
+  private handleTeardown(): void {
+    setHeroLaneHost(null);
+    this.scale.off(Phaser.Scale.Events.RESIZE, this.handleResize, this);
+
+    for (const userId of this.agents.keys()) {
+      this.removeHero(userId);
+    }
   }
 }

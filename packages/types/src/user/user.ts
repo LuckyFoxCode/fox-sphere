@@ -1,3 +1,5 @@
+import type { HeroRef } from "../hero/hero";
+
 // Данные событий (Payloads)
 export interface UserCreatePayload {
   twitchId: string;
@@ -8,15 +10,7 @@ export interface UserLevelUpPayload {
   userId: string;
   username: string;
   newLevel: number;
-  pokemon?: UserPokemonPayload;
-}
-
-export interface UserPokemonPayload {
-  speciesName: string;
-  spriteUrl: string;
-  lvl: number;
-  xp: number;
-  isReadyToEvolve: boolean;
+  hero?: HeroRef;
 }
 
 export interface UserServerToClientEvents {

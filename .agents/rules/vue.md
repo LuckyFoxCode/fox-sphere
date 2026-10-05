@@ -36,8 +36,32 @@ rule.
 ## Imports and structure
 
 - Always the `@/` alias: `import { socket } from '@/services';`
-- Components group by feature (`components/lottery/`, `components/pokemon/`, `components/twitch/`), with shared primitives in `components/ui/`. Every folder has a barrel `index.ts`.
+- Components group by feature (`components/lottery/`, `components/hero/`, `components/twitch/`), with shared primitives in `components/ui/`. Every folder has a barrel `index.ts`.
 - Icons are SFCs in `src/assets/icons/`, exported from that barrel.
+
+## The hero lane: Phaser owns `style.transform` on a Vue-owned element
+
+`components/hero/` splits one feature across two renderers. Vue owns the chat-derived data
+and the HTML labels; Phaser owns the sprites and their movement. `phaser/hero-lane.ts` is a
+module singleton bridging them, so a `chat:message` that arrives before Phaser's async
+`preload()` finishes is buffered and replayed in `create()`.
+
+Two invariants that are easy to break from the Vue side:
+
+- **The scene owns `style.transform` on the label root, exclusively.** `HeroAgent.syncLabel`
+  writes it every frame. So the element must carry no transform of its own, and its
+  enter/leave transition must be **opacity-only** (`.hero-fade` in `assets/styles/main.css`)
+  - a `transform` in those classes fights the scene. Do not put `zoom-in` or
+  `left`/`vw` positioning back on it.
+- **`Phaser.GameObjects.DOMElement` is deliberately unused.** It needs
+  `dom: { createContainer: true }` and reparents the element you hand it, which breaks Vue's
+  ownership of the node.
+
+`spawnHero` returns a generation and `removeHero` ignores a stale one, so a label component
+that has already been superseded - a viewer who chatted again inside its own leave
+transition - cannot destroy the sprite its successor adopted. `phaser/__tests__/hero-lane.test.ts`
+is testable because the bridge imports nothing; `hero-agent.ts` is not, because it reaches
+Phaser through `./wander` and jsdom has no canvas 2d context.
 
 ## Formatting and lint
 

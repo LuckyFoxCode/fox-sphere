@@ -13,7 +13,7 @@ web
 
 ## Product Purpose
 
-fox-sphere is a Twitch bot and live overlay system. It powers real-time interactive features (chat integration, XP/leveling, lottery, Pokemon arena) on stream via an OBS browser-source overlay, and provides an admin panel for managing channels and configuration. Success means a seamless, engaging live-stream experience for both the streamer and viewers.
+fox-sphere is a Twitch bot and live overlay system. It powers real-time interactive features (chat integration, XP/leveling, lottery, Hero lane) on stream via an OBS browser-source overlay, and provides an admin panel for managing channels and configuration. Success means a seamless, engaging live-stream experience for both the streamer and viewers.
 
 ## Positioning
 
@@ -29,7 +29,7 @@ A self-hosted, modular Twitch bot with a live overlay that goes beyond alerts â€
 
 ## Capabilities and Constraints
 
-- Real-time chat, XP/leveling, lottery, Pokemon arena, timer widgets on stream
+- Real-time chat, XP/leveling, lottery, Hero lane, timer widgets on stream
 - Multi-channel architecture (planned multi-tenant per `multi-tenant-architecture.md`)
 - Admin panel is local-only, not deployed to production
 - Overlay is strictly OBS browser source â€” no mobile, no public-facing version
@@ -47,8 +47,8 @@ A self-hosted, modular Twitch bot with a live overlay that goes beyond alerts â€
 
 ## Evidence on Hand
 
-- Working overlay with stream, lottery, Pokemon, and Twitch widgets
+- Working overlay with stream, lottery, hero lane, and Twitch widgets
 - Working admin panel with channel management (create, list, view)
-- Prisma schema with User, TwitchToken, Channel, SystemState models
+- Prisma schema with User, UserHero, TwitchToken, Channel, SystemState models
 - AGENTS.md with comprehensive architecture documentation
 - Multi-tenant architecture proposal in `apps/bot-runtime/docs/multi-tenant-architecture.md`

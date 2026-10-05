@@ -526,7 +526,7 @@ export class ChatbotService {
       await this.activityService.trackActivity(user, msg);
       await this.commandRegistry.execute(channel, user, text, msg);
 
-      const userData = await this.userService.getUserWithPokemon(
+      const userData = await this.userService.getUserWithHero(
         msg.userInfo.userId,
       );
       const isFollower = this.activityService.isFollower(twitchId);
@@ -552,7 +552,7 @@ export class ChatbotService {
         timestamp: msg.date.getTime(),
         userLvl: userData?.lvl ?? 1,
         isFollower,
-        pokemon: userData?.pokemon,
+        hero: userData?.hero,
         isMod: msg.userInfo.isMod,
         isSubscriber: msg.userInfo.isSubscriber,
         isVip: msg.userInfo.isVip,
@@ -586,7 +586,7 @@ export class ChatbotService {
             `[${channel}] Watch streak by ${user}`,
           );
 
-          const userData = await this.userService.getUserWithPokemon(
+          const userData = await this.userService.getUserWithHero(
             msg.userInfo.userId,
           );
           const isFollower = this.activityService.isFollower(
@@ -613,7 +613,7 @@ export class ChatbotService {
             timestamp: msg.date.getTime(),
             userLvl: userData?.lvl ?? 1,
             isFollower,
-            pokemon: userData?.pokemon,
+            hero: userData?.hero,
             isMod: msg.userInfo.isMod,
             isSubscriber: msg.userInfo.isSubscriber,
             isVip: msg.userInfo.isVip,
@@ -673,7 +673,7 @@ export class ChatbotService {
     },
   ): Promise<void> {
     try {
-      const userData = await this.userService.getUserWithPokemon(
+      const userData = await this.userService.getUserWithHero(
         config.twitch.botId,
       );
 
@@ -687,7 +687,7 @@ export class ChatbotService {
         badges: this.botBadges,
         emotes: {},
         timestamp: Date.now(),
-        pokemon: userData?.pokemon,
+        hero: userData?.hero,
         userLvl: userData?.lvl ?? 1,
         isMod: this.isBotMod,
         isFollower: false,

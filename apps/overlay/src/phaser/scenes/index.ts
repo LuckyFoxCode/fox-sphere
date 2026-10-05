@@ -1,3 +1,3 @@
 export * from './MainScene';
-export * from './walk-decision';
+export * from './hero-agent';
 export * from './wander';

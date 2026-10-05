@@ -1,4 +1,4 @@
-import { PokemonPoolItem } from "../pokemon/pokemon";
+import { HeroRef } from "../hero/hero";
 import { WidgetVariant } from "./variants";
 
 export type TwitchAnnouncementColor = "blue" | "green" | "orange" | "purple";
@@ -50,7 +50,7 @@ export interface TwitchChatMessagePayload {
   badges: string[];
   emotes: Record<string, string[]>;
   timestamp: number;
-  pokemon?: PokemonPoolItem;
+  hero?: HeroRef;
   userLvl: number;
   isMod: boolean;
   isFollower: boolean;

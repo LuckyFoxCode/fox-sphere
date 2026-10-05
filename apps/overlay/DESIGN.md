@@ -56,7 +56,7 @@ components:
 
 **Creative North Star: "The Broadcast Marquee"**
 
-A glowing, event-driven broadcast layer that floats over live Twitch gameplay. This is an Experience-mode surface — a transparent OBS browser source that shows bot interactions as they happen: XP level-ups, chat chatter, raids, reward redemptions, lottery draws, Pokemon arena moments. The overlay exists to be seen for a heartbeat, then recede so the stream (the actual content) stays the star.
+A glowing, event-driven broadcast layer that floats over live Twitch gameplay. This is an Experience-mode surface — a transparent OBS browser source that shows bot interactions as they happen: XP level-ups, chat chatter, raids, reward redemptions, lottery draws, hero lane moments. The overlay exists to be seen for a heartbeat, then recede so the stream (the actual content) stays the star.
 
 Everything is built on a near-black canvas that reads as "empty" over any game, with card-shaped widgets framed by a thin **neon border in one of six event colors**. Each event type owns a color — cyan, purple, red, amber, blue, rose — so chat and stream can trigger recognizable visual moods at a glance. Widgets arrive and leave with squash-and-stretch zoom/bubble transitions, and the signature WidgetFrame breathes with a slow pulse-glow.
 
@@ -160,7 +160,7 @@ A small set of custom, event-driven components — no generic UI kit.
 - **Style:** a 64px SVG **gradient rank ring** (one of ten tier gradients — grays, ambers, teals, purples, reds...) with the level number centered.
 - **Meaning:** ring color encodes tier; NEWBIE→OVERLORD progression is read at a glance.
 
-### Event Widgets (Twitch, lottery, Pokemon)
+### Event Widgets (Twitch, lottery, hero lane)
 - **Style:** one WidgetFrame per event, its color set by event type (`variant`), content centered.
 - **Mood:** bold headline (`font-black`, glow), uppercase micro-label, a small pill badge for the event payload (e.g. reward title).
 - **Characters:** chat is tight and fast (`bubble-fade` 0.2s in); announcements and level-ups are bigger and slower.

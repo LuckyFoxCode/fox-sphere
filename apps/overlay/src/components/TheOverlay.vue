@@ -2,7 +2,7 @@
 import { MainScene } from '@/phaser/scenes';
 import Phaser from 'phaser';
 import { onMounted, onUnmounted, ref } from 'vue';
-import TheFooter from './TheFooter.vue';
+import { HeroLane } from './hero';
 import TheHeader from './TheHeader.vue';
 import TheSidebar from './TheSidebar.vue';
 import { WidgetEventsHub } from './widgets-hub';
@@ -16,12 +16,12 @@ onMounted(() => {
   game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: phaserContainer.value,
-    width: '100%',
-    height: '100%',
     transparent: true,
     backgroundColor: 'rgba(0,0,0,0)',
     scale: {
-      mode: Phaser.Scale.NONE,
+      mode: Phaser.Scale.RESIZE,
+      width: window.innerWidth,
+      height: window.innerHeight,
     },
     scene: [MainScene],
   });
@@ -39,12 +39,12 @@ onUnmounted(() => {
       ref="phaserContainer"
       class="pointer-events-none absolute inset-0 z-0"
     />
+    <HeroLane class="pointer-events-none absolute inset-0 z-10" />
 
     <TheHeader class="relative z-10" />
     <main class="relative z-10 flex w-full flex-1 justify-end">
       <WidgetEventsHub />
       <TheSidebar />
     </main>
-    <TheFooter class="relative z-10 hidden" />
   </div>
 </template>

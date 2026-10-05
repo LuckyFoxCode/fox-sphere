@@ -1,4 +1,5 @@
 import {
+  HeroAssignedPayload,
   LotteryFinishedPayload,
   LotteryNoParticipantsPayload,
   LotteryParticipantsPayload,
@@ -6,7 +7,6 @@ import {
   LotteryTicketEarnedPayload,
   LotteryUserDto,
   LotteryWinnerDrawnPayload,
-  PokemonAssignedPayload,
   RouletteSpinResultPayload,
   StreamGetSystemStatePayload,
   StreamJackpotUpdatePayload,
@@ -31,6 +31,7 @@ interface AppEvents {
   "chat:message": TwitchChatMessagePayload;
   "fish:bite": { channel: string; username: string };
   "fish:expired": { channel: string; username: string };
+  "hero:assigned": HeroAssignedPayload;
   "lottery:started": LotteryStartedPayload;
   "lottery:participants": LotteryParticipantsPayload;
   "lottery:no-participants": LotteryNoParticipantsPayload;
@@ -42,7 +43,6 @@ interface AppEvents {
   };
   "lottery:winner-drawn": LotteryWinnerDrawnPayload;
   "lottery:finished": LotteryFinishedPayload;
-  "pokemon:assigned": PokemonAssignedPayload;
   "roulette:spun": RouletteSpinResultPayload;
   "stream:xp-updated": StreamXpUpdatePayload;
   "stream:xp-boost": StreamXpBoostPayload;
