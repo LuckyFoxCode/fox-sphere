@@ -38,6 +38,48 @@ export const HEROES = [
       rows: 5,
     },
   },
+  {
+    id: "robber",
+    name: "Robber",
+    frameWidth: 480,
+    frameHeight: 480,
+    scale: 0.25,
+    idle: {
+      path: "assets/heroes/robber/idle.png",
+      frames: 16,
+      frameRate: 12,
+      columns: 4,
+      rows: 4,
+    },
+    walk: {
+      path: "assets/heroes/robber/walking.png",
+      frames: 20,
+      frameRate: 16,
+      columns: 4,
+      rows: 5,
+    },
+  },
+  {
+    id: "thug",
+    name: "Thug",
+    frameWidth: 480,
+    frameHeight: 480,
+    scale: 0.25,
+    idle: {
+      path: "assets/heroes/thug/idle.png",
+      frames: 16,
+      frameRate: 12,
+      columns: 4,
+      rows: 4,
+    },
+    walk: {
+      path: "assets/heroes/thug/walking.png",
+      frames: 20,
+      frameRate: 16,
+      columns: 4,
+      rows: 5,
+    },
+  },
 ] as const satisfies readonly [HeroDefinition, ...HeroDefinition[]];
 
 export type HeroId = (typeof HEROES)[number]["id"];
@@ -56,7 +98,9 @@ export const getHeroById = (id: string): HeroDefinition => {
   const hero = heroesById.get(id) ?? heroesById.get(DEFAULT_HERO_ID);
 
   if (!hero) {
-    throw new Error(`Default hero "${DEFAULT_HERO_ID}" is missing from the catalog`);
+    throw new Error(
+      `Default hero "${DEFAULT_HERO_ID}" is missing from the catalog`,
+    );
   }
 
   return hero;

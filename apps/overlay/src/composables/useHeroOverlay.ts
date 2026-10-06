@@ -22,11 +22,24 @@ export interface ActiveHero {
 }
 
 const HERO_TTL = 5 * 60 * 1000;
-const MESSAGE_TTL = 8000;
+export const MESSAGE_TTL = 8000;
 
 const activeHeroes = ref(new Map<string, ActiveHero>());
 
-const setMessage = (hero: ActiveHero, data: TwitchChatMessagePayload): void => {
+/**
+ * Resolves the entry through the map rather than taking it as an argument.
+ *
+ * `ref(Map)` returns a reactive *proxy* on `get`, while `set` stores the raw object. Holding
+ * on to the raw object and mutating it writes straight to the target, bypassing the proxy's
+ * `set` trap — so no trigger fires and the bubble never clears. That is exactly what a
+ * captured `setTimeout` closure would do, so both here and in the expiring callback the
+ * entry is looked up by `userId` again.
+ */
+const setMessage = (userId: string, data: TwitchChatMessagePayload): void => {
+  const hero = activeHeroes.value.get(userId);
+
+  if (!hero) return;
+
   hero.message = data.text;
   hero.messageEmotes = data.emotes;
 
@@ -35,8 +48,12 @@ const setMessage = (hero: ActiveHero, data: TwitchChatMessagePayload): void => {
   }
 
   hero.messageTimeoutId = setTimeout(() => {
-    hero.message = undefined;
-    hero.messageEmotes = undefined;
+    const expiring = activeHeroes.value.get(userId);
+
+    if (!expiring) return;
+
+    expiring.message = undefined;
+    expiring.messageEmotes = undefined;
   }, MESSAGE_TTL);
 };
 
@@ -79,7 +96,7 @@ export function useHeroOverlay() {
       clearTimeout(existing.timeoutId);
       applyViewerFlags(existing, data);
       existing.timeoutId = setTimeout(() => removeHeroFromLane(data.userId), HERO_TTL);
-      setMessage(existing, data);
+      setMessage(data.userId, data);
       return;
     }
 
@@ -92,7 +109,7 @@ export function useHeroOverlay() {
 
     activeHeroes.value.set(data.userId, created);
     applyViewerFlags(created, data);
-    setMessage(created, data);
+    setMessage(data.userId, data);
   };
 
   return { activeHeroes, handleHeroMessage, removeHeroFromLane };
