@@ -1,5 +1,5 @@
 import { Logger, prisma } from "@fox-sphere/backend-shared";
-import { HEROES } from "@fox-sphere/types";
+import { getDefaultHero } from "@fox-sphere/types";
 import { globalEventBus } from "../../shared/services";
 
 /**
@@ -24,11 +24,9 @@ export class HeroService {
       return existing.heroId;
     }
 
-    const hero = HEROES[Math.floor(Math.random() * HEROES.length)];
-
-    if (!hero) {
-      throw new Error("Hero catalog is empty");
-    }
+    // Deliberately the free default rather than a random catalog pick: every paid
+    // hero would otherwise be handed out for free to whoever chatted first.
+    const hero = getDefaultHero();
 
     try {
       await prisma.userHero.create({

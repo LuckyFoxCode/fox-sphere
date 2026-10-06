@@ -1,5 +1,3 @@
-import type { HeroDefinition } from "./heroes";
-
 // Сущность (Data Transfer Object)
 export interface HeroRef {
   heroId: string;
@@ -17,5 +15,3 @@ export interface HeroServerToClientEvents {
 }
 
 export interface HeroClientToServerEvents {}
-
-export type { HeroDefinition };

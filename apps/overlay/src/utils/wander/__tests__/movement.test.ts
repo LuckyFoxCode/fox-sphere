@@ -18,11 +18,11 @@ const expectStep = (step: MovementTarget | null): MovementTarget => {
 
 describe('nextWanderStep', () => {
   it('stands still when the coin flip says wait', () => {
-    expect(nextWanderStep(50, 1, NEVER_WALK)).toBeNull();
+    expect(nextWanderStep(50, 1, 1, NEVER_WALK)).toBeNull();
   });
 
   it('takes a step when the coin flip says walk', () => {
-    const step = expectStep(nextWanderStep(50, 1, ALWAYS_WALK));
+    const step = expectStep(nextWanderStep(50, 1, 1, ALWAYS_WALK));
 
     expect(step.actualDistance).toBeGreaterThan(0);
     expect(step.newX).toBeGreaterThanOrEqual(5);
@@ -31,21 +31,21 @@ describe('nextWanderStep', () => {
 
   it('never returns a step shorter than the duration floor allows', () => {
     for (let i = 0; i < 200; i++) {
-      const step = expectStep(nextWanderStep(50, i % 2 === 0 ? 1 : -1, ALWAYS_WALK));
+      const step = expectStep(nextWanderStep(50, i % 2 === 0 ? 1 : -1, 1, ALWAYS_WALK));
 
       expect(step.moveDuration).toBeGreaterThanOrEqual(1.5);
     }
   });
 
   it('turns around at the right bound instead of walking off the lane', () => {
-    const step = expectStep(nextWanderStep(95, 1, ALWAYS_WALK));
+    const step = expectStep(nextWanderStep(95, 1, 1, ALWAYS_WALK));
 
     expect(step.newDirection).toBe(-1);
     expect(step.newX).toBeLessThan(95);
   });
 
   it('turns around at the left bound instead of walking off the lane', () => {
-    const step = expectStep(nextWanderStep(5, -1, ALWAYS_WALK));
+    const step = expectStep(nextWanderStep(5, -1, 1, ALWAYS_WALK));
 
     expect(step.newDirection).toBe(1);
     expect(step.newX).toBeGreaterThan(5);
@@ -53,8 +53,8 @@ describe('nextWanderStep', () => {
 
   it('keeps its direction mid-lane', () => {
     for (let i = 0; i < 200; i++) {
-      expect(expectStep(nextWanderStep(50, 1, ALWAYS_WALK)).newDirection).toBe(1);
-      expect(expectStep(nextWanderStep(50, -1, ALWAYS_WALK)).newDirection).toBe(-1);
+      expect(expectStep(nextWanderStep(50, 1, 1, ALWAYS_WALK)).newDirection).toBe(1);
+      expect(expectStep(nextWanderStep(50, -1, 1, ALWAYS_WALK)).newDirection).toBe(-1);
     }
   });
 
@@ -63,6 +63,19 @@ describe('nextWanderStep', () => {
 
     expect(results.some((step) => step === null)).toBe(true);
     expect(results.some((step) => step !== null)).toBe(true);
+  });
+
+  it('covers the same distance in less time the faster the hero is', () => {
+    const secondsPerPercent = (speed: number) => {
+      // Distance is random per call, so compare time *per unit distance* rather than the
+      // raw duration, which would vary with the drawn step size.
+      const step = expectStep(nextWanderStep(50, 1, speed, ALWAYS_WALK));
+
+      return step.moveDuration / step.actualDistance;
+    };
+
+    expect(secondsPerPercent(0.8)).toBeGreaterThan(secondsPerPercent(1));
+    expect(secondsPerPercent(1)).toBeGreaterThan(secondsPerPercent(1.25));
   });
 });
 

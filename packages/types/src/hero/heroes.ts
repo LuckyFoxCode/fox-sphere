@@ -1,3 +1,5 @@
+import catalog from "./heroes.json";
+
 export interface HeroSpriteSheet {
   path: string;
   frames: number;
@@ -6,102 +8,103 @@ export interface HeroSpriteSheet {
   rows: number;
 }
 
-export interface HeroDefinition {
-  id: string;
-  name: string;
+export interface HeroSpriteGeometry {
   frameWidth: number;
   frameHeight: number;
   scale: number;
+}
+
+/**
+ * The four stats every hero carries.
+ *
+ * A class is a different set of *values*, never a different set of keys: a melee hero and
+ * an archer both fill all four. Branching on a `class` field to decide which stats exist
+ * pushes that branch into every reader — the overlay card, the shop, combat — which is the
+ * expensive part, and buys nothing here.
+ *
+ * `speed` is the only one with a live consumer today (the Phaser walk duration), so it is
+ * the one worth carrying before combat exists. `range`, `mana` and friends are deliberately
+ * absent: nothing reads them yet.
+ */
+export interface HeroStats {
+  health: number;
+  attack: number;
+  defense: number;
+  speed: number;
+}
+
+export interface HeroDefinition extends HeroSpriteGeometry {
+  id: string;
+  name: string;
+  price: number;
+  maxLevel: number;
+  baseStats: HeroStats;
+  growth: Omit<HeroStats, "speed">;
   idle: HeroSpriteSheet;
   walk: HeroSpriteSheet;
 }
 
-export const HEROES = [
-  {
-    id: "assassin",
-    name: "Assassin",
-    frameWidth: 480,
-    frameHeight: 480,
-    scale: 0.25,
-    idle: {
-      path: "assets/heroes/assassin/idle.png",
-      frames: 16,
-      frameRate: 12,
-      columns: 4,
-      rows: 4,
-    },
-    walk: {
-      path: "assets/heroes/assassin/walking.png",
-      frames: 20,
-      frameRate: 16,
-      columns: 4,
-      rows: 5,
-    },
-  },
-  {
-    id: "robber",
-    name: "Robber",
-    frameWidth: 480,
-    frameHeight: 480,
-    scale: 0.25,
-    idle: {
-      path: "assets/heroes/robber/idle.png",
-      frames: 16,
-      frameRate: 12,
-      columns: 4,
-      rows: 4,
-    },
-    walk: {
-      path: "assets/heroes/robber/walking.png",
-      frames: 20,
-      frameRate: 16,
-      columns: 4,
-      rows: 5,
-    },
-  },
-  {
-    id: "thug",
-    name: "Thug",
-    frameWidth: 480,
-    frameHeight: 480,
-    scale: 0.25,
-    idle: {
-      path: "assets/heroes/thug/idle.png",
-      frames: 16,
-      frameRate: 12,
-      columns: 4,
-      rows: 4,
-    },
-    walk: {
-      path: "assets/heroes/thug/walking.png",
-      frames: 20,
-      frameRate: 16,
-      columns: 4,
-      rows: 5,
-    },
-  },
-] as const satisfies readonly [HeroDefinition, ...HeroDefinition[]];
+interface HeroCatalog {
+  sprites: HeroSpriteGeometry;
+  heroes: Omit<HeroDefinition, keyof HeroSpriteGeometry>[];
+}
 
-export type HeroId = (typeof HEROES)[number]["id"];
+/**
+ * The catalog is authored as JSON, which TypeScript cannot narrow, so the shared geometry
+ * block is merged back in here. `apps/overlay/src/utils/hero/__tests__/heroes.test.ts`
+ * is what keeps this cast honest — it validates every entry's shape at CI time.
+ */
+const loaded = catalog as HeroCatalog;
 
-export const DEFAULT_HERO_ID: HeroId = "assassin";
+export const HEROES: readonly HeroDefinition[] = loaded.heroes.map((hero) => ({
+  ...hero,
+  ...loaded.sprites,
+}));
+
+/** Grounded in the JSON so the literal union TypeScript used to derive is not silently lost. */
+export const DEFAULT_HERO_ID = HEROES[0]?.id ?? "";
 
 const heroesById = new Map<string, HeroDefinition>(
   HEROES.map((hero) => [hero.id, hero]),
 );
 
+/** The free hero every new viewer is granted before the shop exists. */
+export const getDefaultHero = (): HeroDefinition => {
+  const hero = heroesById.get(DEFAULT_HERO_ID);
+
+  if (!hero) {
+    throw new Error(`Default hero "${DEFAULT_HERO_ID}" is missing from the catalog`);
+  }
+
+  return hero;
+};
+
+export const isFreeHero = (id: string): boolean =>
+  (heroesById.get(id) ?? getDefaultHero()).price === 0;
+
 /**
  * Resolves a hero by id, falling back to the default so a database row naming a
  * hero that has since been renamed or removed still renders something.
  */
-export const getHeroById = (id: string): HeroDefinition => {
-  const hero = heroesById.get(id) ?? heroesById.get(DEFAULT_HERO_ID);
+export const getHeroById = (id: string): HeroDefinition =>
+  heroesById.get(id) ?? getDefaultHero();
 
-  if (!hero) {
-    throw new Error(
-      `Default hero "${DEFAULT_HERO_ID}" is missing from the catalog`,
-    );
-  }
+/** Fractional growth rates make `base + growth * steps` accumulate float noise. */
+const round2 = (value: number): number => Number(value.toFixed(2));
 
-  return hero;
+/**
+ * Level 1 is the base stats as authored; every level after that adds one `growth` step.
+ * `speed` does not grow — a hero that outran its own stat curve would need the whole walk
+ * model re-tuned per level, and a flat speed is what the overlay already assumes.
+ */
+export const getHeroStats = (id: string, level: number = 1): HeroStats => {
+  const hero = getHeroById(id);
+  const steps = Math.max(0, Math.floor(level) - 1);
+
+  return {
+    health: round2(hero.baseStats.health + hero.growth.health * steps),
+    attack: round2(hero.baseStats.attack + hero.growth.attack * steps),
+    defense: round2(hero.baseStats.defense + hero.growth.defense * steps),
+    speed: hero.baseStats.speed,
+  };
 };

@@ -14,6 +14,8 @@ export interface WanderOptions {
   xPercent: number;
   idleKey: string;
   walkKey: string;
+  /** Scales the step duration, so a faster hero covers the same step in less time. */
+  speed: number;
 }
 
 const toPixels = (width: number, xPercent: number) => (width * xPercent) / 100;
@@ -95,7 +97,7 @@ export class WanderController {
     this.timer = null;
     if (this.stopped) return;
 
-    const step = nextWanderStep(this.xPercent, this.direction);
+    const step = nextWanderStep(this.xPercent, this.direction, this.options.speed);
 
     if (!step) {
       this.playIdle();

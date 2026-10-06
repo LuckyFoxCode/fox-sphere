@@ -26,9 +26,10 @@ export const WANDER_START_X = { min: 10, max: 80 } as const;
  * frame rate the animation was authored at.
  *
  * `calculateNextStep` derives a step's duration from its distance, so every step travels at
- * the same nominal speed of `1 / SPEED_FACTOR`. The only steps that deviate are the tiny ones
- * clamped by the 1.5s duration floor near a bound - those move slower than nominal, and the
- * time scale below is what keeps their feet from sliding.
+ * the same nominal speed of `1 / SPEED_FACTOR`, divided by the hero's own speed. The only
+ * steps that deviate are the tiny ones clamped by the 1.5s duration floor near a bound -
+ * those move slower than nominal, and the time scale below is what keeps their feet from
+ * sliding.
  */
 export const REFERENCE_SPEED = 1 / SPEED_FACTOR;
 
@@ -43,6 +44,7 @@ export function getRandomInt(min: number, max: number): number {
 export function calculateNextStep(
   currentX: number,
   currentDirection: 1 | -1,
+  speed = 1,
 ): MovementTarget | null {
   let direction = currentDirection;
 
@@ -59,7 +61,10 @@ export function calculateNextStep(
 
   if (actualDistance === 0) return null;
 
-  const moveDuration = Math.max(1.5, Number((actualDistance * SPEED_FACTOR).toFixed(1)));
+  const moveDuration = Math.max(
+    1.5,
+    Number(((actualDistance * SPEED_FACTOR) / speed).toFixed(1)),
+  );
 
   return { newX, newDirection: direction, moveDuration, actualDistance };
 }
@@ -76,9 +81,10 @@ export function calculateNextStep(
 export const nextWanderStep = (
   currentX: number,
   currentDirection: 1 | -1,
+  speed = 1,
   random: () => number = Math.random,
 ): MovementTarget | null =>
-  random() <= 0.5 ? null : calculateNextStep(currentX, currentDirection);
+  random() <= 0.5 ? null : calculateNextStep(currentX, currentDirection, speed);
 
 /**
  * Matches the walk cycle to the ground speed the step actually travels at: twice the nominal

@@ -1,0 +1,75 @@
+{
+  "sprites": {
+    "frameWidth": 480,
+    "frameHeight": 480,
+    "scale": 0.25
+  },
+  "heroes": [
+    {
+      "id": "assassin",
+      "name": "Assassin",
+      "price": 0,
+      "maxLevel": 50,
+      "baseStats": { "health": 100, "attack": 12, "defense": 6, "speed": 1.0 },
+      "growth": { "health": 9, "attack": 1.2, "defense": 0.6 },
+      "idle": {
+        "path": "assets/heroes/assassin/idle.png",
+        "frames": 16,
+        "frameRate": 12,
+        "columns": 4,
+        "rows": 4
+      },
+      "walk": {
+        "path": "assets/heroes/assassin/walking.png",
+        "frames": 20,
+        "frameRate": 16,
+        "columns": 4,
+        "rows": 5
+      }
+    },
+    {
+      "id": "robber",
+      "name": "Robber",
+      "price": 300,
+      "maxLevel": 50,
+      "baseStats": { "health": 140, "attack": 10, "defense": 10, "speed": 0.8 },
+      "growth": { "health": 14, "attack": 1.0, "defense": 1.0 },
+      "idle": {
+        "path": "assets/heroes/robber/idle.png",
+        "frames": 16,
+        "frameRate": 12,
+        "columns": 4,
+        "rows": 4
+      },
+      "walk": {
+        "path": "assets/heroes/robber/walking.png",
+        "frames": 20,
+        "frameRate": 16,
+        "columns": 4,
+        "rows": 5
+      }
+    },
+    {
+      "id": "thug",
+      "name": "Thug",
+      "price": 800,
+      "maxLevel": 50,
+      "baseStats": { "health": 80, "attack": 18, "defense": 3, "speed": 1.25 },
+      "growth": { "health": 7, "attack": 1.8, "defense": 0.3 },
+      "idle": {
+        "path": "assets/heroes/thug/idle.png",
+        "frames": 16,
+        "frameRate": 12,
+        "columns": 4,
+        "rows": 4
+      },
+      "walk": {
+        "path": "assets/heroes/thug/walking.png",
+        "frames": 20,
+        "frameRate": 16,
+        "columns": 4,
+        "rows": 5
+      }
+    }
+  ]
+}

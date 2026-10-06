@@ -33,6 +33,7 @@ export class HeroAgent {
       xPercent,
       idleKey: heroIdleKey(hero.id),
       walkKey: heroWalkKey(hero.id),
+      speed: hero.baseStats.speed,
     });
     this.wander.start();
   }
