@@ -25,6 +25,13 @@ what is there now: no component uses the Vue 3.5 destructure-with-defaults form 
 `components/ui/widget-frame/DecorativeCap.vue`, `components/ui/TwitchEmote.vue`. Those work
 and are not bugs. Convert one when you are already editing it; do not sweep them.
 
+**Never import a compiler macro.** `defineProps`, `defineEmits`, `defineModel`,
+`defineExpose` and `withDefaults` are globals inside `<script setup>` - Vue's compiler
+generates the declaration, so importing one from `vue` collides with it and fails `vue-tsc`
+with `TS2440`. Both Vue apps enable the fixable rule `vue/no-import-compiler-macros`, so
+`pnpm lint:*` strips a bad import; an editor tool re-adding one on save (organize-imports
+under `js/ts.experimental.useTsgo`) is undone by the same save.
+
 ## Composables
 
 Anything stateful or reused goes in `src/composables/`, named `useX`. Export through the

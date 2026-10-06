@@ -3,7 +3,7 @@ import { IconLightning } from '@/assets/icons';
 import { WidgetFrame } from '@/components/ui/widget-frame';
 import { getWatchStreakAchievement } from '@/constants';
 import type { TwitchWatchStreakPayload } from '@fox-sphere/types';
-import { computed, defineProps } from 'vue';
+import { computed } from 'vue';
 
 const props = defineProps<{ watchStreak: TwitchWatchStreakPayload }>();
 
