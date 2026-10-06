@@ -3,7 +3,7 @@ import { IconLightning } from '@/assets/icons';
 import { WidgetFrame } from '@/components/ui/widget-frame';
 import { getWatchStreakAchievement } from '@/constants';
 import type { TwitchWatchStreakPayload } from '@fox-sphere/types';
-import { computed } from 'vue';
+import { computed, defineProps } from 'vue';
 
 const props = defineProps<{ watchStreak: TwitchWatchStreakPayload }>();
 
@@ -42,7 +42,7 @@ const achievementSrc = computed(() => getWatchStreakAchievement(props.watchStrea
       <img
         :src="achievementSrc"
         alt="Watch streak achievement"
-        class="size-50 shrink-0"
+        class="size-50 shrink-0 object-contain"
       />
 
       <div class="flex flex-col items-center text-center">
