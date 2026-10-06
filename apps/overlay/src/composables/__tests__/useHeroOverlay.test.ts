@@ -4,11 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent, h, nextTick } from 'vue';
 import { MESSAGE_TTL, useHeroOverlay } from '../useHeroOverlay';
 
-const payload = (
-  text: string,
-  userId: string,
-  heroId = 'assassin',
-): TwitchChatMessagePayload => ({
+const payload = (text: string, userId: string, heroId = 'assassin'): TwitchChatMessagePayload => ({
   id: '1',
   userId,
   username: 'viewer',
@@ -96,9 +92,7 @@ describe('useHeroOverlay', () => {
     handleHeroMessage(payload('second message', 'user-second'));
     await nextTick();
 
-    expect(wrapper.find(bubbleOf('user-second')).attributes('data-bubble')).toBe(
-      'second message',
-    );
+    expect(wrapper.find(bubbleOf('user-second')).attributes('data-bubble')).toBe('second message');
   });
 
   /**

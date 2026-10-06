@@ -196,8 +196,11 @@ describe('getHeroStats', () => {
 
   it('gives the roster genuinely different stats, not three copies', () => {
     const signatures = new Set(
-      HEROES.map((hero) => `${hero.baseStats.health}/${hero.baseStats.attack}/` +
-        `${hero.baseStats.defense}/${hero.baseStats.speed}`),
+      HEROES.map(
+        (hero) =>
+          `${hero.baseStats.health}/${hero.baseStats.attack}/` +
+          `${hero.baseStats.defense}/${hero.baseStats.speed}`,
+      ),
     );
 
     expect(signatures.size).toBe(HEROES.length);

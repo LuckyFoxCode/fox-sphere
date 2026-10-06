@@ -61,10 +61,7 @@ export function calculateNextStep(
 
   if (actualDistance === 0) return null;
 
-  const moveDuration = Math.max(
-    1.5,
-    Number(((actualDistance * SPEED_FACTOR) / speed).toFixed(1)),
-  );
+  const moveDuration = Math.max(1.5, Number(((actualDistance * SPEED_FACTOR) / speed).toFixed(1)));
 
   return { newX, newDirection: direction, moveDuration, actualDistance };
 }
