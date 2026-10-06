@@ -95,6 +95,12 @@ export function useHeroOverlay() {
     if (existing) {
       clearTimeout(existing.timeoutId);
       applyViewerFlags(existing, data);
+
+      // Same reason the flags above are refreshed: this viewer keeps one `ActiveHero` for
+      // HERO_TTL, so a hero changed in the database would otherwise stay invisible until
+      // they fell out of the lane and came back.
+      existing.heroId = hero.heroId;
+
       existing.timeoutId = setTimeout(() => removeHeroFromLane(data.userId), HERO_TTL);
       setMessage(data.userId, data);
       return;

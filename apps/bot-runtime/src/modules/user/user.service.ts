@@ -28,7 +28,7 @@ export class UserService {
   private xpCooldownCache = new Map<string, number>();
   private lotteryCooldownCache = new Map<string, number>();
   private coinsCache = new Map<string, { coins: number; createdAt: number }>();
-  private heroCache = new Map<string, string>();
+  private heroCache = new Map<string, { heroId: string; createdAt: number }>();
 
   constructor(
     private lotteryService: LotteryService,
@@ -408,6 +408,16 @@ export class UserService {
     this.coinsCache.delete(twitchId);
   }
 
+  /**
+   * Drops the cached hero so the next message re-reads the row.
+   *
+   * The TTL alone is not enough once a hero can be bought: a purchase has to be visible on
+   * the next message, not 30 seconds later.
+   */
+  public invalidateHero(twitchId: string): void {
+    this.heroCache.delete(twitchId);
+  }
+
   public async getUserWithHero(
     twitchId: string,
   ): Promise<{
@@ -429,9 +439,14 @@ export class UserService {
     if (!user) return null;
 
     const cached = this.heroCache.get(twitchId);
-    const heroId = cached ?? (await this.heroService.ensureUserHasHero(user.id));
+    const now = Date.now();
 
-    this.heroCache.set(twitchId, heroId);
+    const heroId =
+      cached && now - cached.createdAt < COOLDOWNS.HERO_CACHE_TTL
+        ? cached.heroId
+        : await this.heroService.ensureUserHasHero(user.id);
+
+    this.heroCache.set(twitchId, { heroId, createdAt: now });
 
     return {
       lvl: user.lvl,

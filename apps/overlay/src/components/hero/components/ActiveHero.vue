@@ -4,7 +4,7 @@ import { LevelPill, TwitchEmote } from '@/components/ui';
 import { getRankConfigByLevel } from '@/constants';
 import { attachHeroLabel, removeHero, spawnHero } from '@/phaser/hero-lane';
 import { parseTwitchEmotes } from '@/utils/twitch';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps<{ activeHero: ActiveHero }>();
 
@@ -48,13 +48,23 @@ const bubbleTokens = computed(() => {
   return parseTwitchEmotes(truncated, props.activeHero.messageEmotes ?? {});
 });
 
-onMounted(() => {
+const spawn = (): void => {
   generation.value = spawnHero(props.activeHero.userId, props.activeHero.heroId);
 
   if (label.value) {
     attachHeroLabel(props.activeHero.userId, label.value);
   }
-});
+};
+
+onMounted(spawn);
+
+/**
+ * The lane is keyed by `userId`, so a hero swapped in the database updates this prop without
+ * remounting the component — the Phaser sprite would stay the old hero until the viewer
+ * fell out of the lane. Re-spawning claims a new generation, which is what makes the pending
+ * `removeHero` on unmount drop the *current* sprite rather than this superseded one.
+ */
+watch(() => props.activeHero.heroId, spawn);
 
 onUnmounted(() => {
   if (generation.value === null) return;
