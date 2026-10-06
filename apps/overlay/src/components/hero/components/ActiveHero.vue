@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { TwitchEmote } from '@/components/ui';
 import type { ActiveHero } from '@/composables';
-import { LevelPill, TwitchEmote } from '@/components/ui';
 import { getRankConfigByLevel } from '@/constants';
 import { attachHeroLabel, removeHero, spawnHero } from '@/phaser/hero-lane';
 import { parseTwitchEmotes } from '@/utils/twitch';
@@ -109,10 +109,6 @@ onUnmounted(() => {
       class="bg-line/15 flex items-center gap-x-2 rounded-md border-r-2 px-2"
       :style="{ borderColor: `${roleBorderClass}` }"
     >
-      <LevelPill
-        v-if="!activeHero.isBot && !activeHero.isBroadcaster"
-        :level="activeHero.userLvl"
-      />
       <div class="flex h-full flex-col items-center justify-around leading-none">
         <span
           class="text-[16px] font-semibold tracking-wide whitespace-nowrap"
