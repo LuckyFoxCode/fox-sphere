@@ -13,7 +13,7 @@ web
 
 ## Product Purpose
 
-The overlay is the visual layer of fox-sphere displayed on stream. It renders real-time widgets — XP/leveling progress, chat messages, stream timer, lottery, Pokemon arena — as transparent browser-source elements in OBS. Its purpose is to enhance stream engagement without obstructing the main content.
+The overlay is the visual layer of fox-sphere displayed on stream. It renders real-time widgets — XP/leveling progress, chat messages, stream timer, lottery, hero lane — as transparent browser-source elements in OBS. Its purpose is to enhance stream engagement without obstructing the main content.
 
 ## Positioning
 
@@ -33,7 +33,7 @@ A transparent, always-on stream overlay that makes bot interactions visible on s
 - **Chat widget:** live Twitch chat messages rendered on screen
 - **Timer widget:** countdown/elapsed timer, toggled by bot commands
 - **Lottery widget:** viewer lottery draws, animated on screen
-- **Pokemon arena:** interactive Pokemon battles between viewers
+- **Hero lane:** every chat viewer spawns a locally-sprited hero that wanders the bottom lane with their nickname and rank title
 - **User widget:** viewer info display
 - Strictly OBS browser source — no mobile, no responsive design needed
 - Transparent background, fixed viewport (fullscreen OBS capture)
@@ -48,7 +48,7 @@ None yet — clean slate. No logo, no palette, no typography defined.
 
 - Working Vue 3.5 SFCs with Tailwind 4 utility classes
 - Socket.io client connected to bot-runtime
-- Widget components organized by feature (lottery/, pokemon/, stream/, twitch/, user/)
+- Widget components organized by feature (lottery/, hero/, stream/, twitch/, user/)
 - No DESIGN.md, no visual tokens, no component library
 
 ## Product Principles

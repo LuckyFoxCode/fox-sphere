@@ -1,6 +1,6 @@
 export * from './types';
+export * from './useHeroSocket';
 export * from './useLotterySocket';
-export * from './usePokemonSocket';
 export * from './useRouletteSocket';
 export * from './useStreamSocket';
 export * from './useTwitchSocket';

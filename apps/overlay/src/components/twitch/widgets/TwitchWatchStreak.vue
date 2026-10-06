@@ -42,7 +42,7 @@ const achievementSrc = computed(() => getWatchStreakAchievement(props.watchStrea
       <img
         :src="achievementSrc"
         alt="Watch streak achievement"
-        class="size-50 shrink-0"
+        class="size-50 shrink-0 object-contain"
       />
 
       <div class="flex flex-col items-center text-center">

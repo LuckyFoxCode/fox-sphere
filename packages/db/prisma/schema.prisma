@@ -26,26 +26,20 @@ model User {
   totalLoss      Int           @default(0)
   coinHistories  CoinHistory[]
   lotteryContext UserLottery?
-  pokemon        UserPokemon?
+  hero           UserHero?
   xpHistories    XpHistory[]
   watchStreaks   WatchStreak[]
 }
 
-model UserPokemon {
-  id              Int      @id @default(autoincrement())
-  pokemonId       Int
-  speciesName     String
-  spriteUrl       String
-  lvl             Int      @default(1)
-  xp              Int      @default(1)
-  evolutionStage  Int      @default(1)
-  isReadyToEvolve Boolean  @default(false)
-  userId          Int      @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([userId])
+model UserHero {
+  id        Int      @id @default(autoincrement())
+  heroId    String
+  userId    Int      @unique
+  level     Int      @default(1)
+  xp        Int      @default(0)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model UserLottery {
