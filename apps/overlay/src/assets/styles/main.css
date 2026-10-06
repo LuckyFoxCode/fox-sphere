@@ -124,4 +124,15 @@
     opacity: 0;
     transform: translateY(-4px) scale(0.95);
   }
+
+  /* Opacity only: the scene writes style.transform on the very same element every frame. */
+  .hero-fade-enter-active,
+  .hero-fade-leave-active {
+    transition: opacity 0.4s ease;
+  }
+
+  .hero-fade-enter-from,
+  .hero-fade-leave-to {
+    opacity: 0;
+  }
 }

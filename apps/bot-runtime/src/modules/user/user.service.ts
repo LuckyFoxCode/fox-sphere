@@ -6,8 +6,9 @@ import {
   prisma,
 } from "@fox-sphere/backend-shared";
 import type { User } from "@fox-sphere/db";
-import { PokemonPoolItem } from "@fox-sphere/types";
+import { HeroRef } from "@fox-sphere/types";
 import { globalEventBus } from "../../shared/services";
+import { HeroService } from "../hero";
 import { LotteryService } from "../lottery";
 import { StreamService } from "../stream";
 import type { ExchangePackage } from "../twitch/twitch.constants";
@@ -27,11 +28,12 @@ export class UserService {
   private xpCooldownCache = new Map<string, number>();
   private lotteryCooldownCache = new Map<string, number>();
   private coinsCache = new Map<string, { coins: number; createdAt: number }>();
-  private pokemonCache = new Map<string, PokemonPoolItem | null>();
+  private heroCache = new Map<string, { heroId: string; createdAt: number }>();
 
   constructor(
     private lotteryService: LotteryService,
     private streamService: StreamService,
+    private heroService: HeroService,
   ) {}
 
   public async findOrCreateUser(twitchId: string, username: string) {
@@ -234,14 +236,9 @@ export class UserService {
         select: {
           twitchId: true,
           username: true,
-
-          pokemon: {
+          hero: {
             select: {
-              speciesName: true,
-              spriteUrl: true,
-              lvl: true,
-              xp: true,
-              isReadyToEvolve: true,
+              heroId: true,
             },
           },
         },
@@ -251,7 +248,9 @@ export class UserService {
         userId: freshUserData.twitchId,
         username: freshUserData.username,
         newLevel: currentLvl,
-        pokemon: freshUserData.pokemon ?? undefined,
+        hero: freshUserData.hero
+          ? { heroId: freshUserData.hero.heroId }
+          : undefined,
       });
     }
   }
@@ -409,52 +408,51 @@ export class UserService {
     this.coinsCache.delete(twitchId);
   }
 
-  public async getUserWithPokemon(twitchId: string) {
-    let pokemonData: PokemonPoolItem | null | undefined;
+  /**
+   * Drops the cached hero so the next message re-reads the row.
+   *
+   * The TTL alone is not enough once a hero can be bought: a purchase has to be visible on
+   * the next message, not 30 seconds later.
+   */
+  public invalidateHero(twitchId: string): void {
+    this.heroCache.delete(twitchId);
+  }
 
-    const hasPokemonInCache = this.pokemonCache.has(twitchId);
-
-    if (hasPokemonInCache) {
-      pokemonData = this.pokemonCache.get(twitchId);
-    }
-
-    const userWithPokemon = await prisma.user.findUnique({
+  public async getUserWithHero(
+    twitchId: string,
+  ): Promise<{
+    lvl: number;
+    isPermanentVip: boolean;
+    isFounder: boolean;
+    hero: HeroRef;
+  } | null> {
+    const user = await prisma.user.findUnique({
       where: { twitchId },
       select: {
+        id: true,
         lvl: true,
         isPermanentVip: true,
         isFounder: true,
-        pokemon: !hasPokemonInCache
-          ? {
-              select: {
-                pokemonId: true,
-                speciesName: true,
-                spriteUrl: true,
-              },
-            }
-          : false,
       },
     });
 
-    if (!userWithPokemon) return null;
+    if (!user) return null;
 
-    if (!hasPokemonInCache) {
-      pokemonData = userWithPokemon.pokemon
-        ? {
-            pokemonId: userWithPokemon.pokemon.pokemonId,
-            speciesName: userWithPokemon.pokemon.speciesName,
-            spriteUrl: userWithPokemon.pokemon.spriteUrl,
-          }
-        : null;
+    const cached = this.heroCache.get(twitchId);
+    const now = Date.now();
 
-      this.pokemonCache.set(twitchId, pokemonData);
-    }
+    const heroId =
+      cached && now - cached.createdAt < COOLDOWNS.HERO_CACHE_TTL
+        ? cached.heroId
+        : await this.heroService.ensureUserHasHero(user.id);
+
+    this.heroCache.set(twitchId, { heroId, createdAt: now });
 
     return {
-      lvl: userWithPokemon.lvl,
-      isPermanentVip: userWithPokemon.isPermanentVip,
-      isFounder: userWithPokemon.isFounder,
-      pokemon: pokemonData ?? undefined,
+      lvl: user.lvl,
+      isPermanentVip: user.isPermanentVip,
+      isFounder: user.isFounder,
+      hero: { heroId },
     };
   }
 
@@ -583,7 +581,7 @@ export class UserService {
 
   public clearCache(): void {
     this.verifiedUsersCache.clear();
-    this.pokemonCache.clear();
+    this.heroCache.clear();
     Logger.info("UserService", "User cache cleared successfully🧹");
   }
 }

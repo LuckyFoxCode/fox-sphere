@@ -37,6 +37,17 @@ export default defineConfigWithVueTs(
   ...pluginVue.configs['flat/recommended'],
   vueTsConfigs.recommended,
 
+  {
+    name: 'app/compiler-macros',
+    rules: {
+      // `defineProps`/`defineEmits`/`defineModel` are compiler macros, available as
+      // globals inside `<script setup>` - importing them collides with the generated
+      // declaration and fails `vue-tsc` with TS2440. The rule is fixable, so with
+      // `source.fixAll.eslint` on save it also strips an import an editor tool re-added.
+      'vue/no-import-compiler-macros': 'error',
+    },
+  },
+
   ...pluginOxlint.buildFromOxlintConfigFile('.oxlintrc.json'),
 
   skipFormatting,

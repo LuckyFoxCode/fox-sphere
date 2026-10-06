@@ -1,7 +1,7 @@
 import { config, Logger } from "@fox-sphere/backend-shared";
 import { pathToFileURL } from "url";
+import { HeroService } from "./modules/hero";
 import { LotteryService } from "./modules/lottery";
-import { PokemonService } from "./modules/pokemon";
 import { StreamService } from "./modules/stream";
 import { ChatbotService } from "./modules/twitch/chatbot.service";
 import { TwitchEventSubClient } from "./modules/twitch/eventsub.client";
@@ -20,11 +20,15 @@ export async function bootstrap() {
 
   const twitchConfig: TwitchConfig = config.twitch;
 
-  const pokemonService = new PokemonService();
+  const heroService = new HeroService();
   const streamService = new StreamService();
   const tokenService = new TokenService();
   const lotteryService = new LotteryService(twitchConfig);
-  const userService = new UserService(lotteryService, streamService);
+  const userService = new UserService(lotteryService, streamService, heroService);
+
+  // init() subscribes to `user:created`, so it must run before the chatbot accepts
+  // a single message — otherwise the assignment is dropped for whoever writes first.
+  heroService.init();
 
   // Создаем авторизацию через фабрику
   const authProvider = await TwitchAuthFactory.create(tokenService);
@@ -43,7 +47,6 @@ export async function bootstrap() {
   registerShutdownHandlers([
     { name: "Twitch EventSub", action: () => eventSubClient.stop() },
     { name: "Twitch Chatbot", action: () => chatbotService.stop() },
-    { name: "Pokemon pool top-up", action: () => pokemonService.stop() },
   ]);
 
   // Запуск сервисов
@@ -85,9 +88,16 @@ export async function bootstrap() {
     });
   });
 
-  await pokemonService.init();
-  await pokemonService.asignPokemonToExistingUsersWithoutOne();
+  // Backfill is silent: it assigns but never emits, so the first deploy after the
+  // migration cannot fire the "New Hero" widget once per existing viewer. Only the
+  // `user:created` path announces. This runs after `chatbotService.start()`, so a viewer
+  // who messages in between gets their hero from the lazy path instead - which is also
+  // silent, and their `chat:message` carries the hero, so the lane still spawns them.
+  await heroService.assignHeroToExistingUsersWithoutOne();
 
+  // Every forwarder below is registered after the chatbot is live, so an event emitted in
+  // the window between start() and here reaches a bus with no listener and is dropped.
+  // `chat:message` is equally late, so no viewer sees a half-delivered spawn.
   globalEventBus.on("chat:message", async (data) => {
     Logger.debug(
       "Bootstrap",
@@ -150,12 +160,12 @@ export async function bootstrap() {
     await forwardEventToBackend("roulette:spin-result", data);
   });
 
-  globalEventBus.on("pokemon:assigned", async (data) => {
+  globalEventBus.on("hero:assigned", async (data) => {
     Logger.info(
       "Bootstrap",
-      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding pokemon:assigned to overlay for: ${data.username}`,
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding hero:assigned to overlay for: ${data.username}`,
     );
-    await forwardEventToBackend("pokemon:assigned", data);
+    await forwardEventToBackend("hero:assigned", data);
   });
 
   globalEventBus.on("stream:level-up", async (data) => {

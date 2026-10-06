@@ -9,7 +9,7 @@ const { isTimerActive, timer, timeDigits, messages } = useTwitchSocket(socket);
 
 <template>
   <aside
-    class="from-card/75 via-card/35 flex h-full w-100 flex-col justify-between bg-linear-to-l to-transparent pt-1.5"
+    class="from-card/75 via-card/35 flex h-[85%] w-100 flex-col justify-between bg-linear-to-l to-transparent pt-1.5"
   >
     <div>
       <Transition
