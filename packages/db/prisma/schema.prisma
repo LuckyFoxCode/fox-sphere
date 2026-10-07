@@ -126,6 +126,7 @@ model Channel {
   botIsMod    Boolean       @default(false)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+  users       ChannelUser[]
 }
 
 model TwitchToken {
@@ -139,4 +140,47 @@ model TwitchToken {
   updatedAt           DateTime @updatedAt
 
   @@map("twitch_tokens")
+}
+
+// Личность зрителя, без баланса: баланс принадлежит паре (канал, зритель) и живёт
+// в `ChannelUser`. Релиз A только копирует данные из legacy `User` / `UserLottery` —
+// миграция чисто аддитивная, ни одного `DROP`; legacy-таблицы уходят отдельно.
+model Viewer {
+  id        String   @id @default(cuid())
+  twitchId  String   @unique
+  username  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  channelUsers ChannelUser[]
+}
+
+// `id` — `Int`, а не `cuid`, потому что настоящий ключ пары — это
+// `@@unique([channelId, viewerId])`, обе колонки уже строковые; суррогатный ключ
+// тут ничего не различает, а лидерборды сортируются по (`xp`, `coins`) внутри канала.
+model ChannelUser {
+  id             Int      @id @default(autoincrement())
+  channelId      String
+  viewerId       String
+  coins          Int      @default(0)
+  lvl            Int      @default(1)
+  xp             Int      @default(0)
+  lastXpAt       DateTime @default(now())
+  isMod          Boolean  @default(false)
+  isFounder      Boolean  @default(false)
+  isSubscriber   Boolean  @default(false)
+  isPermanentVip Boolean  @default(false)
+  spinsCount     Int      @default(0)
+  totalWin       Int      @default(0)
+  totalLoss      Int      @default(0)
+  xpThisWeek     Int      @default(0)
+  hasTicket      Boolean  @default(false)
+  isLuckyVip     Boolean  @default(false)
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  viewer  Viewer  @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, viewerId])
+  @@index([channelId, xp])
+  @@index([channelId, coins])
 }

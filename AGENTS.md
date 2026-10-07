@@ -33,6 +33,7 @@ use a topic prefix instead, with the suffix abbreviating the action (`generate`,
 | `pnpm prisma:m` | `prisma migrate dev` - local |
 | `pnpm --filter @fox-sphere/db prisma:migrate:deploy` | `prisma migrate deploy` - production migration step; applies only, generates no artifacts; run by CI, not by hand |
 | `pnpm prisma:s` | Prisma Studio |
+| `pnpm --filter bot-runtime backfill:channels` | One-shot script that copies the legacy `User` / `UserLottery` balances into `Viewer` / `ChannelUser` for one channel (login as `argv[2]`, default `TWITCH_CHANNEL_NAME`). Idempotent, and it runs on every deploy - see `apps/bot-runtime/scripts/backfill-channels.ts` |
 | `pnpm test` | `vitest run` in every member that has tests - `apps/admin`, `apps/overlay`, `packages/backend-shared` |
 | `pnpm new:pkg` | Scaffold a workspace package - see `docs/adding-a-package.md` |
 
