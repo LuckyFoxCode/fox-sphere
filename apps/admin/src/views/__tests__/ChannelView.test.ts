@@ -171,6 +171,19 @@ describe('ChannelsView', () => {
     expect(text).not.toContain('Channel not found');
   });
 
+  // The viewers screen is the only path into the channel-scoped balances, so the
+  // link has to exist and has to carry the channel's own login - a hard-coded
+  // path would render and still be wrong.
+  it('links to the viewers screen for this channel', async () => {
+    query.data = { status: 200, data: channel };
+
+    const wrapper = await mountView();
+    const link = wrapper.find('a[href="/channels/luckyfoxcode/viewers"]');
+
+    expect(link.exists()).toBe(true);
+    expect(link.text()).toContain('Viewers');
+  });
+
   it('renders the edit form once the channel is loaded', async () => {
     query.data = { status: 200, data: channel };
     const wrapper = await mountView();

@@ -368,6 +368,34 @@ One additive migration, then a backfill script, then — much later — a cleanu
 
 Never do step 6 in the same migration as step 1. If the numbers don't match, you want the old tables still sitting there.
 
+Steps 1–5 are Release A, and they are additive against every table that already
+existed: `Viewer` and `ChannelUser` are created, four indexes are created, and the two
+foreign keys arrive as separate `ALTER TABLE "ChannelUser" ADD CONSTRAINT ... FOREIGN KEY`
+statements. Both `ALTER`s target the table created earlier in the same file; `Channel` gets
+no DDL at all. Prisma's Postgres connector always emits foreign keys that way — there is no
+schema shape or flag that puts an inline `REFERENCES` inside `CREATE TABLE` — so a note
+claiming "zero `ALTER`, FK inside `CREATE TABLE`" describes SQL Prisma cannot generate.
+
+### Release B: remove the backfill deploy hook first
+
+`.github/workflows/deploy.yml` runs `backfill:channels` on **every** deploy, between
+`prisma migrate deploy` and the container swap. That is correct while the bot writes `User`,
+because the script's upsert carries `update: balance` over all 14 copied fields and `User` is
+then the source of truth.
+
+It stops being correct the instant a release reads or writes `ChannelUser`. The legacy
+tables freeze, and the next deploy silently overwrites every viewer's coins, xp, level and
+lottery state with those frozen values — a live rollback of real progress, with no error.
+
+The script cannot warn you: `reportCounts` compares `sum(coins) User` against
+`sum(coins) ChannelUser`, and after a destructive re-run those two match *by construction*.
+A green count report is not evidence that anything survived.
+
+So step 14 above ("Backfill and cutover") has a prerequisite the step does not mention:
+**delete the backfill step from `deploy.yml` in the same commit that first touches
+`ChannelUser`.** Then verify against a backup, not against the legacy tables — the legacy
+tables are stale by definition from that commit onwards.
+
 ---
 
 ## 8. How things flow

@@ -13,7 +13,7 @@ web
 
 ## Product Purpose
 
-The admin panel is a local development tool for managing fox-sphere channels, viewing bot status, and configuring stream settings. It provides a structured UI over the Express API (`apps/api` on `:3001`), with auto-generated typed clients from the OpenAPI spec. Not deployed to production.
+The admin panel is a local development tool for managing fox-sphere channels and inspecting their channel-scoped viewer balances. It provides a structured UI over the Express API (`apps/api` on `:3001`), with auto-generated typed clients from the OpenAPI spec. Not deployed to production.
 
 ## Positioning
 
@@ -31,6 +31,7 @@ An internal operator console — not a SaaS dashboard, not user-facing. It exist
 
 - **Dashboard:** overview/landing with nav links to features
 - **Channels:** list channels, create new channel, view channel details
+- **Viewers** (per channel, read-only): paginated viewer balances, coin and xp leaderboards, and a viewer detail row
 - Local-only — never deployed, accessed only on localhost
 - Multi-tenant awareness planned (per-channel admin access)
 - No authentication yet (local-only makes it acceptable for now)
@@ -47,7 +48,7 @@ None yet — clean slate. Uses shadcn-vue/ui component patterns but no custom br
 - Auto-generated typed API client from OpenAPI spec
 - Sidebar navigation with Dashboard and Channels views
 - Channel CRUD (list, create, detail)
-- No DESIGN.md, no visual tokens beyond Tailwind defaults
+- `DESIGN.md` (since 2026-08) and the shadcn token layer in `src/assets/styles/` — the panel is token-driven, not raw Tailwind defaults
 
 ## Product Principles
 
