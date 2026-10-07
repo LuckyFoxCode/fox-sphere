@@ -7,10 +7,12 @@ import { routes } from '../../router';
 
 type MockResponse = { status: number; data?: unknown };
 
-// Typed mock: vitest checks the factory against the module's real exports, so a
-// typo in a hook name fails the type-check instead of the runtime. Every hook the
-// view calls is here, and every value is a REAL ref - a plain `{ value }` object
-// reads as always-truthy in a template and every status branch misfires.
+// Mock state for the generated hooks. Note that these names are NOT checked
+// against the module's exports: vitest's `vi.mock(stringPath, factory)` overload
+// is untyped, so a typo in a hook name fails at runtime rather than at the
+// type-check. Every hook the view calls is here, and every value is a REAL ref -
+// a plain `{ value }` object reads as always-truthy in a template and every
+// status branch misfires.
 const query = vi.hoisted(() => ({
   list: { data: undefined as MockResponse | undefined, isPending: false, isError: false },
   leaderboard: { data: undefined as MockResponse | undefined, isPending: false, isError: false },

@@ -12,8 +12,20 @@
  *   pnpm --filter bot-runtime backfill:channels [login]
  *
  * The count/sum report is the whole verification story, because there is no
- * other automated check on this script: `count(User)` must equal
- * `count(ChannelUser)` and the two `sum(coins)` values must match.
+ * other automated check on this script. Read it as `count(User)` and
+ * `sum(coins) User` from the `before` report — one snapshot, taken before the
+ * copy loop — against `count(ChannelUser)` and `sum(coins) ChannelUser` from the
+ * `after` report. Both sides are table-wide counts, so the two agree exactly
+ * while these tables hold only this one channel; the only thing that can
+ * separate them is the handful of queries between that snapshot and the
+ * `findMany` the copy reads from.
+ *
+ * Do NOT compare the `after` report's own `User` side against `ChannelUser`:
+ * that read is fresh and the live bot is still writing `User` throughout, so on
+ * an active stream the two legitimately differ — every chat message moves `xp`,
+ * a spin moves `coins`, a new chatter adds a row — and the difference is
+ * indistinguishable from a mapping bug. Nothing is lost either way: the next
+ * deploy's `update: balance` re-converges.
  */
 // Kept for the DATABASE_URL contract. Note this reads `process.cwd()/.env`, which
 // is `apps/bot-runtime` - no `.env` there. What actually loads the repo-root
