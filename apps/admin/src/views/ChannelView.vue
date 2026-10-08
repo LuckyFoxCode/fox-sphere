@@ -111,6 +111,13 @@ const handleDelete = async () => {
       </div>
 
       <div class="flex gap-x-2">
+        <Button
+          as-child
+          variant="outline"
+          class="cursor-pointer"
+        >
+          <RouterLink :to="`/channels/${channel.login}/viewers`">Viewers</RouterLink>
+        </Button>
         <ConfirmDialog
           :on-confirm="handleDelete"
           confirm-text="Delete"

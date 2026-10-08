@@ -7,10 +7,15 @@
  */
 
 export * from './channel';
+export * from './channelLeaderboard';
 export * from './channelList';
 export * from './channelStatus';
+export * from './channelUser';
 export * from './createChannel';
 export * from './errorResponse';
 export * from './errorResponseErrors';
 export * from './errorResponseStatus';
+export * from './getChannelLeaderboardParams';
+export * from './listChannelUsersParams';
+export * from './paginatedChannelUsers';
 export * from './updateChannel';

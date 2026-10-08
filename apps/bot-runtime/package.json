@@ -9,6 +9,7 @@
     "start:prod": "tsx src/prod.ts",
     "dev": "tsx watch src/worker.ts",
     "dev:server": "tsx watch src/server.ts",
+    "backfill:channels": "tsx scripts/backfill-channels.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "worker:twitch": "tsx watch src/worker.ts"
