@@ -136,6 +136,127 @@
             "type": "boolean"
           }
         }
+      },
+      "PaginatedChannelUsers": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelUser"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "perPage": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "perPage"
+        ]
+      },
+      "ChannelUser": {
+        "type": "object",
+        "properties": {
+          "twitchId": {
+            "type": "string",
+            "example": "12345678"
+          },
+          "username": {
+            "type": "string",
+            "example": "luckyfoxcode"
+          },
+          "coins": {
+            "type": "number"
+          },
+          "lvl": {
+            "type": "number"
+          },
+          "xp": {
+            "type": "number"
+          },
+          "lastXpAt": {
+            "type": "string",
+            "example": "2026-10-07T12:00:00.000Z"
+          },
+          "isMod": {
+            "type": "boolean"
+          },
+          "isFounder": {
+            "type": "boolean"
+          },
+          "isSubscriber": {
+            "type": "boolean"
+          },
+          "isPermanentVip": {
+            "type": "boolean"
+          },
+          "spinsCount": {
+            "type": "number"
+          },
+          "totalWin": {
+            "type": "number"
+          },
+          "totalLoss": {
+            "type": "number"
+          },
+          "xpThisWeek": {
+            "type": "number"
+          },
+          "hasTicket": {
+            "type": "boolean"
+          },
+          "isLuckyVip": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "twitchId",
+          "username",
+          "coins",
+          "lvl",
+          "xp",
+          "lastXpAt",
+          "isMod",
+          "isFounder",
+          "isSubscriber",
+          "isPermanentVip",
+          "spinsCount",
+          "totalWin",
+          "totalLoss",
+          "xpThisWeek",
+          "hasTicket",
+          "isLuckyVip"
+        ]
+      },
+      "ChannelLeaderboard": {
+        "type": "object",
+        "properties": {
+          "topCoins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelUser"
+            }
+          },
+          "topXp": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelUser"
+            }
+          }
+        },
+        "required": [
+          "topCoins",
+          "topXp"
+        ]
       }
     },
     "parameters": {}
@@ -383,6 +504,231 @@
           },
           "404": {
             "description": "Channel not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{login}/viewers": {
+      "get": {
+        "tags": [
+          "ChannelUsers"
+        ],
+        "summary": "List a channel's viewers",
+        "operationId": "listChannelUsers",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "luckyfoxcode"
+            },
+            "required": true,
+            "name": "login",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            },
+            "required": false,
+            "name": "perPage",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page of viewers; empty when the channel has none",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedChannelUsers"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid pagination",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Channel not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{login}/leaderboard": {
+      "get": {
+        "tags": [
+          "ChannelUsers"
+        ],
+        "summary": "Get a channel's coin and xp leaderboards",
+        "operationId": "getChannelLeaderboard",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "luckyfoxcode"
+            },
+            "required": true,
+            "name": "login",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Top viewers by coins and by xp",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelLeaderboard"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Channel not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{login}/viewers/{twitchId}": {
+      "get": {
+        "tags": [
+          "ChannelUsers"
+        ],
+        "summary": "Get one viewer of a channel",
+        "operationId": "getChannelUser",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "login",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "twitchId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Viewer found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelUser"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid login or twitchId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Channel or viewer not found",
             "content": {
               "application/json": {
                 "schema": {

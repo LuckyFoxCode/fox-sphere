@@ -104,6 +104,10 @@ jobs:
             docker compose pull
             # Run migrations before swapping the app (one-shot container).
             docker compose run --rm bot-runtime pnpm --filter @fox-sphere/db prisma:migrate:deploy
+            # Copy legacy balances into the channel-scoped tables. Idempotent: upserts, and
+            # Channel is never recreated. Must run BEFORE the container swap, otherwise a
+            # future release that reads ChannelUser boots against empty tables.
+            docker compose run --rm bot-runtime pnpm --filter bot-runtime backfill:channels
             # --remove-orphans: a container left over from a previous service name keeps
             # running beside the new one - two Twitch workers on one channel, so every
             # chat command and EventSub event is handled twice.

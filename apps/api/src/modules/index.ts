@@ -1,5 +1,6 @@
 import type { Router } from "express";
 import { channelRouter } from "./channel";
+import { channelUserRouter } from "./channel-user";
 
 /**
  * The single list of feature modules. `app.ts` mounts it and `dump-openapi.ts`
@@ -8,4 +9,5 @@ import { channelRouter } from "./channel";
  */
 export const modules: readonly { prefix: string; router: Router }[] = [
   { prefix: "/api", router: channelRouter },
+  { prefix: "/api", router: channelUserRouter },
 ];
