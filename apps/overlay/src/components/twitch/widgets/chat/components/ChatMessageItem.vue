@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { TwitchEmote } from '@/components/ui';
-import { getRankConfigByLevel, RANK_BADGES } from '@/constants';
+import { getRankConfigByLevel, MAX_ICON_TIER, RANK_BADGES } from '@/constants';
 import { getAnnounceStyle, parseTwitchEmotes } from '@/utils/twitch';
 import type { TwitchChatMessagePayload } from '@fox-sphere/types';
 import { computed } from 'vue';
@@ -20,7 +20,7 @@ const medal = computed(
           props.message.isBroadcaster,
           props.message.isBot,
         ).tier,
-        9,
+        MAX_ICON_TIER,
       )
     ],
 );

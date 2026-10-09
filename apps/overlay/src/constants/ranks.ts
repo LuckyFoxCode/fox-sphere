@@ -56,6 +56,10 @@ export const RANK_RINGS: Record<number, Component> = {
   9: IconRing09,
 };
 
+// Визуальных рангов девять: IconRank01..09 и IconRing01..09, иконки свыше не будет.
+// Tier 10 (OVERLORD) намеренно показывается девятым знаком — свой десятый не рисуем.
+export const MAX_ICON_TIER = 9;
+
 export const RANK_TIERS = {
   1: { gradient: 'linear-gradient(to right, #4B5563, #FEF08A, #4B5563)' },
   2: { gradient: 'linear-gradient(to right, #FCD34D, #B45309, #FCD34D)' },

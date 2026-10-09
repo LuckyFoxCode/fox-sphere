@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { getRankConfigByLevel, RANK_BADGES, RANK_TIERS, TITLE_CONFIG } from '../ranks';
+import {
+  getRankConfigByLevel,
+  MAX_ICON_TIER,
+  RANK_BADGES,
+  RANK_RINGS,
+  RANK_TIERS,
+  TITLE_CONFIG,
+} from '../ranks';
 
 describe('getRankConfigByLevel', () => {
   it('resolves each rank across its level band', () => {
@@ -80,7 +87,8 @@ describe('rank level bands', () => {
 });
 
 describe('rank badge lookup', () => {
-  const badgeTier = (level: number) => Math.min(getRankConfigByLevel(level).tier, 9);
+  const badgeTier = (level: number) =>
+    Math.min(getRankConfigByLevel(level).tier, MAX_ICON_TIER);
 
   it('maps every level to an existing badge icon', () => {
     for (let level = 1; level <= 120; level += 1) {
@@ -89,8 +97,8 @@ describe('rank badge lookup', () => {
   });
 
   it('clamps the top tier onto the last badge', () => {
-    expect(badgeTier(100)).toBe(9);
-    expect(badgeTier(500)).toBe(9);
+    expect(badgeTier(100)).toBe(MAX_ICON_TIER);
+    expect(badgeTier(500)).toBe(MAX_ICON_TIER);
   });
 
   it('distinguishes lower tiers', () => {
@@ -103,5 +111,16 @@ describe('rank badge lookup', () => {
   it('reuses one badge per tier', () => {
     expect(badgeTier(1)).toBe(badgeTier(8));
     expect(RANK_BADGES[badgeTier(1)]).toBe(RANK_BADGES[badgeTier(8)]);
+  });
+
+  it('gives every tier in use both a badge and a ring', () => {
+    for (const tier of new Set(TITLE_CONFIG.map((rank) => rank.tier))) {
+      expect(RANK_BADGES[Math.min(tier, MAX_ICON_TIER)]).toBeDefined();
+      expect(RANK_RINGS[Math.min(tier, MAX_ICON_TIER)]).toBeDefined();
+    }
+  });
+
+  it('keeps exactly one tier above the last icon, the top rank', () => {
+    expect(Math.max(...TITLE_CONFIG.map((rank) => rank.tier))).toBe(MAX_ICON_TIER + 1);
   });
 });
