@@ -137,7 +137,7 @@ export class ChatbotService {
       this.botUsername = botUser.name;
       this.botDisplayName = botUser.displayName;
 
-      await this.userService.findOrCreateUser(
+      await this.userService.ensureUserExists(
         config.twitch.botId,
         this.botUsername,
       );

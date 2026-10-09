@@ -31,45 +31,58 @@ export class UserService {
     private watchStreakService: WatchStreakService = new WatchStreakService(),
   ) {}
 
-  public async findOrCreateUser(twitchId: string, username: string) {
+  /**
+   * Makes sure a `User` row exists for this Twitch id, creating it if needed.
+   *
+   * Returns nothing on purpose. The one thing this method has to guarantee is the
+   * side effect: a newly created user emits `user:created`, and `HeroService` hangs a hero
+   * assignment off that. Both callers ignored the return value, so an earlier version could
+   * return one — and did return `undefined` for every viewer already in `verifiedUsers`, since
+   * the whole body sat inside `if (!isVerified)`. Nothing caught it because a `find or create`
+   * that resolves to nothing invites the exact caller that would have relied on it: `if (!user)
+   * throw new NotFoundError()`. Dropping the return removes that trap rather than papering
+   * over it.
+   */
+  public async ensureUserExists(
+    twitchId: string,
+    username: string,
+  ): Promise<void> {
     try {
-      if (!this.cache.isVerified(twitchId)) {
-        let user = await prisma.user.findUnique({
-          where: { twitchId },
+      if (this.cache.isVerified(twitchId)) return;
+
+      let user = await prisma.user.findUnique({
+        where: { twitchId },
+      });
+
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            twitchId,
+            username,
+          },
         });
 
-        if (!user) {
-          user = await prisma.user.create({
+        globalEventBus.emit("user:created", {
+          twitchId: user.twitchId,
+          username: user.username,
+        });
+      } else {
+        if (user.username !== username) {
+          user = await prisma.user.update({
+            where: { twitchId },
             data: {
-              twitchId,
               username,
             },
           });
-
-          globalEventBus.emit("user:created", {
-            twitchId: user.twitchId,
-            username: user.username,
-          });
-        } else {
-          if (user.username !== username) {
-            user = await prisma.user.update({
-              where: { twitchId },
-              data: {
-                username,
-              },
-            });
-          }
-
-          const lastXpTime = user.lastXpAt
-            ? new Date(user.lastXpAt).getTime()
-            : 0;
-          this.cache.setLastXpAt(user.twitchId, lastXpTime);
         }
 
-        this.cache.markVerified(twitchId);
-
-        return user;
+        const lastXpTime = user.lastXpAt
+          ? new Date(user.lastXpAt).getTime()
+          : 0;
+        this.cache.setLastXpAt(user.twitchId, lastXpTime);
       }
+
+      this.cache.markVerified(twitchId);
     } catch (error) {
       Logger.error(
         "UserService",
