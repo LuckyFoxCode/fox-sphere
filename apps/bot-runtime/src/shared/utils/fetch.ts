@@ -1,3 +1,5 @@
+import { delay } from "./delay";
+
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_RETRIES = 3;
 const RETRY_BASE_DELAY_MS = 500;
@@ -16,9 +18,6 @@ export class FetchHttpError extends Error {
 
 const isRetryableStatus = (status: number): boolean =>
   status === 429 || status >= 500;
-
-const delay = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
 
 async function fetchOnce(url: string, timeoutMs: number): Promise<Response> {
   const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
