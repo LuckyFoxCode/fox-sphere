@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { getRankConfigByLevel, RANK_RINGS } from '@/constants';
+import { getRankConfigByLevel, MAX_ICON_TIER, RANK_RINGS } from '@/constants';
 import { computed } from 'vue';
 
 const props = defineProps<{ level: number }>();
 
-const ring = computed(() => RANK_RINGS[Math.min(getRankConfigByLevel(props.level).tier, 9)]);
+const ring = computed(
+  () => RANK_RINGS[Math.min(getRankConfigByLevel(props.level).tier, MAX_ICON_TIER)],
+);
 </script>
 
 <template>
