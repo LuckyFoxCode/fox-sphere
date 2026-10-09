@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getRankConfigByLevel, RANK_BADGES, RANK_TIERS } from '../ranks';
+import { getRankConfigByLevel, RANK_BADGES, RANK_TIERS, TITLE_CONFIG } from '../ranks';
 
 describe('getRankConfigByLevel', () => {
   it('resolves each rank across its level band', () => {
@@ -36,6 +36,46 @@ describe('getRankConfigByLevel', () => {
   it('carries the tier gradient onto every rank', () => {
     expect(getRankConfigByLevel(1).gradient).toBe(RANK_TIERS[1].gradient);
     expect(getRankConfigByLevel(100).gradient).toBe(RANK_TIERS[10].gradient);
+  });
+});
+
+describe('rank level bands', () => {
+  it('starts at level 1 and leaves no gap between bands', () => {
+    expect(TITLE_CONFIG[0]!.minLvl).toBe(1);
+
+    for (let i = 1; i < TITLE_CONFIG.length; i += 1) {
+      const prev = TITLE_CONFIG[i - 1]!;
+      const current = TITLE_CONFIG[i]!;
+      expect(current.minLvl).toBe(prev.maxLvl + 1);
+    }
+  });
+
+  it('never inverts a band and never closes the top rank', () => {
+    for (const rank of TITLE_CONFIG) {
+      expect(rank.maxLvl).toBeGreaterThanOrEqual(rank.minLvl);
+    }
+
+    expect(TITLE_CONFIG[TITLE_CONFIG.length - 1]!.maxLvl).toBe(Infinity);
+  });
+
+  it('resolves every level to a band that actually contains it', () => {
+    for (let level = 1; level <= 250; level += 1) {
+      const resolved = getRankConfigByLevel(level);
+      const band = TITLE_CONFIG.find((item) => item.rankTitle === resolved.rankTitle);
+
+      if (!band) {
+        throw new Error(`level ${level} resolved to unknown rank "${resolved.rankTitle}"`);
+      }
+
+      expect(level).toBeGreaterThanOrEqual(band.minLvl);
+      expect(level).toBeLessThanOrEqual(band.maxLvl);
+    }
+  });
+
+  it('gives every band a title reachable at its own lower bound', () => {
+    for (const rank of TITLE_CONFIG) {
+      expect(getRankConfigByLevel(rank.minLvl).rankTitle).toBe(rank.rankTitle);
+    }
   });
 });
 
