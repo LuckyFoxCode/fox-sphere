@@ -12,11 +12,10 @@ import { HeroService } from "../hero";
 import { LotteryService } from "../lottery";
 import { StreamService } from "../stream";
 import type { ExchangePackage } from "../twitch/twitch.constants";
-import {
-  COOLDOWNS,
-  isWatchStreakRewardLevel,
-  XP_REWARDS,
-} from "./user.constants";
+import { COOLDOWNS, XP_REWARDS } from "./user.constants";
+import { UserCache } from "./user-cache";
+import type { WatchStreakAward } from "./watch-streak.service";
+import { WatchStreakService } from "./watch-streak.service";
 
 type ExchangeChannelPointsResult =
   | { status: "credited"; awarded: number }
@@ -24,21 +23,17 @@ type ExchangeChannelPointsResult =
   | { status: "user-not-found" };
 
 export class UserService {
-  private verifiedUsersCache = new Set<string>();
-  private xpCooldownCache = new Map<string, number>();
-  private lotteryCooldownCache = new Map<string, number>();
-  private coinsCache = new Map<string, { coins: number; createdAt: number }>();
-  private heroCache = new Map<string, { heroId: string; createdAt: number }>();
-
   constructor(
     private lotteryService: LotteryService,
     private streamService: StreamService,
     private heroService: HeroService,
+    private cache: UserCache = new UserCache(),
+    private watchStreakService: WatchStreakService = new WatchStreakService(),
   ) {}
 
   public async findOrCreateUser(twitchId: string, username: string) {
     try {
-      if (!this.verifiedUsersCache.has(twitchId)) {
+      if (!this.cache.isVerified(twitchId)) {
         let user = await prisma.user.findUnique({
           where: { twitchId },
         });
@@ -68,10 +63,10 @@ export class UserService {
           const lastXpTime = user.lastXpAt
             ? new Date(user.lastXpAt).getTime()
             : 0;
-          this.xpCooldownCache.set(user.twitchId, lastXpTime);
+          this.cache.setLastXpAt(user.twitchId, lastXpTime);
         }
 
-        this.verifiedUsersCache.add(twitchId);
+        this.cache.markVerified(twitchId);
 
         return user;
       }
@@ -86,37 +81,34 @@ export class UserService {
   }
 
   public async addVipToDb(twitchId: string, username: string): Promise<void> {
-    try {
-      await prisma.user.upsert({
-        where: {
-          twitchId: twitchId,
-        },
-        update: {
-          isPermanentVip: true,
-          username,
-        },
-        create: {
-          isPermanentVip: true,
-          twitchId: twitchId,
-          username,
-        },
-      });
-      Logger.debug(
-        "UserService",
-        `✩°｡🧸𓏲⋆.🧺𖦹 ₊˚ Successfully added permanent VIP ${username} in Prisma.`,
-      );
-    } catch (error) {
-      Logger.error(
-        "UserService",
-        `𓏲๋࣭࣪˖🪼.ᐟ Failed to add VIP for user: ${twitchId}`,
-        error,
-      );
-    }
+    await this.setPermanentVip(
+      twitchId,
+      username,
+      true,
+      `✩°｡🧸𓏲⋆.🧺𖦹 ₊˚ Successfully added permanent VIP ${username} in Prisma.`,
+      `𓏲๋࣭࣪˖🪼.ᐟ Failed to add VIP for user: ${twitchId}`,
+    );
   }
 
   public async removeVipFromDb(
     twitchId: string,
     username: string,
+  ): Promise<void> {
+    await this.setPermanentVip(
+      twitchId,
+      username,
+      false,
+      `✩°｡🧸𓏲⋆.🧺𖦹 ₊˚ Successfully remove permanent VIP ${username} in Prisma.`,
+      `𓏲๋࣭࣪˖🪼.ᐟ Failed to remove VIP for user: ${twitchId}`,
+    );
+  }
+
+  private async setPermanentVip(
+    twitchId: string,
+    username: string,
+    isPermanentVip: boolean,
+    successMessage: string,
+    failureMessage: string,
   ): Promise<void> {
     try {
       await prisma.user.upsert({
@@ -124,25 +116,18 @@ export class UserService {
           twitchId: twitchId,
         },
         update: {
-          isPermanentVip: false,
+          isPermanentVip,
           username,
         },
         create: {
-          isPermanentVip: false,
-          twitchId,
+          isPermanentVip,
+          twitchId: twitchId,
           username,
         },
       });
-      Logger.debug(
-        "UserService",
-        `✩°｡🧸𓏲⋆.🧺𖦹 ₊˚ Successfully remove permanent VIP ${username} in Prisma.`,
-      );
+      Logger.debug("UserService", successMessage);
     } catch (error) {
-      Logger.error(
-        "UserService",
-        `𓏲๋࣭࣪˖🪼.ᐟ Failed to remove VIP for user: ${twitchId}`,
-        error,
-      );
+      Logger.error("UserService", failureMessage, error);
     }
   }
 
@@ -169,17 +154,17 @@ export class UserService {
 
       if (!userWithLottery) return;
 
-      const lastLotteryTime = this.lotteryCooldownCache.get(twitchId) || 0;
+      const lastLotteryTime = this.cache.getLastLotteryXpAt(twitchId);
 
       if (now - lastLotteryTime >= COOLDOWNS.XP_LOTTERY_COOLDOWN) {
         await this.lotteryService.processMessageXp(
           userWithLottery.id,
           Number(XP_REWARDS.LOTTERY),
         );
-        this.lotteryCooldownCache.set(twitchId, now);
+        this.cache.setLastLotteryXpAt(twitchId, now);
       }
 
-      const lastXpTime = this.xpCooldownCache.get(twitchId) || 0;
+      const lastXpTime = this.cache.getLastXpAt(twitchId);
       if (now - lastXpTime < COOLDOWNS.XP_MESSAGE_COOLDOWN) return;
 
       const isVip =
@@ -199,7 +184,7 @@ export class UserService {
         },
       });
 
-      this.xpCooldownCache.set(twitchId, now);
+      this.cache.setLastXpAt(twitchId, now);
       await this.checkAndUpgradeLevel(updatedUser);
       await this.streamService.updateStreamXp(finalXpAmount);
     } catch (error) {
@@ -279,7 +264,7 @@ export class UserService {
       },
     });
 
-    this.coinsCache.delete(twitchId);
+    this.cache.invalidateCoins(twitchId);
 
     Logger.debug(
       "UserService",
@@ -346,7 +331,7 @@ export class UserService {
       throw error;
     }
 
-    this.coinsCache.delete(twitchId);
+    this.cache.invalidateCoins(twitchId);
 
     Logger.debug(
       "UserService",
@@ -386,11 +371,9 @@ export class UserService {
 
   public async getUserCoins(twitchId: string): Promise<number> {
     const now = Date.now();
-    const cacheData = this.coinsCache.get(twitchId);
+    const cachedCoins = this.cache.getCoins(twitchId, now);
 
-    if (cacheData && now - cacheData.createdAt < COOLDOWNS.COINS_CACHE_TTL) {
-      return cacheData.coins;
-    }
+    if (cachedCoins !== undefined) return cachedCoins;
 
     const user = await prisma.user.findUnique({
       where: { twitchId },
@@ -399,23 +382,17 @@ export class UserService {
 
     const currentCoins = user ? user.coins : 0;
 
-    this.coinsCache.set(twitchId, { coins: currentCoins, createdAt: now });
+    this.cache.setCoins(twitchId, currentCoins, now);
 
     return currentCoins;
   }
 
   public invalidateCoins(twitchId: string): void {
-    this.coinsCache.delete(twitchId);
+    this.cache.invalidateCoins(twitchId);
   }
 
-  /**
-   * Drops the cached hero so the next message re-reads the row.
-   *
-   * The TTL alone is not enough once a hero can be bought: a purchase has to be visible on
-   * the next message, not 30 seconds later.
-   */
   public invalidateHero(twitchId: string): void {
-    this.heroCache.delete(twitchId);
+    this.cache.invalidateHero(twitchId);
   }
 
   public async getUserWithHero(
@@ -438,15 +415,13 @@ export class UserService {
 
     if (!user) return null;
 
-    const cached = this.heroCache.get(twitchId);
     const now = Date.now();
+    const cached = this.cache.getHero(twitchId, now);
 
     const heroId =
-      cached && now - cached.createdAt < COOLDOWNS.HERO_CACHE_TTL
-        ? cached.heroId
-        : await this.heroService.ensureUserHasHero(user.id);
+      cached ?? (await this.heroService.ensureUserHasHero(user.id));
 
-    this.heroCache.set(twitchId, { heroId, createdAt: now });
+    this.cache.setHero(twitchId, heroId, now);
 
     return {
       lvl: user.lvl,
@@ -459,129 +434,12 @@ export class UserService {
   public async awardWatchStreak(
     twitchId: string,
     streakValue: number,
-  ): Promise<{
-    xpAwarded: number;
-    coinsAwarded: number;
-    isRepeat: boolean;
-  } | null> {
-    if (!isWatchStreakRewardLevel(streakValue)) return null;
-
-    try {
-      const user = await prisma.user.findUnique({ where: { twitchId } });
-      if (!user) return null;
-
-      const existing = await prisma.watchStreak.findUnique({
-        where: {
-          userId_streakValue: { userId: user.id, streakValue },
-        },
-      });
-
-      if (existing) {
-        const halfXp = Math.floor((streakValue * 7) / 2);
-        const halfCoins = Math.floor((streakValue * 100) / 2);
-
-        await this.awardWatchStreakRewards(
-          twitchId,
-          user.id,
-          halfXp,
-          halfCoins,
-          streakValue,
-        );
-
-        Logger.debug(
-          "UserService",
-          `Watch streak ${streakValue} already awarded for ${twitchId} — repeat, half reward`,
-        );
-
-        return { xpAwarded: halfXp, coinsAwarded: halfCoins, isRepeat: true };
-      }
-
-      const xpAwarded = streakValue * 7;
-      const coinsAwarded = streakValue * 100;
-
-      await prisma.$transaction(async (tx) => {
-        await tx.watchStreak.create({
-          data: { userId: user.id, streakValue },
-        });
-
-        await this.awardWatchStreakRewards(
-          twitchId,
-          user.id,
-          xpAwarded,
-          coinsAwarded,
-          streakValue,
-          tx,
-        );
-      });
-
-      return { xpAwarded, coinsAwarded, isRepeat: false };
-    } catch (error) {
-      if (error instanceof Error && "code" in error && error.code === "P2002") {
-        Logger.info(
-          "UserService",
-          `Watch streak ${streakValue} already awarded for ${twitchId} — repeat, widget without rewards`,
-        );
-        return { xpAwarded: 0, coinsAwarded: 0, isRepeat: true };
-      }
-
-      Logger.error(
-        "UserService",
-        `Failed to award watch streak for ${twitchId}`,
-        error,
-      );
-
-      return null;
-    }
-  }
-
-  private async awardWatchStreakRewards(
-    twitchId: string,
-    userId: number,
-    xpAwarded: number,
-    coinsAwarded: number,
-    streakValue: number,
-    tx?: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
-  ): Promise<void> {
-    const run = async (
-      t: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
-    ) => {
-      await t.user.update({
-        where: { twitchId },
-        data: {
-          xp: { increment: xpAwarded },
-          coins: { increment: coinsAwarded },
-        },
-      });
-
-      await t.xpHistory.create({
-        data: {
-          userId,
-          amount: xpAwarded,
-          reason: "WATCH_STREAK",
-          details: `Watch streak: ${streakValue} streams`,
-        },
-      });
-
-      await t.coinHistory.create({
-        data: {
-          userId,
-          amount: coinsAwarded,
-          reason: "WATCH_STREAK",
-          details: `Watch streak: ${streakValue} streams`,
-        },
-      });
-    };
-
-    if (tx) {
-      await run(tx);
-    } else {
-      await prisma.$transaction(run);
-    }
+  ): Promise<WatchStreakAward | null> {
+    return await this.watchStreakService.award(twitchId, streakValue);
   }
 
   public clearCache(): void {
-    this.verifiedUsersCache.clear();
-    this.heroCache.clear();
+    this.cache.clearAll();
     Logger.info("UserService", "User cache cleared successfully🧹");
   }
 }
