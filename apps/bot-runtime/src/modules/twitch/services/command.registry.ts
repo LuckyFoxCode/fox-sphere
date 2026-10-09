@@ -38,7 +38,7 @@ import {
   XpBoostCommand,
 } from "../commands/moderation";
 
-export class CommandRegisry {
+export class CommandRegistry {
   private commands = new Map<string, TwitchCommand>();
   private globalCooldowns = new Set<string>();
   private userCooldowns = new Map<string, Map<string, { expiresAt: number; notified: boolean }>>();

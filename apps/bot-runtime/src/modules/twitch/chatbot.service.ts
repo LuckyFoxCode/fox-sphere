@@ -1,6 +1,5 @@
-import { config, Logger, prisma } from "@fox-sphere/backend-shared";
+import { config, Logger } from "@fox-sphere/backend-shared";
 import {
-  LotteryUserDto,
   TwitchAnnouncementColor,
   TwitchChatMessagePayload,
 } from "@fox-sphere/types";
@@ -8,12 +7,16 @@ import { ApiClient } from "@twurple/api";
 import { RefreshingAuthProvider } from "@twurple/auth";
 import { ChatClient, type ChatMessage } from "@twurple/chat";
 import { randomUUID } from "node:crypto";
-import { globalEventBus } from "../../shared/services/event-bus.service";
-import { LOTTERY_DELAYS, LOTTERY_MESSAGES } from "../lottery";
-import { FISHING_MESSAGES, FishingService } from "../fishing";
+import { globalEventBus } from "../../shared/services";
+import { FishingService } from "../fishing";
 import { RouletteService } from "../roulette";
 import { StreamService } from "../stream";
 import { COOLDOWNS as USER_COOLDOWNS, UserService } from "../user";
+import {
+  buildChatMessagePayload,
+  LotteryVipRotation,
+  registerChatEventListeners,
+} from "./chat";
 import {
   CoinExchangeHandler,
   LeaderboardHandler,
@@ -22,11 +25,11 @@ import {
 } from "./handlers";
 import {
   AnnouncementService,
-  CommandRegisry,
+  CommandRegistry,
   TwitchActivityService,
   TwitchBadgeService,
 } from "./services";
-import { BOT_MESSAGES, EXCHANGE_PACKAGES } from "./twitch.constants";
+import { EXCHANGE_PACKAGES } from "./twitch.constants";
 import { TwitchConfig } from "./twitch.types";
 
 export class ChatbotService {
@@ -34,7 +37,7 @@ export class ChatbotService {
   private apiClient!: ApiClient;
   private activityService: TwitchActivityService;
   private badgeService!: TwitchBadgeService;
-  private commandRegistry: CommandRegisry;
+  private commandRegistry: CommandRegistry;
   private announcementService: AnnouncementService;
   private botUsername = "";
   private botDisplayName = "";
@@ -56,7 +59,7 @@ export class ChatbotService {
       this.userService,
       this.twitchConfig,
     );
-    this.commandRegistry = new CommandRegisry(
+    this.commandRegistry = new CommandRegistry(
       this,
       this.userService,
       this.streamService,
@@ -91,7 +94,7 @@ export class ChatbotService {
         channels: [this.twitchConfig.channelName],
       });
 
-      this.setupGlobalEventListers();
+      this.setupChatEventListeners();
       this.setupChatClientListeners();
 
       this.chatClient.connect();
@@ -134,7 +137,7 @@ export class ChatbotService {
       this.botUsername = botUser.name;
       this.botDisplayName = botUser.displayName;
 
-      await this.userService.findOrCreateUser(
+      await this.userService.ensureUserExists(
         config.twitch.botId,
         this.botUsername,
       );
@@ -193,320 +196,22 @@ export class ChatbotService {
     this.rewardHandlers.set(stats.rewardTitle, stats);
   }
 
-  private setupGlobalEventListers(): void {
-    globalEventBus.on("lottery:ticket-earned", async (data) => {
-      if (config.nodeEnv === "development") return;
-
-      try {
-        const message = LOTTERY_MESSAGES.TICKET_EARNED(data.username);
-        await this.sendMessage(this.twitchConfig.channelName, message);
-      } catch (error) {
-        Logger.error(
-          "ChatbotService",
-          `Failed to send ticket alert for ${data.username}`,
-          error,
-        );
-      }
+  private setupChatEventListeners(): void {
+    const lotteryVipRotation = new LotteryVipRotation({
+      apiClient: this.apiClient,
+      twitchConfig: this.twitchConfig,
+      sendMessage: (channel, message) => this.sendMessage(channel, message),
+      sendAnnouncement: (message, color) => this.sendAnnouncement(message, color),
     });
 
-    globalEventBus.on("fish:bite", async (data) => {
-      try {
-        const message = FISHING_MESSAGES.BITE(data.username);
-        await this.sendMessage(data.channel, message);
-      } catch (error) {
-        Logger.error(
-          "ChatbotService",
-          `Failed to send fishing bite for ${data.username}`,
-          error,
-        );
-      }
+    registerChatEventListeners({
+      twitchConfig: this.twitchConfig,
+      apiClient: this.apiClient,
+      rewardHandlers: this.rewardHandlers,
+      lotteryVipRotation,
+      sendMessage: (channel, message) => this.sendMessage(channel, message),
+      sendAnnouncement: (message, color) => this.sendAnnouncement(message, color),
     });
-
-    globalEventBus.on("fish:expired", async (data) => {
-      try {
-        const message = FISHING_MESSAGES.EXPIRED(data.username);
-        await this.sendMessage(data.channel, message);
-      } catch (error) {
-        Logger.error(
-          "ChatbotService",
-          `Failed to send fishing expiry for ${data.username}`,
-          error,
-        );
-      }
-    });
-
-    globalEventBus.on("lottery:no-participants", async (data) => {
-      try {
-        await this.removeVipFromUsers(data.oldWinners);
-        await this.sendMessage(
-          this.twitchConfig.channelName,
-          LOTTERY_MESSAGES.LOTTERY_POSTPONED_NO_PARTICIPANTS,
-        );
-      } catch (error) {
-        Logger.error(
-          "ChatbotService",
-          "Failed to handle no-participants cleanup",
-          error,
-        );
-      }
-    });
-
-    globalEventBus.on("lottery:winners", async (data) => {
-      try {
-        const { oldWinners, newWinners } = data;
-        const channelId = this.twitchConfig.userId;
-        const channelName = this.twitchConfig.channelName;
-
-        const delay = (ms: number) =>
-          new Promise((resolve) => setTimeout(resolve, ms));
-
-        Logger.info(
-          "ChatbotService",
-          "Начался процесс ротации лотерейных VIP-статусов...",
-        );
-
-        await this.removeVipFromUsers(data.oldWinners, data.newWinners);
-
-        await this.sendAnnouncement(
-          LOTTERY_MESSAGES.START_ANNOUNCEMENT,
-          "purple",
-        );
-
-        await delay(LOTTERY_DELAYS.ROTATION_PAUSE);
-
-        for (let i = 0; i < newWinners.length; i++) {
-          const winner = newWinners[i];
-          const placesLeft = newWinners.length - (i + 1);
-
-          try {
-            const wasWinnerAlready = oldWinners.some(
-              (ow) => ow.twitchId === winner.twitchId,
-            );
-
-            if (wasWinnerAlready) {
-              Logger.info(
-                "ChatbotService",
-                `@${winner.username} уже имеет VIP с прошлой недели. Пропускаем запрос.`,
-              );
-              const message = LOTTERY_MESSAGES.REPEATED_WINNER(
-                i + 1,
-                winner.username,
-                placesLeft,
-              );
-              await this.sendMessage(channelName, message);
-
-              globalEventBus.emit("lottery:winner-drawn", {
-                place: i + 1,
-                username: winner.username,
-                twitchId: winner.twitchId,
-              });
-
-              if (placesLeft > 0) await delay(LOTTERY_DELAYS.NEXT_WINNER_PAUSE);
-              continue;
-            }
-
-            await this.apiClient.asUser(channelId, async (ctx) => {
-              await ctx.channels.addVip(channelId, winner.twitchId);
-            });
-
-            Logger.info(
-              "ChatbotService",
-              `VIP успешно выдан для @${winner.username}`,
-            );
-            const message = LOTTERY_MESSAGES.NEW_WINNER(
-              i + 1,
-              winner.username,
-              placesLeft,
-            );
-            await this.sendMessage(channelName, message);
-
-            globalEventBus.emit("lottery:winner-drawn", {
-              place: i + 1,
-              username: winner.username,
-              twitchId: winner.twitchId,
-            });
-          } catch (error) {
-            Logger.error(
-              "ChatbotService",
-              `Ошибка при выдаче VIP для ${winner.username}`,
-              error,
-            );
-
-            const message = LOTTERY_MESSAGES.ERROR_ADDING_VIP(winner.username);
-            await this.sendMessage(channelName, message);
-          }
-
-          if (placesLeft > 0) {
-            await delay(LOTTERY_DELAYS.NEXT_WINNER_PAUSE);
-          }
-        }
-
-        await delay(LOTTERY_DELAYS.FINAL_PAUSE);
-
-        await this.sendAnnouncement(
-          LOTTERY_MESSAGES.FINAL_ANNOUNCEMENT,
-          "purple",
-        );
-        globalEventBus.emit("lottery:finished", { winners: newWinners });
-      } catch (error) {
-        Logger.error("ChatbotService", `Failed to send winners alert`, error);
-      }
-    });
-
-    globalEventBus.on("stream:level-up", async (data) => {
-      if (config.nodeEnv === "development") {
-        Logger.debug(
-          "ChatbotService",
-          `💤[DEV] Skipped stream level-up: Level ${data.lvl}`,
-        );
-        return;
-      }
-
-      try {
-        const message = BOT_MESSAGES.ALERTS.LEVEL_UP_STREAM(data.lvl);
-        await this.sendMessage(this.twitchConfig.channelName, message);
-      } catch (error) {
-        Logger.error(
-          "ChatbotService",
-          `Failed to send level-up message to chat`,
-          error,
-        );
-      }
-    });
-
-    globalEventBus.on("user:level-up", async (data) => {
-      if (config.nodeEnv === "development") {
-        Logger.debug(
-          "ChatbotService",
-          `💤[DEV] Skipped auto level-up for ${data.username}`,
-        );
-        return;
-      }
-
-      try {
-        const message = BOT_MESSAGES.ALERTS.LEVEL_UP_USER(
-          data.username,
-          data.newLevel,
-        );
-        await this.sendMessage(this.twitchConfig.channelName, message);
-      } catch (error) {
-        Logger.error(
-          "ChatbotService",
-          `Failed to send level-up message for ${data.username}`,
-          error,
-        );
-      }
-    });
-
-    globalEventBus.on("twitch:follow", async (data) => {
-      if (config.nodeEnv === "development") {
-        Logger.debug(
-          "ChatbotService",
-          `💤[DEV] Skipped auto follow announcement for @${data.username}`,
-        );
-        return;
-      }
-
-      try {
-        const message = BOT_MESSAGES.ALERTS.FOLLOW(data.username);
-        await this.sendMessage(this.twitchConfig.channelName, message);
-      } catch (error) {
-        Logger.error(
-          "ChatbotService",
-          `Failed to send follow alert message for user: ${data.username}`,
-          error,
-        );
-      }
-    });
-
-    globalEventBus.on("twitch:raid", async (data) => {
-      try {
-        const message = BOT_MESSAGES.ALERTS.RAID(data.raiderName, data.viewers);
-        await this.sendAnnouncement(message, "purple");
-        await this.apiClient.asUser(config.twitch.botId, async (ctx) => {
-          await ctx.chat.shoutoutUser(config.twitch.userId, data.raiderId);
-        });
-      } catch (error) {
-        Logger.error(
-          "ChatbotService",
-          `Failed to send raid alert message for streamer: ${data.raiderName}`,
-          error,
-        );
-      }
-    });
-
-    globalEventBus.on("twitch:reward-redeem", async (data) => {
-      const handler = this.rewardHandlers.get(data.rewardTitle);
-
-      if (handler) {
-        try {
-          await handler.execute({
-            userId: data.userId,
-            username: data.username,
-            redemptionId: data.redemptionId,
-          });
-        } catch (error) {
-          Logger.error(
-            "ChatbotService",
-            `Error executing reward handler for: ${data.rewardTitle}`,
-            error,
-          );
-        }
-      } else {
-        Logger.debug(
-          "ChatbotService",
-          `No handler registered for reward: ${data.rewardTitle}`,
-        );
-      }
-    });
-  }
-
-  private async removeVipFromUsers(
-    oldWinners: LotteryUserDto[],
-    newWinners: LotteryUserDto[] = [],
-  ) {
-    const channelId = this.twitchConfig.userId;
-    const delay = (ms: number) =>
-      new Promise((resolve) => setTimeout(resolve, ms));
-
-    for (const oldWinner of oldWinners) {
-      try {
-        const currentDbUser = await prisma.user.findUnique({
-          where: { twitchId: oldWinner.twitchId },
-        });
-
-        if (currentDbUser?.isPermanentVip) {
-          Logger.debug(
-            "ChatbotService",
-            `Пропускаем снятие VIP с перманентного пользователя: ${oldWinner.username}`,
-          );
-          continue;
-        }
-
-        const isWinnerAgain = newWinners.some(
-          (nw) => nw.twitchId === oldWinner.twitchId,
-        );
-
-        if (!isWinnerAgain) {
-          await this.apiClient.asUser(channelId, async (ctx) => {
-            await ctx.channels.removeVip(channelId, oldWinner.twitchId);
-          });
-
-          Logger.info(
-            "ChatbotService",
-            `Временный VIP успешно снят с @${oldWinner.username}`,
-          );
-
-          await delay(LOTTERY_DELAYS.BEFORE_START_ANNOUNCEMENT);
-        }
-      } catch (error) {
-        Logger.error(
-          "ChatbotService",
-          `Не удалось снять VIP с ${oldWinner.username}`,
-          error,
-        );
-      }
-    }
   }
 
   private handleChatMessage = async (
@@ -531,38 +236,22 @@ export class ChatbotService {
       );
       const isFollower = this.activityService.isFollower(twitchId);
 
-      const emotes: Record<string, string[]> = Object.fromEntries(
-        msg.emoteOffsets,
-      );
       const rawBadges: Record<string, string> = Object.fromEntries(
         msg.userInfo.badges,
       );
 
       const badgeUrls = this.badgeService.getBadgeUrls(rawBadges);
 
-      const chatMessagePayload: TwitchChatMessagePayload = {
-        id: msg.id,
-        userId: msg.userInfo.userId,
-        username: user,
-        displayName: msg.userInfo.displayName,
-        color: msg.userInfo.color || "#9146FF",
-        text,
-        badges: badgeUrls,
-        emotes,
-        timestamp: msg.date.getTime(),
-        userLvl: userData?.lvl ?? 1,
-        isFollower,
-        hero: userData?.hero,
-        isMod: msg.userInfo.isMod,
-        isSubscriber: msg.userInfo.isSubscriber,
-        isVip: msg.userInfo.isVip,
-        isBroadcaster: msg.userInfo.isBroadcaster,
-        isBot: msg.userInfo.userId === config.twitch.botId,
-        isPermanentVip: userData?.isPermanentVip ?? false,
-        isFounder: userData?.isFounder ?? false,
-        isHighlight: msg.isHighlight,
-        isAction,
-      };
+      const chatMessagePayload: TwitchChatMessagePayload =
+        buildChatMessagePayload({
+          msg,
+          username: user,
+          text,
+          isAction,
+          isFollower,
+          userData,
+          badges: badgeUrls,
+        });
 
       globalEventBus.emit("chat:message", chatMessagePayload);
     } catch (error) {
@@ -593,41 +282,27 @@ export class ChatbotService {
             msg.userInfo.userId,
           );
 
-          const emotes: Record<string, string[]> = Object.fromEntries(
-            msg.emoteOffsets,
-          );
           const rawBadges: Record<string, string> = Object.fromEntries(
             msg.userInfo.badges,
           );
           const badgeUrls = this.badgeService.getBadgeUrls(rawBadges);
 
-          const chatMessagePayload: TwitchChatMessagePayload = {
-            id: msg.id,
-            userId: msg.userInfo.userId,
-            username: user,
-            displayName: msg.userInfo.displayName,
-            color: msg.userInfo.color || "#9146FF",
-            text: milestoneInfo.message ?? "",
-            badges: badgeUrls,
-            emotes,
-            timestamp: msg.date.getTime(),
-            userLvl: userData?.lvl ?? 1,
-            isFollower,
-            hero: userData?.hero,
-            isMod: msg.userInfo.isMod,
-            isSubscriber: msg.userInfo.isSubscriber,
-            isVip: msg.userInfo.isVip,
-            isBroadcaster: msg.userInfo.isBroadcaster,
-            isBot: false,
-            isPermanentVip: userData?.isPermanentVip ?? false,
-            isFounder: userData?.isFounder ?? false,
-            isHighlight: false,
-            isAction: false,
-            watchStreak: {
-              value: milestoneInfo.value ?? 0,
-              reward: milestoneInfo.reward ?? 0,
-            },
-          };
+          const chatMessagePayload: TwitchChatMessagePayload =
+            buildChatMessagePayload({
+              msg,
+              username: user,
+              text: milestoneInfo.message ?? "",
+              isAction: false,
+              isFollower,
+              userData,
+              badges: badgeUrls,
+              isBot: false,
+              isHighlight: false,
+              watchStreak: {
+                value: milestoneInfo.value ?? 0,
+                reward: milestoneInfo.reward ?? 0,
+              },
+            });
 
           globalEventBus.emit("chat:message", chatMessagePayload);
 
