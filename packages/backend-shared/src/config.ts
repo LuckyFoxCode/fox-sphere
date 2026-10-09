@@ -32,6 +32,20 @@ export const config = {
   allowedOrigin: getEnv("ALLOWED_ORIGIN", "http://localhost:5173"),
   version: getEnv("BOT_VERSION", "dev"),
 
+  /**
+   * Shared secret for the admin API (`apps/api`), or `undefined` when unset.
+   *
+   * The admin routes expose every viewer's balance with no per-viewer check, and `apps/api` mounts
+   * `cors()` wide open — so without this, any page open in a developer's browser can read
+   * localhost:3001. It is a stopgap for local work, not a credential: the same secret travels to
+   * whoever has the `.env`. Twitch OAuth replaces it once the admin panel is deployed.
+   *
+   * Deliberately optional, not `getEnv`: only `apps/api` reads it, and making it required would
+   * stop the deployed Twitch bot from booting over a secret it never uses. `requireAdmin` fails
+   * closed when it is missing, so an unset key locks the routes rather than opening them.
+   */
+  adminKey: process.env.ADMIN_KEY,
+
   twitch: {
     userId: getEnv("TWITCH_USER_ID"),
     botId: getEnv("TWITCH_BOT_ID"),

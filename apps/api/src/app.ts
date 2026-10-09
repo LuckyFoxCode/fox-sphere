@@ -3,6 +3,7 @@ import cors from "cors";
 import express, { type Express } from "express";
 import { createServer } from "http";
 import swaggerUi from "swagger-ui-express";
+import { requireAdmin } from "./shared/middleware";
 import { generateOpenAPISpec } from "./shared/openapi";
 import { modules } from "./modules";
 
@@ -17,6 +18,11 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
+
+// Everything below is admin surface, so it all sits behind the key. Mounted after /health
+// (a probe must not need a credential) and before the modules, so it also covers /docs —
+// Swagger renders every route and schema, which is a map of this API.
+app.use(requireAdmin);
 
 for (const { prefix, router } of modules) {
   app.use(prefix, router);

@@ -23,6 +23,12 @@ export class ConflictError extends AppError {
   }
 }
 
+export class UnauthorizedError extends AppError {
+  constructor(message = "Unauthorized") {
+    super(message, 401);
+  }
+}
+
 export class ValidationError extends AppError {
   constructor(
     message: string,
