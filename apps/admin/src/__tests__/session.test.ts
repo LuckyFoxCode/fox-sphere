@@ -15,49 +15,29 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('installSession', () => {
-  it('sends the browser to the Twitch login on a 401', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const original = vi
-      .fn<() => Promise<Response>>()
-      .mockResolvedValue(new Response(null, { status: 401 }));
+describe('login', () => {
+  it('starts the OAuth flow as a top-level navigation', async () => {
+    const { login } = await import('../lib/session');
 
-    window.fetch = original;
-    const { installSession } = await import('../lib/session');
-    installSession();
-
-    await window.fetch('/api/channels');
+    login();
 
     expect(assign).toHaveBeenCalledWith('/api/auth/twitch/login');
-  });
-
-  it('leaves the request alone when the API is not 401', async () => {
-    const original = vi
-      .fn<() => Promise<Response>>()
-      .mockResolvedValue(new Response(null, { status: 200 }));
-
-    window.fetch = original;
-    const { installSession } = await import('../lib/session');
-    installSession();
-
-    const response = await window.fetch('/api/channels');
-
-    expect(assign).not.toHaveBeenCalled();
-    expect(response.status).toBe(200);
   });
 });
 
 describe('logout', () => {
-  it('posts to the logout route and then returns to login', async () => {
+  it('posts to the logout route and stays on the page', async () => {
     const fetchMock = vi
       .fn<() => Promise<Response>>()
-      .mockResolvedValue(new Response(null, { status: 200 }));
+      .mockResolvedValue(new Response(null, { status: 204 }));
     window.fetch = fetchMock;
 
     const { logout } = await import('../lib/session');
     await logout();
 
     expect(fetchMock).toHaveBeenCalledWith('/api/auth/twitch/logout', { method: 'POST' });
-    expect(assign).toHaveBeenCalledWith('/api/auth/twitch/login');
+    // The whole point of the guest state: logging out must not throw the user into a Twitch
+    // window. The sidebar button flips to Login instead, and the panel stays where it is.
+    expect(assign).not.toHaveBeenCalled();
   });
 });
