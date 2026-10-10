@@ -1,29 +1,24 @@
 const LOGIN_PATH = '/api/auth/twitch/login';
 
 /**
- * Sends the browser to the Twitch login when the API says there is no session.
+ * Starts the Twitch login as a top-level navigation, never through the generated client.
  *
- * This replaces `installAdminKey`, which attached an `X-Admin-Key` header because the generated
- * client could not carry it: `src/api/generated/` is orval output, committed, and CI asserts
- * `pnpm gen:api` is byte-identical, so a header added there would be overwritten. Wrapping
- * `window.fetch` once keeps that seam, and the session cookie needs no wrapper at all - the
- * browser attaches it by itself on same-origin requests.
+ * `/api/auth/twitch/login` answers with a 302 into Twitch's HTML page, which the generated
+ * parser throws on when a `fetch` follows it. That is also why the route is absent from the
+ * spec - see `.agents/rules/openapi-routes.md`, "What stays outside the spec".
  */
-export const installSession = () => {
-  const originalFetch = window.fetch.bind(window);
-
-  window.fetch = async (input, init) => {
-    const response = await originalFetch(input, init);
-
-    if (response.status === 401) {
-      window.location.assign(LOGIN_PATH);
-    }
-
-    return response;
-  };
+export const login = () => {
+  window.location.assign(LOGIN_PATH);
 };
 
+/**
+ * Clears the session cookie, and stops there.
+ *
+ * There is deliberately no redirect. This used to send the browser straight back into a Twitch
+ * window, which meant logging out looked exactly like being logged in by a third party.
+ * Staying put is what makes the guest state visible: the sidebar button flips to Login on its
+ * own once the session query refetches and sees the 401.
+ */
 export const logout = async () => {
   await fetch('/api/auth/twitch/logout', { method: 'POST' });
-  window.location.assign(LOGIN_PATH);
 };

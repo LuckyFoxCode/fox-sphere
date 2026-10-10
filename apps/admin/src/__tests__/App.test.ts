@@ -44,6 +44,7 @@ vi.mock('@/api/generated/auth/auth', async () => {
   const { ref } = await import('vue');
 
   return {
+    getGetSessionMeQueryKey: () => ['api', 'auth', 'me'] as const,
     useGetSessionMe: () => ({
       data: ref({ status: 200, data: { login: 'luckyfoxcode' } }),
       isPending: ref(false),
