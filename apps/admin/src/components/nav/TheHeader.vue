@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/custom-ui/theme-toggle';
+import { useSessionQuery } from '@/composables/useSession';
+
+const { login } = useSessionQuery();
 </script>
 
 <template>
@@ -8,6 +11,6 @@ import { ThemeToggle } from '@/components/custom-ui/theme-toggle';
     <SidebarTrigger class="-ml-1" />
     <div class="flex-1" />
     <ThemeToggle />
-    <span class="text-muted-foreground text-sm">LuckyFoxCode</span>
+    <span class="text-muted-foreground text-sm">{{ login }}</span>
   </header>
 </template>

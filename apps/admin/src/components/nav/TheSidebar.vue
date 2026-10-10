@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Globe } from '@lucide/vue';
 import { useRoute } from 'vue-router';
+import LogoutButton from './LogoutButton.vue';
 import { navItems } from './navigation';
 
 const route = useRoute();
@@ -70,6 +71,11 @@ const isActive = (url: string) => {
     </SidebarContent>
 
     <SidebarFooter class="bg-background">
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <LogoutButton />
+        </SidebarMenuItem>
+      </SidebarMenu>
       <p class="text-sidebar-foreground/40 text-xs">v0.1.0</p>
     </SidebarFooter>
   </Sidebar>
