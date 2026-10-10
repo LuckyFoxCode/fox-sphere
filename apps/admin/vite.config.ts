@@ -7,12 +7,11 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
 export default defineConfig({
-  // One .env for the whole repo, not one per app. The backend already loads the root file
-  // (packages/backend-shared/src/config.ts resolves it from the package, not cwd), so leaving
-  // Vite on its default would silently split configuration in two: VITE_* vars would have to be
-  // duplicated into apps/admin/.env while everything else lived at the root.
-  // Safe: only VITE_-prefixed vars reach the client bundle, so the root file's DATABASE_URL and
-  // Twitch tokens stay server-side.
+  // One .env for the whole repo, not one per app, so the first client-exposed variable does not
+  // need duplicating into apps/admin/.env while everything else lives at the root - the backend
+  // already loads it (packages/backend-shared/src/config.ts resolves the path from the package,
+  // not cwd). Nothing in this app reads env vars yet; when something does, only VITE_-prefixed
+  // vars reach the client bundle, so the root file's DATABASE_URL and tokens stay server-side.
   envDir: fileURLToPath(new URL('../..', import.meta.url)),
   plugins: [
     vue(),

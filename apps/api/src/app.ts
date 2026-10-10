@@ -32,8 +32,14 @@ const httpServer = createServer(app);
 // browser never consults CORS. What withholds the cookie from a cross-site fetch is `SameSite=Lax`
 // in shared/auth/session.ts.
 //
-// Still an echo, not an allowlist - any Origin is reflected, which is no looser than the bare
-// cors() it replaces. requireSession below, not these headers, is what guards the data.
+// Still an echo, not an allowlist - any Origin is reflected. And it IS marginally looser than the
+// bare cors() it replaces, not "no looser": bare cors() answered `ACAO: *` with no
+// Access-Control-Allow-Credentials, which a browser refuses to honour for a credentialed
+// cross-origin read, so the caller could not read the response at all. Reflecting the Origin and
+// adding the credentials header lets the request go out and the response be read. `SameSite=Lax`,
+// not CORS, is what withholds fx_session on that cross-site request, so what a cross-origin
+// caller actually reads is the 401 from requireSession below - never data. requireSession, not
+// these headers, is what guards the data.
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
@@ -62,10 +68,13 @@ if (openApiSpec) {
 // The session guards the DATA, not the documentation.
 //
 // Swagger's page is fetched by the browser itself and its "Try it out" buttons issue their own
-// requests — neither goes through apps/admin's fetch wrapper, so a middleware mounted above
-// /docs would 401 a page that has no way to carry the session cookie. The docs are also
-// read-only and carry no viewer data; what is worth protecting is the route table that leaks
-// nothing and the payloads that leak balances.
+// requests — neither goes through apps/admin's fetch wrapper, and that wrapper is the only thing
+// turning a 401 into a bounce to /api/auth/twitch/login. A guard mounted above /docs would hand an
+// anonymous visitor a JSON 401 instead of the page, and would buy little: a browser already
+// holding fx_session WOULD send it, because cookies are host-scoped and port-agnostic, so a page
+// on :3001 calling :3001/api is a cookie-bearing request. The docs are also read-only and carry
+// no viewer data; what is worth protecting is the route table that leaks nothing and the
+// payloads that leak balances.
 //
 // The trade-off: the route list is readable by anything that can reach this server. That is
 // acceptable while apps/api is local-only and undeployed. When it goes to production, delete
