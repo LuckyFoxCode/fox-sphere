@@ -20,9 +20,9 @@ mounting a handler, or mount one without registering the path.** Two things are 
 you - the committed `openapi.json` is only as fresh as your last `pnpm openapi:dump`, and a
 new module reaches neither the app nor the spec until it is added to
 `apps/api/src/modules/index.ts`. That file is the single list `app.ts` mounts and
-`dump-openapi.ts` loads, so adding it there does both at once. `/health`,
-`/api/internal/events` and `/openapi.json` are mounted directly on `app` and deliberately
-absent from the spec.
+`dump-openapi.ts` loads, so adding it there does both at once. A few routes are mounted
+directly on `app` instead and are deliberately absent from the spec; they are enumerated
+once, under `What stays outside the spec` below.
 
 ## One module = one tag = one router
 
@@ -77,6 +77,22 @@ export const modules: readonly { prefix: string; router: Router }[] = [
 
 The `/api` prefix lives in `app.ts` and in `API_PREFIX` inside `define-route.ts`. Paths
 passed to `route()` never repeat it.
+
+### What stays outside the spec
+
+Three categories are mounted directly on `app` and are deliberately absent from the spec:
+`/health`, `/openapi.json` + `/docs`, and the three Twitch OAuth routes
+(`/api/auth/twitch/login`, `/callback`, `/logout`).
+
+The OAuth routes answer with a 302. `define-route.ts` models responses as JSON schemas, so a
+redirect does not fit, and orval would generate a hook whose `fetch` follows the redirect to
+Twitch's HTML login page and then throws parsing it. The only correct way to start the flow is
+`window.location.assign`, which never touches the generated client - so a hook for it would be
+actively wrong, not merely unused.
+
+The invariant still holds where it matters: a JSON route cannot be mounted without registering
+its path. These three are exempt because they are not JSON routes. Note that the spec therefore
+describes no authentication at all - it never described `X-Admin-Key` either.
 
 ## The verbs
 

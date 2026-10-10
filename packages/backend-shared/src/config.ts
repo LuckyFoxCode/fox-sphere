@@ -33,18 +33,35 @@ export const config = {
   version: getEnv("BOT_VERSION", "dev"),
 
   /**
-   * Shared secret for the admin API (`apps/api`), or `undefined` when unset.
+   * Twitch user id allowed to use the admin panel.
    *
-   * The admin routes expose every viewer's balance with no per-viewer check, and `apps/api` mounts
-   * `cors()` wide open — so without this, any page open in a developer's browser can read
-   * localhost:3001. It is a stopgap for local work, not a credential: the same secret travels to
-   * whoever has the `.env`. Twitch OAuth replaces it once the admin panel is deployed.
+   * Required, and unlike the two secrets below it is read with `getEnv`: an allowlist with
+   * nothing in it has no correct fallback, so there is nothing to default it to.
    *
-   * Deliberately optional, not `getEnv`: only `apps/api` reads it, and making it required would
-   * stop the deployed Twitch bot from booting over a secret it never uses. `requireAdmin` fails
-   * closed when it is missing, so an unset key locks the routes rather than opening them.
+   * Not the same as `twitch.userId`: that one is the broadcaster the bot runs as, and in a
+   * multi-tenant world the two stop being equal. Keeping them separate stops a future "tidy up"
+   * from quietly widening the allowlist to whoever the bot happens to act for.
    */
-  adminKey: process.env.ADMIN_KEY,
+  adminTwitchUserId: getEnv("ADMIN_TWITCH_USER_ID"),
+
+  /**
+   * HMAC key for the admin session cookie, or `undefined` when unset.
+   *
+   * Deliberately `process.env`, NOT `getEnv`, for the reason `ADMIN_KEY` was: only `apps/api`
+   * reads it, and a `getEnv` here would stop the deployed Twitch bot from booting over a secret
+   * it never uses. `requireSession` fails closed when it is missing, so an unset value locks the
+   * routes rather than opening them.
+   */
+  adminSessionSecret: process.env.ADMIN_SESSION_SECRET,
+
+  /**
+   * The exact URL Twitch redirects back to after the user authorizes.
+   *
+   * Must match a registered redirect URL byte for byte, including scheme and port. In dev that is
+   * `http://localhost:5174/api/auth/twitch/callback` — the Vite port, not the API port, because
+   * the browser only ever sees the proxy.
+   */
+  adminOAuthRedirectUri: process.env.ADMIN_OAUTH_REDIRECT_URI,
 
   twitch: {
     userId: getEnv("TWITCH_USER_ID"),

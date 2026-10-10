@@ -1,3 +1,4 @@
+import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query';
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMemoryHistory, createRouter } from 'vue-router';
@@ -37,6 +38,21 @@ vi.mock('@/api/generated/channels/channels', async () => {
   };
 });
 
+// The shell mounts `TheHeader` and `LogoutButton`, both of which reach for the query client
+// that `main.ts` installs, so the mount has to carry it too.
+vi.mock('@/api/generated/auth/auth', async () => {
+  const { ref } = await import('vue');
+
+  return {
+    useGetSessionMe: () => ({
+      data: ref({ status: 200, data: { login: 'luckyfoxcode' } }),
+      isPending: ref(false),
+      isError: ref(false),
+      refetch: vi.fn<() => void>(),
+    }),
+  };
+});
+
 vi.mock('vue-sonner', () => ({
   Toaster: { name: 'Toaster', template: '<div />' },
   toast: { error: vi.fn<(message: string) => void>(), success: vi.fn<() => void>() },
@@ -50,7 +66,10 @@ const mountApp = async (path = '/') => {
   await router.isReady();
 
   const wrapper = mount(App, {
-    global: { plugins: [router], stubs: { VueQueryDevtools: true } },
+    global: {
+      plugins: [router, [VueQueryPlugin, { queryClient: new QueryClient() }]],
+      stubs: { VueQueryDevtools: true },
+    },
   });
 
   return wrapper;

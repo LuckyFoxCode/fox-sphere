@@ -1,2 +1,2 @@
-export * from "./require-admin";
+export * from "./require-session";
 export * from "./validate";

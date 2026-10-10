@@ -23,6 +23,7 @@
     "@asteasolutions/zod-to-openapi": "^9.1.0",
     "@fox-sphere/backend-shared": "workspace:*",
     "@fox-sphere/shared-schemas": "workspace:*",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "openapi3-ts": "^4.6.1",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^24.12.4",
