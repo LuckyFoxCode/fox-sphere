@@ -137,9 +137,17 @@ app.get("/api/auth/twitch/callback", async (req, res) => {
 // POST, not a link. SameSite=Lax still sends the cookie on a top-level GET navigation, so a GET
 // logout could be triggered from any third-party page with an <img> tag. Lax withholds the cookie
 // from cross-site POST, which is what makes the whole CSRF story work without a token.
+//
+// 204, deliberately not a redirect. The caller is a `fetch` (src/lib/session.ts), and a redirect
+// here walked the whole chain under fetch's CORS rules: this route -> /auth/twitch/login ->
+// id.twitch.tv/oauth2/authorize -> www.twitch.tv/login. The last hop is cross-origin and Twitch
+// sends no Access-Control-Allow-Origin for it, so fetch rejected and the caller's
+// `window.location.assign(LOGIN_PATH)` after the await never ran - logout cleared the cookie and
+// then left the user on a stale panel with a CORS error in the console. The client navigates
+// itself; the server has nothing useful to redirect to.
 app.post("/api/auth/twitch/logout", (_req, res) => {
   res.clearCookie(SESSION_COOKIE, sessionCookieOptions());
-  res.redirect("/api/auth/twitch/login");
+  res.status(204).end();
 });
 
 app.use(requireSession);
