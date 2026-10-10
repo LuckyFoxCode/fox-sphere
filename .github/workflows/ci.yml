@@ -22,6 +22,7 @@ jobs:
       DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci?schema=public"
       COMMAND_PREFIX: "!"
       ALLOWED_ORIGIN: "http://localhost:5173"
+      ADMIN_TWITCH_USER_ID: "ci"
       TWITCH_USER_ID: "ci"
       TWITCH_BOT_ID: "ci"
       TWITCH_CLIENT_ID: "ci"
