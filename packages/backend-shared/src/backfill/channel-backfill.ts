@@ -86,3 +86,55 @@ export const buildChannelUserRows = (
     };
   });
 };
+
+/**
+ * The identity of a `ChannelUser` row - the composite unique key it is upserted on.
+ */
+export const channelUserKey = (channelId: string, viewerId: string): string =>
+  `${channelId}:${viewerId}`;
+
+/**
+ * Keeps only the rows that are absent from `existingKeys`, preserving the given order.
+ * Selecting before writing is what makes the backfill insert-only: an already-present row
+ * is never handed to a write, so a stale `User` row cannot overwrite a live `ChannelUser`.
+ */
+export const selectMissingRows = (
+  rows: readonly ChannelUserRow[],
+  existingKeys: ReadonlySet<string>,
+): ChannelUserRow[] =>
+  rows.filter((row) => !existingKeys.has(channelUserKey(row.channelId, row.viewerId)));
+
+export interface BackfillArgs {
+  login?: string;
+  sync: boolean;
+}
+
+/**
+ * Reads the channel login and the flags out of one argv slice.
+ *
+ * Flags are collected separately from positionals because the caller already sits at
+ * `process.argv[2]` (the channel login) when the script runs as `backfill:channels --sync`.
+ * A parser that stopped at the first argument it did not recognise would hand `--sync` back
+ * as the channel name and backfill a channel that does not exist, so flags are recognised
+ * wherever they appear and anything unknown is refused rather than silently ignored.
+ */
+export const parseBackfillArgs = (argv: readonly string[]): BackfillArgs => {
+  const positionals: string[] = [];
+  let sync = false;
+
+  for (const arg of argv) {
+    if (arg === "--sync") {
+      sync = true;
+    } else if (arg.startsWith("-")) {
+      throw new Error(`Unknown flag: ${arg}`);
+    } else {
+      positionals.push(arg);
+    }
+  }
+
+  if (positionals.length > 1) {
+    throw new Error(`Expected at most one channel login, got ${positionals.length}`);
+  }
+
+  return { login: positionals[0], sync };
+};
