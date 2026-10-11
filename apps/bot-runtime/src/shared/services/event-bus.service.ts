@@ -27,7 +27,7 @@ import {
 } from "@fox-sphere/types";
 import EventEmitter from "events";
 
-interface AppEvents {
+export interface AppEvents {
   "chat:message": TwitchChatMessagePayload;
   "fish:bite": { channel: string; username: string };
   "fish:expired": { channel: string; username: string };

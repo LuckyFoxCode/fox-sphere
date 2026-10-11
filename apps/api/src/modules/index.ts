@@ -1,4 +1,5 @@
 import type { Router } from "express";
+import { authRouter } from "./auth";
 import { channelRouter } from "./channel";
 import { channelUserRouter } from "./channel-user";
 
@@ -8,6 +9,7 @@ import { channelUserRouter } from "./channel-user";
  * app while missing from the spec (or the reverse). Add new modules here only.
  */
 export const modules: readonly { prefix: string; router: Router }[] = [
+  { prefix: "/api", router: authRouter },
   { prefix: "/api", router: channelRouter },
   { prefix: "/api", router: channelUserRouter },
 ];

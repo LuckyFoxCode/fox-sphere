@@ -20,7 +20,7 @@ export class TwitchActivityService {
     const twitchId = msg.userInfo.userId;
 
     try {
-      await this.userService.findOrCreateUser(twitchId, username);
+      await this.userService.ensureUserExists(twitchId, username);
 
       if (!this.followersCache.has(twitchId)) {
         try {

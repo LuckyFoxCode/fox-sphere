@@ -17,7 +17,7 @@ Vitest, in three members only:
 | Where | File | Covers |
 |---|---|---|
 | `packages/backend-shared` | `src/__tests__/xp.spec.ts` | `getXpThresholdForLevel`, `resolveActiveXpBoost` |
-| `packages/backend-shared` | `src/__tests__/channel-backfill.spec.ts` | the pure `User` -> `Viewer` / `ChannelUser` row mapper - every copied balance and flag field, the three lottery fields, the no-lottery default, and the missing-viewer throw |
+| `packages/backend-shared` | `src/__tests__/channel-backfill.spec.ts` | the pure `User` -> `Viewer` / `ChannelUser` row mapper - every copied balance and flag field, the three lottery fields, the no-lottery default, and the missing-viewer throw; plus `channelUserKey`, `selectMissingRows` (insert-only selection, including that one channel's existing rows never suppress another's), and `parseBackfillArgs` |
 | `apps/overlay` | `src/utils/twitch/__tests__/parseTwitchEmotes.test.ts` | emote positions (code points, not UTF-16), urls, malformed emote maps |
 | `apps/overlay` | `src/constants/__tests__/rouletteSegments.test.ts` | segment catalog, rarity tiers, and tape strip constants |
 | `apps/overlay` | `src/utils/roulette/__tests__/tapeFill.test.ts` | tape strip fill algorithm - center winner, no adjacent duplicates, weights match backend |

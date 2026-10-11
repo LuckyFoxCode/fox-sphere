@@ -12,6 +12,51 @@
   ],
   "components": {
     "schemas": {
+      "SessionMe": {
+        "type": "object",
+        "properties": {
+          "login": {
+            "type": "string",
+            "example": "luckyfoxcode"
+          }
+        },
+        "required": [
+          "login"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "example": "Channel not found"
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "example": {
+              "id": [
+                "Invalid input"
+              ]
+            }
+          }
+        },
+        "required": [
+          "status",
+          "message"
+        ]
+      },
       "ChannelList": {
         "type": "array",
         "items": {
@@ -60,39 +105,6 @@
           "ACTIVE",
           "PAUSED",
           "REVOKED"
-        ]
-      },
-      "ErrorResponse": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "error"
-            ]
-          },
-          "message": {
-            "type": "string",
-            "example": "Channel not found"
-          },
-          "errors": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "example": {
-              "id": [
-                "Invalid input"
-              ]
-            }
-          }
-        },
-        "required": [
-          "status",
-          "message"
         ]
       },
       "CreateChannel": {
@@ -262,6 +274,47 @@
     "parameters": {}
   },
   "paths": {
+    "/api/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Get the currently signed-in admin",
+        "operationId": "getSessionMe",
+        "responses": {
+          "200": {
+            "description": "The signed-in admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionMe"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid session cookie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/channels": {
       "get": {
         "tags": [

@@ -86,9 +86,18 @@ dev-mode worker process can reach the server over HTTP.
 
 ## CORS is currently inconsistent
 
-`app.use(cors())` is fully open while the Socket.io server pins `config.allowedOrigin`.
-That is a known gap, not a pattern to copy. New HTTP surface should take an allowlist from
-config.
+Neither backend has an allowlist. `apps/bot-runtime` calls bare `cors()`;
+`apps/api` calls `cors({ origin: true, credentials: true })`, which reflects whatever
+`Origin` it is given instead of sending `*` - so it answers with an
+`Access-Control-Allow-Credentials` a `*` could not be sent with. Reflecting the request's
+own origin is marginally *looser* than bare `cors()`: it lets a cross-origin request go out
+at all, where `SameSite=Lax` then withholds the session cookie from the response and the
+caller gets a 401 rather than a refusal.
+
+In `apps/bot-runtime` the only real allowlist is Socket.io's, which pins
+`config.allowedOrigin`; it gates the WebSocket upgrade alone, so a missing origin fails the
+socket while plain HTTP keeps working. That is a known gap, not a pattern to copy. New HTTP
+surface should take an allowlist from config.
 
 ## App and server are separate on purpose
 

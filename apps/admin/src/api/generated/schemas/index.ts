@@ -18,4 +18,5 @@ export * from './errorResponseStatus';
 export * from './getChannelLeaderboardParams';
 export * from './listChannelUsersParams';
 export * from './paginatedChannelUsers';
+export * from './sessionMe';
 export * from './updateChannel';

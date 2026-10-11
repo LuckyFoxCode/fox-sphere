@@ -382,25 +382,34 @@ untouched: it still declares `userId Int` and a `User` relation, and carries no 
 re-points it when the bot moves, and the column and the `channelId` filter land together,
 in one migration. A release that adds the column without the filter is the bug.
 
-### Release B: remove the backfill deploy hook first
+### Release B: the deploy hook is no longer the hazard it was
 
 `.github/workflows/deploy.yml` runs `backfill:channels` on **every** deploy, between
-`prisma migrate deploy` and the container swap. That is correct while the bot writes `User`,
-because the script's upsert carries `update: balance` over all 14 copied fields and `User` is
-then the source of truth.
+`prisma migrate deploy` and the container swap, and §14, step 14 ("Backfill and cutover")
+used to carry a prerequisite that the step itself did not mention: delete that step in the
+same commit that first touches `ChannelUser`. The prerequisite is gone. The default mode is
+insert-only — it builds the rows and writes only the ones whose `(channelId, viewerId)` is
+absent, so an existing `ChannelUser` row is never handed to a write at all. There is no
+`update: balance`, no upsert, no path to reach. So the deploy step may stay across the
+cutover: when a release starts writing `ChannelUser`, the next deploy inserts nothing and
+changes no balance. It has one deadline, and §14 step 14 sets it — the step reads `User` and
+`UserLottery` in `reportCounts` and in the copy itself, so deleting the deploy step is
+required in the same migration and commit that drops those two tables, not before it. A
+deploy carrying that drop migration would otherwise throw against a missing table, and
+`deploy.yml` runs the step under `set -e` with no `|| true`, so it aborts the deploy — and so
+does every deploy after it, until the step is gone.
 
-It stops being correct the instant a release reads or writes `ChannelUser`. The legacy
-tables freeze, and the next deploy silently overwrites every viewer's coins, xp, level and
-lottery state with those frozen values — a live rollback of real progress, with no error.
+What survives is the hazard in the *other* direction. `--sync` is the only converging mode:
+it upserts all 14 copied fields over every row, it has to be typed by a human, and it is
+only correct while `User` is still the source of truth. **One manual `--sync` run before the
+cutover is what brings `ChannelUser` back into agreement** with a live `User` that has
+drifted since the last deploy — after that run, or after the cutover, `--sync` is the
+destructive direction and nothing should invoke it.
 
-The script cannot warn you: `reportCounts` compares `sum(coins) User` against
-`sum(coins) ChannelUser`, and after a destructive re-run those two match *by construction*.
-A green count report is not evidence that anything survived.
-
-So §14, step 14 ("Backfill and cutover") has a prerequisite the step does not mention:
-**delete the backfill step from `deploy.yml` in the same commit that first touches
-`ChannelUser`.** Then verify against a backup, not against the legacy tables — the legacy
-tables are stale by definition from that commit onwards.
+The verification guidance is unchanged and still worth restating: verify the cutover against
+a backup, not against the legacy tables. From the cutover commit onward `User` is stale by
+definition, so it can no longer prove that anything survived — and `reportCounts` remains a
+snapshot report, not a reconciliation check.
 
 ---
 

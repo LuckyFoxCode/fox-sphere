@@ -56,6 +56,10 @@ export const RANK_RINGS: Record<number, Component> = {
   9: IconRing09,
 };
 
+// Визуальных рангов девять: IconRank01..09 и IconRing01..09, иконки свыше не будет.
+// Tier 10 (OVERLORD) намеренно показывается девятым знаком — свой десятый не рисуем.
+export const MAX_ICON_TIER = 9;
+
 export const RANK_TIERS = {
   1: { gradient: 'linear-gradient(to right, #4B5563, #FEF08A, #4B5563)' },
   2: { gradient: 'linear-gradient(to right, #FCD34D, #B45309, #FCD34D)' },
@@ -72,14 +76,22 @@ export const RANK_TIERS = {
 const RAW_TITLE_CONFIG = [
   { minLvl: 1, maxLvl: 5, rankTitle: 'NEWBIE', tier: 1 },
   { minLvl: 6, maxLvl: 10, rankTitle: 'ROOKIE', tier: 1 },
-  { minLvl: 11, maxLvl: 20, rankTitle: 'SCOUT', tier: 2 },
-  { minLvl: 21, maxLvl: 30, rankTitle: 'WARRIOR', tier: 3 },
-  { minLvl: 31, maxLvl: 40, rankTitle: 'ELITE', tier: 3 },
-  { minLvl: 41, maxLvl: 50, rankTitle: 'EXPERT', tier: 4 },
-  { minLvl: 51, maxLvl: 60, rankTitle: 'MASTER', tier: 4 },
-  { minLvl: 61, maxLvl: 70, rankTitle: 'GRANDMASTER', tier: 5 },
-  { minLvl: 71, maxLvl: 80, rankTitle: 'HERO', tier: 6 },
-  { minLvl: 81, maxLvl: 88, rankTitle: 'EPIC', tier: 7 },
+  { minLvl: 11, maxLvl: 15, rankTitle: 'SCOUT', tier: 2 },
+  { minLvl: 16, maxLvl: 20, rankTitle: 'VANGUARD', tier: 2 },
+  { minLvl: 21, maxLvl: 25, rankTitle: 'FIGHTER', tier: 3 },
+  { minLvl: 26, maxLvl: 30, rankTitle: 'WARRIOR', tier: 3 },
+  { minLvl: 31, maxLvl: 35, rankTitle: 'GLADIATOR', tier: 3 },
+  { minLvl: 36, maxLvl: 40, rankTitle: 'ELITE', tier: 3 },
+  { minLvl: 41, maxLvl: 45, rankTitle: 'VETERAN', tier: 4 },
+  { minLvl: 46, maxLvl: 50, rankTitle: 'EXPERT', tier: 4 },
+  { minLvl: 51, maxLvl: 55, rankTitle: 'COMMANDER', tier: 4 },
+  { minLvl: 56, maxLvl: 60, rankTitle: 'MASTER', tier: 4 },
+  { minLvl: 61, maxLvl: 65, rankTitle: 'CONQUEROR', tier: 5 },
+  { minLvl: 66, maxLvl: 70, rankTitle: 'GRANDMASTER', tier: 5 },
+  { minLvl: 71, maxLvl: 75, rankTitle: 'CHAMPION', tier: 6 },
+  { minLvl: 76, maxLvl: 80, rankTitle: 'HERO', tier: 6 },
+  { minLvl: 81, maxLvl: 84, rankTitle: 'WARLORD', tier: 7 },
+  { minLvl: 85, maxLvl: 88, rankTitle: 'EPIC', tier: 7 },
   { minLvl: 89, maxLvl: 94, rankTitle: 'LEGEND', tier: 8 },
   { minLvl: 95, maxLvl: 97, rankTitle: 'MYTHIC', tier: 8 },
   { minLvl: 98, maxLvl: 99, rankTitle: 'SUPREME', tier: 9 },
