@@ -11,9 +11,12 @@
  * never written, so a frozen `User` cannot roll a live balance backwards. That
  * is why the script can stay in `deploy.yml` — after the Release B cutover
  * `User` stops being the source of truth, a deploy-time run finds every row
- * already present, inserts none of them and changes nothing. Once the backfill
- * has happened the default mode is a structural no-op rather than a decision:
- * no update path is reachable from it.
+ * already present, inserts none of them and changes no balance. It is not a total
+ * no-op, and deliberately so: `Viewer.username` is still refreshed from `User` on
+ * every run, and a `Channel` is still created when none matches the login, because
+ * a stale nickname is safer than a frozen one. Both go away with the legacy tables.
+ * Where the balances are concerned the default mode is a structural no-op rather
+ * than a decision: no update path to one is reachable from it.
  *
  * `--sync` is the only converging mode, a human has to ask for it by name, and
  * it is a migration step rather than a deploy step — run it by hand, as late as
@@ -24,10 +27,12 @@
  * other automated check on this script. Read it as `count(User)` and
  * `sum(coins) User` from the `before` report — one snapshot, taken before the
  * copy loop — against `count(ChannelUser)` and `sum(coins) ChannelUser` from the
- * `after` report. Both sides are table-wide counts, so the two agree exactly
- * while these tables hold only this one channel; the only thing that can
- * separate them is the handful of queries between that snapshot and the
- * `findMany` the copy reads from.
+ * `after` report. Both sides are table-wide counts, and while the bot still writes
+ * `User` — that is, for every run before the Release B cutover — the two agree to
+ * within the handful of queries between that snapshot and the `findMany` the copy
+ * reads from. After the cutover they diverge arbitrarily and durably, and that is
+ * the expected result rather than a symptom: insert-only mode exists precisely so
+ * it will not reconcile them for you.
  *
  * Do NOT compare the `after` report's own `User` side against `ChannelUser`:
  * that read is fresh and the live bot is still writing `User` throughout, so on

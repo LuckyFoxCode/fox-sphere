@@ -203,13 +203,15 @@ describe("channelUserKey", () => {
 });
 
 describe("selectMissingRows", () => {
-  const rowsFor = (...twitchIds: string[]) =>
+  const rowsForChannel = (channelId: string, ...twitchIds: string[]) =>
     buildChannelUserRows(
       twitchIds.map((twitchId) => makeUser({ twitchId })),
       [],
-      "channel-one",
+      channelId,
       viewerIdsFor(...twitchIds),
     );
+
+  const rowsFor = (...twitchIds: string[]) => rowsForChannel("channel-one", ...twitchIds);
 
   it("keeps nothing when every key is already present", () => {
     const rows = rowsFor("twitch-alpha");
@@ -238,6 +240,16 @@ describe("selectMissingRows", () => {
     const rows = rowsFor("twitch-al");
 
     expect(selectMissingRows(rows, new Set(["channel-one:viewer-for-twitch-alpha"]))).toEqual(rows);
+  });
+
+  it("keys on the channel too, so one channel never suppresses another's rows", () => {
+    const rows = [...rowsFor("twitch-alpha"), ...rowsForChannel("channel-two", "twitch-alpha")];
+
+    const missing = selectMissingRows(rows, new Set(["channel-one:viewer-for-twitch-alpha"]));
+
+    expect(missing.map((row) => `${row.channelId}:${row.viewerId}`)).toEqual([
+      "channel-two:viewer-for-twitch-alpha",
+    ]);
   });
 });
 
