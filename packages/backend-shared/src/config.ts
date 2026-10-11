@@ -33,16 +33,23 @@ export const config = {
   version: getEnv("BOT_VERSION", "dev"),
 
   /**
-   * Twitch user id allowed to use the admin panel.
+   * Twitch user id allowed to use the admin panel, or `undefined` when unset.
    *
-   * Required, and unlike the two secrets below it is read with `getEnv`: an allowlist with
-   * nothing in it has no correct fallback, so there is nothing to default it to.
+   * Deliberately `process.env`, NOT `getEnv`, for the same reason as the two secrets below it:
+   * only `apps/api` reads it, and `apps/api` is not deployed, so a `getEnv` here stops the
+   * deployed Twitch bot from booting — over an admin-panel allowlist it never uses. That is not
+   * hypothetical: `v1.15.0` shipped exactly that, and the deploy's `backfill:channels` step died
+   * on it under `set -e`, before `docker compose up -d`.
+   *
+   * An allowlist with nothing in it has no correct fallback, but the fallback belongs in the
+   * consumer, not here: `identity.userId !== undefined` is always true, so an unset value refuses
+   * every login. That is fail-closed, which is what an allowlist wants.
    *
    * Not the same as `twitch.userId`: that one is the broadcaster the bot runs as, and in a
    * multi-tenant world the two stop being equal. Keeping them separate stops a future "tidy up"
    * from quietly widening the allowlist to whoever the bot happens to act for.
    */
-  adminTwitchUserId: getEnv("ADMIN_TWITCH_USER_ID"),
+  adminTwitchUserId: process.env.ADMIN_TWITCH_USER_ID,
 
   /**
    * HMAC key for the admin session cookie, or `undefined` when unset.

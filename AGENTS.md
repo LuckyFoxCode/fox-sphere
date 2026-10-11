@@ -81,8 +81,16 @@ usable as they ship:
   `ADMIN_OAUTH_REDIRECT_URI` ships with the dev value `http://localhost:5174/api/auth/twitch/callback`
   and must be changed to a redirect URL registered in the Twitch console byte for byte, including
   scheme and port; the **Vite** port `5174`, not the API port, because `/api` is proxied and the
-  browser only ever sees the proxy. `ADMIN_TWITCH_USER_ID` is the single Twitch account allowed in;
-  of the three it is the only one read with `getEnv`, so leaving it out stops the process at boot.
+  browser only ever sees the proxy. `ADMIN_TWITCH_USER_ID` is the single Twitch account allowed in.
+  **All three admin variables are read with `process.env`, not `getEnv`, and that is deliberate:**
+  only `apps/api` acts on them and `apps/api` is not deployed, so a `getEnv` would stop the
+  deployed bot from booting over a panel secret it never uses. An unset allowlist fails closed at
+  the consumer instead - `identity.userId !== undefined` refuses every login - which is what an
+  allowlist wants, and costs the panel rather than the stream. This was learned the hard way:
+  `v1.15.0` shipped `ADMIN_TWITCH_USER_ID` on `getEnv`, and the deploy's `backfill:channels` step
+  died on the missing variable under `set -e`, after both images were built and pushed and before
+  `docker compose up -d`. Prod kept serving chat on the old container - a stopped deploy, not an
+  outage - but the release did not ship until the VM's `.env` gained the line.
   (In `.env.prod.example` all three ship as placeholders - two are the literal `CHANGE_ME`, and
   `ADMIN_SESSION_SECRET` ships as `CHANGE_ME_openssl_rand_hex_32`.)
 
