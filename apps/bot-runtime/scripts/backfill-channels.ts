@@ -27,12 +27,13 @@
  * other automated check on this script. Read it as `count(User)` and
  * `sum(coins) User` from the `before` report — one snapshot, taken before the
  * copy loop — against `count(ChannelUser)` and `sum(coins) ChannelUser` from the
- * `after` report. Both sides are table-wide counts, and while the bot still writes
- * `User` — that is, for every run before the Release B cutover — the two agree to
- * within the handful of queries between that snapshot and the `findMany` the copy
- * reads from. After the cutover they diverge arbitrarily and durably, and that is
- * the expected result rather than a symptom: insert-only mode exists precisely so
- * it will not reconcile them for you.
+ * `after` report. Both sides are table-wide counts, and they agree only while the copy
+ * still writes every row it builds — that is, while no `ChannelUser` row pre-exists yet —
+ * and then only to within the handful of queries between that snapshot and the `findMany`
+ * the copy reads from. From the second run onward the comparison is not a check: insert-only
+ * skips every row that is already there while the live bot keeps moving `User`, so the sums
+ * cannot agree, and the gap grows with every chat message in between. Treat the two `after`
+ * numbers as something to read, not something that proves anything.
  *
  * Do NOT compare the `after` report's own `User` side against `ChannelUser`:
  * that read is fresh and the live bot is still writing `User` throughout, so on

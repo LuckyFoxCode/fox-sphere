@@ -390,9 +390,14 @@ used to carry a prerequisite that the step itself did not mention: delete that s
 same commit that first touches `ChannelUser`. The prerequisite is gone. The default mode is
 insert-only — it builds the rows and writes only the ones whose `(channelId, viewerId)` is
 absent, so an existing `ChannelUser` row is never handed to a write at all. There is no
-`update: balance`, no upsert, no path to reach. When a release starts writing `ChannelUser`,
-the next deploy inserts nothing and changes no balance; deleting the deploy step is now
-optional housekeeping rather than a correctness requirement.
+`update: balance`, no upsert, no path to reach. So the deploy step may stay across the
+cutover: when a release starts writing `ChannelUser`, the next deploy inserts nothing and
+changes no balance. It has one deadline, and §14 step 14 sets it — the step reads `User` and
+`UserLottery` in `reportCounts` and in the copy itself, so deleting the deploy step is
+required in the same migration and commit that drops those two tables, not before it. A
+deploy carrying that drop migration would otherwise throw against a missing table, and
+`deploy.yml` runs the step under `set -e` with no `|| true`, so it aborts the deploy — and so
+does every deploy after it, until the step is gone.
 
 What survives is the hazard in the *other* direction. `--sync` is the only converging mode:
 it upserts all 14 copied fields over every row, it has to be typed by a human, and it is
