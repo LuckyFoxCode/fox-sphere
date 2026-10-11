@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   buildChannelUserRows,
   buildViewerRows,
+  channelUserKey,
   type LegacyUser,
   type LegacyUserLottery,
+  parseBackfillArgs,
+  selectMissingRows,
 } from "../backfill";
 
 const LAST_XP_AT = new Date("2026-03-04T05:06:07.000Z");
@@ -190,5 +193,85 @@ describe("buildChannelUserRows", () => {
     );
 
     expect(rows.map((row) => row.channelId)).toEqual(["channel-nine", "channel-nine"]);
+  });
+});
+
+describe("channelUserKey", () => {
+  it("joins the channel and viewer ids into one string", () => {
+    expect(channelUserKey("channel-one", "viewer-42")).toBe("channel-one:viewer-42");
+  });
+});
+
+describe("selectMissingRows", () => {
+  const rowsForChannel = (channelId: string, ...twitchIds: string[]) =>
+    buildChannelUserRows(
+      twitchIds.map((twitchId) => makeUser({ twitchId })),
+      [],
+      channelId,
+      viewerIdsFor(...twitchIds),
+    );
+
+  const rowsFor = (...twitchIds: string[]) => rowsForChannel("channel-one", ...twitchIds);
+
+  it("keeps nothing when every key is already present", () => {
+    const rows = rowsFor("twitch-alpha");
+
+    expect(selectMissingRows(rows, new Set(["channel-one:viewer-for-twitch-alpha"]))).toEqual([]);
+  });
+
+  it("keeps every row when nothing exists yet", () => {
+    const rows = rowsFor("twitch-alpha", "twitch-beta");
+
+    expect(selectMissingRows(rows, new Set())).toEqual(rows);
+  });
+
+  it("keeps only the rows whose key is absent, in the order given", () => {
+    const rows = rowsFor("twitch-alpha", "twitch-beta", "twitch-gamma");
+
+    const missing = selectMissingRows(rows, new Set(["channel-one:viewer-for-twitch-beta"]));
+
+    expect(missing.map((row) => row.viewerId)).toEqual([
+      "viewer-for-twitch-alpha",
+      "viewer-for-twitch-gamma",
+    ]);
+  });
+
+  it("does not confuse a key that is a substring of another", () => {
+    const rows = rowsFor("twitch-al");
+
+    expect(selectMissingRows(rows, new Set(["channel-one:viewer-for-twitch-alpha"]))).toEqual(rows);
+  });
+
+  it("keys on the channel too, so one channel never suppresses another's rows", () => {
+    const rows = [...rowsFor("twitch-alpha"), ...rowsForChannel("channel-two", "twitch-alpha")];
+
+    const missing = selectMissingRows(rows, new Set(["channel-one:viewer-for-twitch-alpha"]));
+
+    expect(missing.map((row) => `${row.channelId}:${row.viewerId}`)).toEqual([
+      "channel-two:viewer-for-twitch-alpha",
+    ]);
+  });
+});
+
+describe("parseBackfillArgs", () => {
+  it("returns no login and sync false for no arguments", () => {
+    expect(parseBackfillArgs([])).toEqual({ login: undefined, sync: false });
+  });
+
+  it("reads the first positional as the channel login", () => {
+    expect(parseBackfillArgs(["mychannel"])).toEqual({ login: "mychannel", sync: false });
+  });
+
+  it("reads --sync wherever it appears and does not mistake it for a login", () => {
+    expect(parseBackfillArgs(["--sync"])).toEqual({ login: undefined, sync: true });
+    expect(parseBackfillArgs(["mychannel", "--sync"])).toEqual({ login: "mychannel", sync: true });
+  });
+
+  it("throws on an unknown flag rather than ignoring it", () => {
+    expect(() => parseBackfillArgs(["--nope"])).toThrow(/--nope/);
+  });
+
+  it("throws on a second positional argument", () => {
+    expect(() => parseBackfillArgs(["one", "two"])).toThrow();
   });
 });
