@@ -22,11 +22,13 @@ data
 *.log
 .DS_Store
 
-# apps/admin and apps/api are deliberately NOT excluded here any more: both ship as their
-# own deployed images. "Local-only" no longer describes them - it describes *what they are
-# never bundled into*, and that is each Dockerfile's per-member COPY list, not this file.
-# .dockerignore is shared by every build, so a rule here silently removes a member from
-# images it belongs in; excluding apps/api is why this file had to change at all.
+# apps/api and apps/admin are deliberately NOT excluded here any more. apps/api ships as its
+# own deployed image, built by .docker/admin.Dockerfile. apps/admin has no image yet - its
+# exclusion was dropped now rather than twice, and it joins one when the frontend image is
+# written. "Local-only" describes *what a member is never bundled into*, and that is each
+# Dockerfile's per-member COPY list, not this file. .dockerignore is shared by every build,
+# so a rule here silently removes a member from images it belongs in; excluding apps/api is
+# why this file had to change at all.
 
 # Docker meta
 Dockerfile

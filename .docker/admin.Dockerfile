@@ -78,6 +78,11 @@ COPY --from=build --chown=node:node /app/packages ./packages
 # this image has no build step left to run it, so a devDependency would be pruned and
 # the container would die with "tsx not found" on the first boot.
 RUN pnpm install --prod --frozen-lockfile
+# apps/api/src/port.ts reads API_PORT and defaults to 3001. Pinning it here makes the
+# EXPOSE, the HEALTHCHECK below and the Caddy upstream the same number by construction:
+# set API_PORT on the container and the app would listen elsewhere while the healthcheck
+# kept probing 3001, failing forever with a symptom that reads like a hung process.
+ENV API_PORT=3001
 EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
   CMD node -e "fetch('http://localhost:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"

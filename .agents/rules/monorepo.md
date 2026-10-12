@@ -92,12 +92,13 @@ need. Keep the filter when adding packages.
 **Excluding a member from an image is that Dockerfile's per-member `COPY` list, not
 `.dockerignore`.** The two are easy to confuse because they used to agree: `.dockerignore`
 listed `apps/admin` and `apps/api` under "local-only apps - never part of any deployed image",
-so both were absent from *every* build context. Neither ships with the bot any more - each has
-its own image - and both lines are gone. `apps/api` is now in the admin image's context and out
-of the bot's, `apps/admin` is in neither backend image, and all three facts come from the
-`COPY` lists above. A `.dockerignore` rule is shared by every build in the repo, so one placed
-there removes the member from images it belongs in - which is exactly how `apps/api` became
-unbuildable here.
+so both were absent from *every* build context. Both lines are gone. What replaced that label
+is not "each has its own image" - it is that *local-only* never described a `.dockerignore`
+rule at all; it described these `COPY` lists, which say which image bundles what. Two facts
+follow, both read off the lists above: `apps/api` is in the admin image's context and out of
+the bot's, and `apps/admin` is in no backend image because it has no image of its own yet. A
+`.dockerignore` rule is shared by every build in the repo, so one placed there removes the
+member from images it belongs in - which is exactly how `apps/api` became unbuildable here.
 
 **A new member that a backend depends on therefore needs a new `COPY` line in that backend's
 Dockerfile**, or the Docker build silently installs without it. The failure is not at the
