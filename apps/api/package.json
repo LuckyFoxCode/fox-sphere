@@ -16,6 +16,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "start:prod": "tsx src/server.ts",
     "lint": "eslint .",
     "openapi:dump": "tsx src/dump-openapi.ts"
   },
@@ -28,6 +29,7 @@
     "express": "^5.2.1",
     "openapi3-ts": "^4.6.1",
     "swagger-ui-express": "^5.0.1",
+    "tsx": "^4.22.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -38,7 +40,6 @@
     "@types/node": "^24.12.4",
     "@types/swagger-ui-express": "^4.1.8",
     "eslint": "^10.4.0",
-    "tsx": "^4.22.1",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.59.3"
   }

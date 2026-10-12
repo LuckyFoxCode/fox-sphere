@@ -22,10 +22,11 @@ data
 *.log
 .DS_Store
 
-# Local-only apps - never part of any deployed image (see AGENTS.md architecture table).
-# Keeps them out of the build context entirely, not just out of the final stage.
-apps/admin
-apps/api
+# apps/admin and apps/api are deliberately NOT excluded here any more: both ship as their
+# own deployed images. "Local-only" no longer describes them - it describes *what they are
+# never bundled into*, and that is each Dockerfile's per-member COPY list, not this file.
+# .dockerignore is shared by every build, so a rule here silently removes a member from
+# images it belongs in; excluding apps/api is why this file had to change at all.
 
 # Docker meta
 Dockerfile
