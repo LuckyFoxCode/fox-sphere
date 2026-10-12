@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Admin backend image: the panel's API and its Swagger UI, on :3001.
+# Admin backend image: the panel's API, on :3001.
 # Build context = repo root (needs workspace packages).
 #
 #   docker build -f .docker/admin.Dockerfile -t foxsphere-admin-api .
