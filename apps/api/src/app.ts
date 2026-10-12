@@ -1,9 +1,8 @@
-import { config, errorHandler, Logger, NotFoundError } from "@fox-sphere/backend-shared";
+import { config, errorHandler, NotFoundError } from "@fox-sphere/backend-shared";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { type Express } from "express";
 import { createServer } from "http";
-import swaggerUi from "swagger-ui-express";
 import {
   SESSION_COOKIE,
   STATE_COOKIE,
@@ -16,7 +15,6 @@ import {
   validateToken,
 } from "./shared/auth";
 import { requireSession } from "./shared/middleware";
-import { generateOpenAPISpec } from "./shared/openapi";
 import { modules } from "./modules";
 
 const app: Express = express();
@@ -46,47 +44,26 @@ app.use(cookieParser());
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
-// A docs defect must not take the API down with it: without the guard, a route
-// with incomplete OpenAPI metadata throws at import and nothing serves at all.
-let openApiSpec: ReturnType<typeof generateOpenAPISpec> | null = null;
-try {
-  openApiSpec = generateOpenAPISpec();
-} catch (error) {
-  Logger.error(
-    "OpenAPI",
-    "Spec generation failed - /docs and /openapi.json are disabled, the API still serves",
-    error,
-  );
-}
-
-if (openApiSpec) {
-  const spec = openApiSpec;
-  app.use("/docs", swaggerUi.serve, swaggerUi.setup(spec));
-  app.get("/openapi.json", (_req, res) => res.json(spec));
-}
-
-// The session guards the DATA, not the documentation.
+// There is no /docs and no /openapi.json here. Both used to be mounted above requireSession, so
+// an anonymous visitor got the page instead of a JSON 401 — the right trade while this app was
+// local-only and an open route table cost nothing. This app is deployed now, and Swagger cannot
+// be gated the way the data is: its page is fetched by the browser itself and its "Try it out"
+// buttons issue their own requests, neither of which passes through apps/admin's fetch wrapper —
+// and that wrapper is the only thing turning a 401 into a bounce to /api/auth/twitch/login. So
+// the block was deleted rather than locked. `.docker/Caddyfile.admin` answers 404 for both paths
+// as well, which means the answer does not depend on anything in this file staying true.
 //
-// Swagger's page is fetched by the browser itself and its "Try it out" buttons issue their own
-// requests — neither goes through apps/admin's fetch wrapper, and that wrapper is the only thing
-// turning a 401 into a bounce to /api/auth/twitch/login. A guard mounted above /docs would hand an
-// anonymous visitor a JSON 401 instead of the page, and would buy little: a browser already
-// holding fx_session WOULD send it, because cookies are host-scoped and port-agnostic, so a page
-// on :3001 calling :3001/api is a cookie-bearing request. The docs are also read-only and carry
-// no viewer data; what is worth protecting is the route table that leaks nothing and the
-// payloads that leak balances.
-//
-// The trade-off: the route list is readable by anything that can reach this server. That is
-// acceptable while apps/api is local-only and undeployed. When it goes to production, delete
-// this block rather than locking it — a Swagger UI for an internal admin API has no business
-// being public, and dropping it is simpler than authenticating it.
+// The spec itself is untouched: `pnpm openapi:dump` still writes apps/api/openapi.json and orval
+// still turns that file into the panel's typed client, and both are committed. Only the
+// human-readable rendering of it is gone. Bringing it back means authenticating it first, not
+// moving the mount back up here.
 
 // The OAuth routes are mounted directly, NOT through route(), and are absent from the spec on
 // purpose: they answer with 302 redirects, which the response-schema model in define-route.ts
 // cannot express and which orval would turn into a hook that throws when called - a browser
 // `fetch` follows the redirect to Twitch's HTML login page and the generated parser chokes on it.
 // The only correct way to start the flow is window.location.assign, which does not use the
-// generated client at all. Health, docs and these three routes are the documented exceptions to
+// generated client at all. Health and these three routes are the documented exceptions to
 // "never call router.get directly".
 app.get("/api/auth/twitch/login", (_req, res) => {
   const state = createStateValue();

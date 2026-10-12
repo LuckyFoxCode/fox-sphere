@@ -80,9 +80,15 @@ passed to `route()` never repeat it.
 
 ### What stays outside the spec
 
-Three categories are mounted directly on `app` and are deliberately absent from the spec:
-`/health`, `/openapi.json` + `/docs`, and the three Twitch OAuth routes
+Two categories are mounted directly on `app` and are deliberately absent from the spec:
+`/health`, and the three Twitch OAuth routes
 (`/api/auth/twitch/login`, `/callback`, `/logout`).
+
+`/openapi.json` + `/docs` were a third category and no longer exist: the block was deleted from
+`apps/api/src/app.ts` when the app was deployed, because Swagger cannot sit behind
+`requireSession` (the browser fetches its page and issues its own "Try it out" requests, so
+neither passes through the client's 401-to-login redirect), and `.docker/Caddyfile.admin` 404s
+both paths as well. The spec generation itself is untouched - see the end of this file.
 
 The OAuth routes answer with a 302. `define-route.ts` models responses as JSON schemas, so a
 redirect does not fit, and orval would generate a hook whose `fetch` follows the redirect to
@@ -91,7 +97,7 @@ Twitch's HTML login page and then throws parsing it. The only correct way to sta
 actively wrong, not merely unused.
 
 The invariant still holds where it matters: a JSON route cannot be mounted without registering
-its path. These three are exempt because they are not JSON routes. Note that the spec therefore
+its path. These are exempt because they are not JSON routes. Note that the spec therefore
 describes no authentication at all - it never described `X-Admin-Key` either.
 
 ## The verbs
@@ -212,5 +218,6 @@ pnpm gen:api         # regenerates the admin client from that file
 and type-checks without a running server. A route change that skips the dump leaves the
 admin client stale, and nothing fails loudly - so run both, in the same commit.
 
-`GET /openapi.json` on the running server serves the same document; `/docs` is Swagger UI
-over it.
+The running server serves no rendering of that document: `/openapi.json` and `/docs` are not
+mounted. `pnpm openapi:dump` is the only way to read it, and `apps/admin` reads the committed
+copy - which is why the whole chain works without a server.

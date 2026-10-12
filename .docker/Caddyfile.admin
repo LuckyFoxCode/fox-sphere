@@ -1,0 +1,46 @@
+# Admin panel edge. Plain HTTP on :80 - the site address is written out rather than taken from
+# {$SITE_ADDRESS}, as .docker/Caddyfile does, because there is no domain here and nothing to
+# gain from an env var: this image is reached through an SSH tunnel and compose publishes the
+# host port. Caddy defaults to :80 for an empty site address, but naming it keeps the listening
+# port and the image's EXPOSE 80 one fact instead of two that can drift.
+#
+#   ssh -L 5174:localhost:5174 <vm>    # then open http://localhost:5174
+#
+# The proxy target is the backend container on the compose network: `admin-api` is the service
+# name and 3001 is ENV API_PORT in .docker/admin.Dockerfile.
+
+:80 {
+	encode gzip
+
+	# `route` preserves this order, which is the whole reason it is here. A bare chain of
+	# `handle` blocks is sorted by Caddy rather than read in the order written.
+	route {
+		# apps/api no longer mounts Swagger - the block was deleted from src/app.ts - and this
+		# 404 is the second lock on the same door, so the answer does not depend on the app
+		# keeping that true. Routing already closes it too: only /api/* is proxied, so /docs
+		# never reaches the backend either way. A rule whose safety rests on some future
+		# `handle` not existing is not a rule, so it is written down. Keep both first.
+		handle /docs {
+			respond 404
+		}
+		handle /openapi.json {
+			respond 404
+		}
+
+		# The panel's API, same-origin: this replaces Vite's dev proxy
+		# (apps/admin/vite.config.ts) in production, which is why fx_session is sent on every
+		# call without any CORS involvement. reverse_proxy upgrades WebSockets automatically,
+		# though apps/api is HTTP only and has no socket server.
+		handle /api/* {
+			reverse_proxy admin-api:3001
+		}
+
+		# Everything else: the Vue SPA. try_files falls back to /index.html so client-side
+		# routes survive a refresh and a deep link.
+		handle {
+			root * /srv
+			try_files {path} /index.html
+			file_server
+		}
+	}
+}
