@@ -15,5 +15,5 @@ httpServer.on("error", (error: NodeJS.ErrnoException) => {
 });
 
 httpServer.listen(apiPort, () => {
-  Logger.info("Server", `Admin backend + swagger on http://localhost:${apiPort} 🦊`);
+  Logger.info("Server", `Admin backend on http://localhost:${apiPort} 🦊`);
 });

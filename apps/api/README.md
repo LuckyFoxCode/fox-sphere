@@ -1,11 +1,14 @@
 # api
 
-The admin-panel backend. Express 5 + Zod, with the OpenAPI spec and the Swagger UI
-generated from the route declarations themselves.
+The admin-panel backend. Express 5 + Zod, with the OpenAPI spec generated from the
+route declarations themselves.
 
-**Local-only.** It is not in `docker compose`, not built by CI, and never deployed - it
-exists to serve `apps/admin` and to produce the spec that the admin's API client is
-generated from. The deployed Twitch backend is `apps/bot-runtime`, a separate app.
+**Deployed**, since this release, in its own compose project `foxsphere-admin`
+(`.docker/admin.Dockerfile` → `admin-api`, started by `docker-compose.admin.yml` on the VM
+beside the bot's stack, sharing its `.env` and its Postgres). It is not in the **dev** compose
+file - locally it runs on its own via `pnpm dev:api` - and it publishes no host port: the only
+caller is the panel's Caddy, which reaches it by service name on the shared network. The
+deployed Twitch backend remains `apps/bot-runtime`, a separate app and a separate stack.
 
 ```bash
 pnpm dev:api          # from the repo root - tsx watch, :3001
@@ -13,9 +16,22 @@ pnpm dev:api          # from the repo root - tsx watch, :3001
 
 | URL | What |
 |---|---|
-| http://localhost:3001/docs/ | Swagger UI (trailing slash; `/docs` redirects) |
-| http://localhost:3001/openapi.json | the generated spec |
+| http://localhost:3001/api/* | the panel's routes, behind the session guard |
+| http://localhost:3001/docs | Swagger UI, behind the same guard |
+| http://localhost:3001/openapi.json | the generated spec, behind the same guard |
 | http://localhost:3001/health | `{"status":"ok"}` |
+
+In production none of those URLs is reachable from the host: the panel is on
+`127.0.0.1:5174`, `/api/*` is proxied to this app, and `.docker/Caddyfile.admin` answers 404 for
+`/docs` and `/openapi.json` before the request gets here. So in production the only copy of the
+spec anyone can read is the committed one — which is also the copy orval and CI work from.
+
+`/docs` is mounted behind `requireSession`, not above it. It used to sit above the guard on the
+claim that Swagger cannot carry a session; that claim is wrong — cookies are host-scoped and
+port-agnostic, so a browser holding `fx_session` sends it whatever rendered the page, and
+`src/lib/session.ts` holds `login()` and `logout()` with no `fetch` wrapper that a 401 could turn
+into a redirect. The trade is the usual one: an anonymous visitor gets a JSON 401 instead of the
+page. In dev that costs nothing, because you are already signed in to use the panel at all.
 
 It needs Postgres (`docker compose up -d postgres`) and a complete `.env` at the repo root -
 `config` throws on the first missing variable.
@@ -86,7 +102,7 @@ import { NotFoundError } from "@fox-sphere/backend-shared";
 import { createModule } from "../../shared/openapi";
 import { getUserById } from "./user.service";
 
-const { router, route } = createModule("Users"); // tag: Swagger group + orval folder
+const { router, route } = createModule("Users"); // tag: the spec group + orval folder
 
 route(
   {
@@ -240,7 +256,7 @@ and the UI has no branch for it.
 
 ```
 src/
-  app.ts                    express app, module mounts, swagger, 404 - no listen()
+  app.ts                    express app, module mounts, 404 - no listen()
   server.ts                 listen() on :3001
   port.ts                   API_PORT, default 3001
   dump-openapi.ts           writes openapi.json

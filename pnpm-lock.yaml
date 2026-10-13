@@ -360,6 +360,9 @@ importers:
       swagger-ui-express:
         specifier: ^5.0.1
         version: 5.0.1(express@5.2.1)
+      tsx:
+        specifier: ^4.22.1
+        version: 4.22.1
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -385,9 +388,6 @@ importers:
       eslint:
         specifier: ^10.4.0
         version: 10.9.1(jiti@2.7.0)
-      tsx:
-        specifier: ^4.22.1
-        version: 4.22.1
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
