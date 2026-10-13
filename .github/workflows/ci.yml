@@ -95,8 +95,10 @@ jobs:
         working-directory: apps/admin
         run: ./node_modules/.bin/vitest run --coverage
 
-  # Both deployed images must build from a PR too - a broken Dockerfile otherwise only
-  # surfaces on main, after the merge, in the deploy job itself.
+  # All four deployed images must build from a PR too - a broken Dockerfile otherwise only
+  # surfaces on main, after the merge, in the deploy job itself. Two stacks, so two release
+  # workflows: bot-runtime + web ship by deploy.yml (tag-triggered), admin-api + admin-web by
+  # deploy-admin.yml (manual dispatch). The trigger differs; the build shape below does not.
   images:
     runs-on: ubuntu-latest
     steps:
@@ -120,5 +122,28 @@ jobs:
           file: .docker/web.Dockerfile
           push: false
           build-args: VITE_API_BASE_URL=
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # The panel's pair. No build-args: admin-web reads none (the panel is same-origin through
+      # Caddy's /api proxy, so it has no VITE_API_BASE_URL), and admin-api's build stage declares
+      # a placeholder DATABASE_URL ARG default. deploy-admin.yml builds them the same way, only
+      # with push: true.
+      - name: admin-api image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .docker/admin.Dockerfile
+          target: runner
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: admin-web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .docker/admin-web.Dockerfile
+          push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max

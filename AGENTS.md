@@ -222,7 +222,7 @@ Two consequences for code written today:
 
 ## Verification
 
-`.github/workflows/ci.yml` runs this gate on every PR and on pushes to `main`/`dev` (plus a build of both deployed images). The suite covers units only - never extend "tests pass" to mean the bot, the database or the socket path work. The admin coverage step enforces the 90% threshold from `apps/admin/vitest.config.ts` over the admin's business-logic files. Locally the gate is:
+`.github/workflows/ci.yml` runs this gate on every PR and on pushes to `main`/`dev` (plus a build of all four deployed images - `bot-runtime` and `web` from `deploy.yml`, `admin-api` and `admin-web` from `deploy-admin.yml`, which is manual-dispatch and not tag-triggered). The suite covers units only - never extend "tests pass" to mean the bot, the database or the socket path work. The admin coverage step enforces the 90% threshold from `apps/admin/vitest.config.ts` over the admin's business-logic files. Locally the gate is:
 
 ```bash
 pnpm install
