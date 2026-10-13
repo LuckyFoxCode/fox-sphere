@@ -89,7 +89,9 @@ exposed on `:3000` (Socket.io + REST).
 ### Environment
 
 - Dev: copy `.env.example` → `.env` (repo root; see `AGENTS.md` "First run") and fill Twitch credentials
-- Prod: see `.env.prod.example` (never commit real values). The panel's stack reads the VM's single `~/foxsphere/.env` — the same file the bot's stack uses — because `config` throws on any missing key and `apps/api` needs the whole `TWITCH_*` set to boot
+- Prod: see `.env.prod.example` for the values, never the file. The VM keeps them in one
+  `~/foxsphere/.env` that both stacks read, because `config` throws on any missing key and
+  `apps/api` needs the whole `TWITCH_*` set to boot
 
 ## Scripts
 
@@ -154,9 +156,13 @@ artifact is stale. Neither step needs a running server: orval reads the committe
 ## Docker & Deployment
 
 - **Dev (`docker-compose.yml`):** PostgreSQL + backend in watch mode; frontend runs in the terminal.
-- **Prod, bot + overlay (`docker-compose.prod.yml`):** production stack driven by `.env.prod` on the target VM.
+- **Prod, bot + overlay (`docker-compose.prod.yml`):** the bot's stack. Its env file on the VM is
+  the single `~/foxsphere/.env`, and the deployed copy of this project is a hand-placed
+  `~/foxsphere/compose.yaml` reading that file — `.env.prod`, which `docker-compose.prod.yml`
+  and `.env.prod.example` name, does not exist on that host.
 - **Prod, admin panel (`docker-compose.admin.yml`):** a second, separate compose project
-  (`foxsphere-admin`) on the same VM, sharing the bot's `.env` and Postgres. It publishes one
+  (`foxsphere-admin`) on the same VM, sharing that same `~/foxsphere/.env` and the same
+  Postgres. It publishes one
   host port, `127.0.0.1:5174`, and `admin-api` none — so the panel is reachable only through
   `ssh -L 5174:localhost:5174 <vm>`, then `http://localhost:5174`.
 - **CI/CD:** every PR runs `.github/workflows/ci.yml` (the gate). Pushing to `main` runs it again, and `deploy.yml` follows on a green run: `linux/amd64` images are built, pushed to GHCR, and rolled out on the Oracle VM over SSH. The panel's two images ship from `deploy-admin.yml` instead, on a manual dispatch — the bot's release must not restart the panel, and the panel's must not restart the bot.

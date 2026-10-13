@@ -26,8 +26,10 @@ There is no `/docs` and no `/openapi.json` here. The spec is still **generated a
 `pnpm openapi:dump` writes `apps/api/openapi.json`, orval turns that into the panel's typed
 client, and CI fails the PR if either is stale. What is gone is only the *serving* of that
 document: Swagger cannot sit behind `requireSession`, because its page and its "Try it out"
-requests are issued by the browser rather than through the panel's `fetch` wrapper, and this app
-is deployed now. Restoring it means authenticating it first, not re-mounting it above the guard.
+requests are issued by the browser itself rather than through the panel — `src/lib/session.ts`
+holds `login()` and `logout()` and no `fetch` wrapper that could turn a 401 into a redirect —
+and this app is deployed now. Restoring it means authenticating it first, not re-mounting it
+above the guard.
 
 It needs Postgres (`docker compose up -d postgres`) and a complete `.env` at the repo root -
 `config` throws on the first missing variable.

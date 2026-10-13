@@ -4,19 +4,34 @@
 #
 #   docker compose -f docker-compose.admin.yml up -d
 #
-# `name: foxsphere-admin` is what keeps them apart. Project scope is what `up -d
-# --remove-orphans` and `down` operate on, so the bot's deploy cannot remove these containers
-# and this one cannot remove the bot's.
+# `name: foxsphere-admin` is what keeps the two stacks apart at the container level: project
+# scope is what `up -d --remove-orphans` and `down` operate on, so neither stack can remove or
+# restart the other's containers, and neither deploy reads the other's compose file.
+#
+# The network is NOT part of that, and one consequence is worth knowing before you type the
+# word. The bot's project owns `foxsphere_foxsphere` — it created it — so a `docker compose
+# down` there, while this stack is up, ends in
+#   error while removing network: network foxsphere_foxsphere has active endpoints
+# No release runs `down`; both deploys are `pull` then `up -d`, so this has never cost a
+# deploy. It is an operator's manual `down` that meets it, and the answer is to bring this
+# stack down first (and `up -d` again afterwards), not to delete the network.
 #
 # Images are built and pushed by CI (.github/workflows/deploy-admin.yml, manual dispatch); the
-# VM only pulls, exactly as docker-compose.prod.yml does for the bot.
+# VM only pulls, exactly as docker-compose.prod.yml does for the bot. **"Only" is the
+# operator's job here, not compose's.** Both tags are `:latest` and there is deliberately no
+# `pull_policy`, so a bare `docker compose up -d` starts whatever is already on disk — the
+# previous release — and reports success. Pull first, or you have deployed nothing.
+#
+# (`pull_policy: always` would be the worse mistake: the deploy script ends with
+# `docker logout ghcr.io`, so an operator's later `up` would fail to pull and refuse to start
+# at all, rather than starting the image that is already on disk.)
 #
 # This is not the dev stack. Locally the panel is `pnpm dev:api` + `pnpm dev:a`, and the network
 # this file attaches to exists only on the VM.
 #
 # The panel has exactly one way in, and it is not a URL on the internet:
 #
-#   ssh -L 5174:localhost:5174 ubuntu@79.76.42.154
+#   ssh -L 5174:localhost:5174 <vm>
 #   # then open http://localhost:5174
 #
 # `127.0.0.1` below is the whole security boundary. The panel reads and writes every table in
