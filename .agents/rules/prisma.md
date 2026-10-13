@@ -94,6 +94,15 @@ responses; nothing deeper in the stack should be choosing a status code.
 - **`SystemState` is a singleton row** (`@id @default(1)`). Upsert it; never create a second.
 - **Every relation field in the current schema already has a matching `@@index`.** Add an
   index when you introduce a new query predicate, not speculatively.
+- **A history row belongs to a `(channelId, channelUserId)` pair, and `channelId` there is a
+  plain column with no foreign key.** `CoinHistory`, `XpHistory`, `WatchStreak` and
+  `UserHero` carry both since `20261013182939_channel_user_history`; only `channelUserId` is
+  the relation, and it is the cascade target. Nothing in the database stops `channelId` from
+  drifting away from `ChannelUser.channelId`, so write both from the same channel context.
+- **`User` and `UserLottery` are frozen.** No bot code writes them after that same migration,
+  so a `ChannelUser` balance and a `User` balance legitimately differ. Do not "fix" a
+  divergence by writing `User`, and do not add columns to `User` - both are dropped in their
+  own migration at the end of phase 1.
 
 ## Never edit generated output
 

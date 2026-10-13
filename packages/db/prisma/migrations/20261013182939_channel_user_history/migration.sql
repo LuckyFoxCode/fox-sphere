@@ -6,7 +6,8 @@
 
   `User` and `UserLottery` are deliberately left alone. They stay in the schema, frozen,
   and are dropped in their own migration at the end of phase 1 - so a rollback to the
-  previous bot image still finds a readable `User`.
+  previous bot image still finds a readable `User`. They are read below and never written:
+  every statement here targets `Viewer` or `ChannelUser`.
 
   WHY EVERYTHING BELOW IS ONE TRANSACTION
 
@@ -38,50 +39,67 @@
       no instant at which it can read a half-moved table. Without the transaction, a lock
       released statement by statement is not a cutover at all.
 
-  WHY A ROW WITH NO MATCHING `ChannelUser` ABORTS THE DEPLOY
+  WHY THIS MIGRATION CREATES THE MISSING `Viewer` / `ChannelUser` ROWS
 
-  The `UPDATE`s use an inner join, so a history row whose viewer has no `ChannelUser` row
-  is left NULL, and the `SET NOT NULL` below then fails the whole migration. That is the
-  intended outcome: the deploy stops with the old container still serving chat, and the
-  operator fixes it instead of losing ledger rows. `CoinHistory` is money - a migration
-  that quietly dropped unmoved rows would be worse than one that refuses.
+  It cannot simply refuse. `deploy.yml` runs this migration at line 106, `backfill:channels`
+  at line 112 and `compose up -d` at line 119 - so the migration runs *before* the step that
+  would fill the gap, and that step is insert-only by design: it creates absent rows and
+  never updates an existing one. A viewer who has chatted since the last deploy therefore
+  has a `User` with history rows and no `ChannelUser`, and refusing to remap such a row
+  deadlocks the release against a step that cannot yet run, aborting under `set -e` before
+  the new bot ever starts.
 
-  The precondition is the manual `backfill:channels --sync` that phase 1 step 14 puts
-  before the cutover; without it, any `User` that appeared since the last deploy aborts
-  this migration.
+  Creating the rows is not inventing data, it is finishing the mapping this migration is
+  already performing: these are exactly the rows the bot's own Release B code will write at
+  that viewer's next message, and they carry the balance that viewer already has. The
+  alternative - remapping onto nothing, or dropping the history - is what would be inventing.
+
+  The field list is `apps/bot-runtime/scripts/backfill-channels.ts`'s, not a new one:
+  `buildChannelUserRows` in `packages/backend-shared/src/backfill/channel-backfill.ts` maps
+  eleven fields from `User` (`coins`, `lvl`, `xp`, `lastXpAt`, `isMod`, `isFounder`,
+  `isSubscriber`, `isPermanentVip`, `spinsCount`, `totalWin`, `totalLoss`) and three from
+  `UserLottery` (`xpThisWeek`, `hasTicket`, `isLuckyVip`), the last three defaulting to
+  `NO_LOTTERY` when there is no lottery row. The two writes keep that script's modes as
+  well: `Viewer` is upserted on `twitchId` (create, or refresh `username`), and
+  `ChannelUser` is insert-only on `(channelId, viewerId)` - never updated. Updating an
+  existing one would roll a live balance backwards out of a `User` the old bot is still
+  writing, which is the one thing `selectMissingRows` exists to prevent.
+
+  Scope is the `User`s that actually have rows in the four history tables. A `User` with no
+  history needs no `ChannelUser`, and `backfill:channels` creates one for it on its next run.
+
+  WHAT STILL ABORTS, AND WHY IT CANNOT BE PAPERED OVER
+
+  The channel itself. This migration resolves the single `Channel` row the legacy
+  single-channel bot belonged to, and refuses when that row is not unambiguous: zero channels
+  means there is nothing to scope the history to, and more than one means any choice would
+  silently file a viewer's history under the wrong channel. Neither is something this file
+  may guess at - `Channel` is configuration, not data to be derived.
 
   WHY THE PREFLIGHT IS OUTSIDE THE TRANSACTION
 
   Inside one, its message would be thrown away. Postgres keeps only the first error of a
-  transaction: once the `SET NOT NULL` fails, every later command - including `COMMIT` -
-  answers "current transaction is aborted, commands ignored until end of transaction
-  block", and that is the text the operator ends up reading. The preflight therefore runs
-  first, while nothing has been applied, and raises the actionable message naming the
-  twitchIds at fault. The `SET NOT NULL` stays where it is: it is the real gate, because
-  it closes the window between the preflight and the `ACCESS EXCLUSIVE` lock.
+  transaction: once a statement fails, every later command - including `COMMIT` - answers
+  "current transaction is aborted, commands ignored until end of transaction block", and
+  that is the text the operator ends up reading. The preflight therefore runs first, while
+  nothing has been applied, and raises the actionable message. `SET NOT NULL` stays inside
+  the transaction: it is the real data gate, closing the window between the preflight and the
+  `ACCESS EXCLUSIVE` lock.
 */
 
 DO $$
 DECLARE
-  unmatched text;
+  channel_count integer;
+  channel_names text;
 BEGIN
-  SELECT string_agg(DISTINCT u."twitchId", ', ') INTO unmatched
-  FROM (
-      SELECT "userId" FROM "CoinHistory"
-      UNION SELECT "userId" FROM "XpHistory"
-      UNION SELECT "userId" FROM "WatchStreak"
-      UNION SELECT "userId" FROM "UserHero"
-  ) refs
-  JOIN "User" u ON u."id" = refs."userId"
-  WHERE NOT EXISTS (
-      SELECT 1 FROM "ChannelUser" cu
-      JOIN "Viewer" v ON v."id" = cu."viewerId"
-      WHERE v."twitchId" = u."twitchId"
-  );
-  IF unmatched IS NOT NULL THEN
+  SELECT count(*), string_agg("login", ', ' ORDER BY "login") INTO channel_count, channel_names
+  FROM "Channel";
+
+  IF channel_count <> 1 THEN
     RAISE EXCEPTION
-      'channel_user_history: history rows reference twitchId(s) % which have no ChannelUser row, so they cannot be moved. Run `pnpm --filter bot-runtime backfill:channels --sync <channel login>` first, then re-run this migration.',
-      unmatched;
+      'channel_user_history: expected exactly 1 Channel row to scope history to, found % (%). The legacy tables belonged to one channel, so this migration will not guess which. Fix the Channel rows, then run `prisma migrate resolve --rolled-back 20261013182939_channel_user_history` - Prisma refuses to re-run a failed migration (P3009) until that is issued - and run this migration again.',
+      channel_count,
+      coalesce(channel_names, 'none');
   END IF;
 END $$;
 
@@ -116,6 +134,86 @@ ADD COLUMN "channelUserId" INTEGER;
 ALTER TABLE "UserHero" ADD COLUMN "channelId" TEXT,
 ADD COLUMN "channelUserId" INTEGER;
 
+-- CreateMissingTargets
+-- `Viewer` upsert by `twitchId`, as `backfill:channels` does: create when absent, refresh
+-- `username` when present, because a stale nickname is safer than a frozen one.
+--
+-- `id` is derived from `twitchId` rather than left to a random generator because `Viewer.id`
+-- has no database default - Prisma's `cuid()` is client-side - so this INSERT has to supply
+-- one. `substr(md5(twitchId), 1, 25)` is deterministic, so the statement is idempotent and
+-- two `User`s can never fight over the same id, and 25 lowercase hex characters match the
+-- length of every cuid already in the column. The column is opaque and referenced by
+-- nothing but its own foreign keys.
+INSERT INTO "Viewer" ("id", "twitchId", "username", "createdAt", "updatedAt")
+SELECT substr(md5(u."twitchId"), 1, 25), u."twitchId", u."username", now(), now()
+FROM "User" u
+WHERE u."id" IN (
+    SELECT "userId" FROM "CoinHistory"
+    UNION SELECT "userId" FROM "XpHistory"
+    UNION SELECT "userId" FROM "WatchStreak"
+    UNION SELECT "userId" FROM "UserHero"
+)
+ON CONFLICT ("twitchId") DO UPDATE SET "username" = EXCLUDED."username";
+
+-- CreateMissingTargets
+-- `ChannelUser`, insert-only on `(channelId, viewerId)` - `ON CONFLICT DO NOTHING`, which is
+-- `selectMissingRows` in SQL. An existing row is never handed to an update, so the `User` the
+-- old bot is still writing cannot roll a live balance backwards.
+--
+-- `id` is left to the SERIAL default; `lastXpAt` and `username`'s sibling timestamps are the
+-- only values that come straight across. The three lottery columns are `COALESCE`d to
+-- `NO_LOTTERY` (`0`, `false`, `false`), matching `buildChannelUserRows` for a `User` with no
+-- `UserLottery` row - the LEFT JOIN, not the COALESCE, is what makes the row optional.
+--
+-- The channel is resolved by a scalar subquery that yields NULL unless there is exactly one
+-- `Channel`, so a second row inserted between the preflight above and this statement cannot
+-- fan every viewer into two channels - it aborts on the NOT NULL instead.
+INSERT INTO "ChannelUser" (
+    "channelId",
+    "viewerId",
+    "coins",
+    "lvl",
+    "xp",
+    "lastXpAt",
+    "isMod",
+    "isFounder",
+    "isSubscriber",
+    "isPermanentVip",
+    "spinsCount",
+    "totalWin",
+    "totalLoss",
+    "xpThisWeek",
+    "hasTicket",
+    "isLuckyVip"
+)
+SELECT
+    (SELECT CASE WHEN count(*) = 1 THEN min("id") ELSE NULL END FROM "Channel"),
+    v."id",
+    u."coins",
+    u."lvl",
+    u."xp",
+    u."lastXpAt",
+    u."isMod",
+    u."isFounder",
+    u."isSubscriber",
+    u."isPermanentVip",
+    u."spinsCount",
+    u."totalWin",
+    u."totalLoss",
+    COALESCE(l."xpThisWeek", 0),
+    COALESCE(l."hasTicket", false),
+    COALESCE(l."isLuckyVip", false)
+FROM "User" u
+JOIN "Viewer" v ON v."twitchId" = u."twitchId"
+LEFT JOIN "UserLottery" l ON l."userId" = u."id"
+WHERE u."id" IN (
+    SELECT "userId" FROM "CoinHistory"
+    UNION SELECT "userId" FROM "XpHistory"
+    UNION SELECT "userId" FROM "WatchStreak"
+    UNION SELECT "userId" FROM "UserHero"
+)
+ON CONFLICT ("channelId", "viewerId") DO NOTHING;
+
 -- Backfill
 -- Through `twitchId`, never through the ids: `User.id` and `ChannelUser.id` are two
 -- unrelated integer sequences, so no amount of arithmetic relates them. `twitchId` is
@@ -139,8 +237,8 @@ CREATE UNIQUE INDEX "UserHero_channelUserId_key" ON "UserHero"("channelUserId");
 CREATE UNIQUE INDEX "WatchStreak_channelUserId_streakValue_key" ON "WatchStreak"("channelUserId", "streakValue");
 
 -- AlterTable
--- The gate described in the header: if the backfill left a NULL anywhere, this fails
--- and the whole migration rolls back with the old container still serving chat.
+-- The data gate: if the backfill left a NULL anywhere, this fails and the whole migration
+-- rolls back, with the old container still serving chat and no row lost.
 ALTER TABLE "CoinHistory" ALTER COLUMN "channelId" SET NOT NULL,
 ALTER COLUMN "channelUserId" SET NOT NULL;
 ALTER TABLE "XpHistory" ALTER COLUMN "channelId" SET NOT NULL,
