@@ -1,0 +1,101 @@
+# Admin panel stack for the Oracle VM - a second compose project on the same host, beside the
+# bot's (`~/foxsphere/compose.yaml`, project `foxsphere`). The two share that directory's `.env`
+# and that stack's Postgres; neither stack knows the other exists.
+#
+#   docker compose -f docker-compose.admin.yml up -d
+#
+# `name: foxsphere-admin` is what keeps the two stacks apart at the container level: project
+# scope is what `up -d --remove-orphans` and `down` operate on, so neither stack can remove or
+# restart the other's containers, and neither deploy reads the other's compose file.
+#
+# The network is NOT part of that, and one consequence is worth knowing before you type the
+# word. The bot's project owns `foxsphere_foxsphere` — it created it — so a `docker compose
+# down` there, while this stack is up, ends in
+#   error while removing network: network foxsphere_foxsphere has active endpoints
+# No release runs `down`; both deploys are `pull` then `up -d`, so this has never cost a
+# deploy. It is an operator's manual `down` that meets it, and the answer is to bring this
+# stack down first (and `up -d` again afterwards), not to delete the network.
+#
+# Images are built and pushed by CI (.github/workflows/deploy-admin.yml, manual dispatch); the
+# VM only pulls, exactly as docker-compose.prod.yml does for the bot. **"Only" is the
+# operator's job here, not compose's.** Both tags are `:latest` and there is deliberately no
+# `pull_policy`, so a bare `docker compose up -d` starts whatever is already on disk — the
+# previous release — and reports success. Pull first, or you have deployed nothing.
+#
+# (`pull_policy: always` would be the worse mistake: the deploy script ends with
+# `docker logout ghcr.io`, so an operator's later `up` would fail to pull and refuse to start
+# at all, rather than starting the image that is already on disk.)
+#
+# What `--wait` is NOT is a database check. It blocks on admin.Dockerfile's HEALTHCHECK, and that
+# check is `/health` - a static route (apps/api/src/app.ts) that answers ok on a container whose
+# DATABASE_URL points nowhere, behind a green deploy. There is no cheap probe to fix that with:
+# every DB-backed route sits behind `requireSession`, so no unauthenticated one exists.
+#
+# This is not the dev stack. Locally the panel is `pnpm dev:api` + `pnpm dev:a`, and the network
+# this file attaches to exists only on the VM.
+#
+# The panel has exactly one way in, and it is not a URL on the internet:
+#
+#   ssh -L 5174:localhost:5174 <vm>
+#   # then open http://localhost:5174
+#
+# `127.0.0.1` below is the whole security boundary. The panel reads and writes every table in
+# the database behind one allowlisted Twitch account, so on 0.0.0.0 it would be a single
+# unclosed port away from the internet - no domain, no TLS, no second factor.
+name: foxsphere-admin
+
+services:
+  # The panel's API. No `ports` block at all, and that is the point: nothing on the host talks
+  # to it. Only Caddy does, by the service name `admin-api` on the shared network
+  # (`.docker/Caddyfile.admin`). Not even `expose: 3001` - the image already declares it, and a
+  # second declaration would be a second source of truth for one number.
+  admin-api:
+    image: ghcr.io/luckyfoxcode/foxsphere-admin-api:latest
+    container_name: foxsphere-admin-api
+    restart: unless-stopped
+    # The bot's `.env`, not an admin-only file. `config` builds itself at import and throws on
+    # any missing key, so apps/api needs the whole TWITCH_* set plus COMMAND_PREFIX and
+    # DATABASE_URL even though it never uses most of them. A smaller admin file would be a
+    # second copy of the same secrets, not a smaller exposure.
+    env_file:
+      - .env
+    environment:
+      # The only value overridden here, because the one in `.env` says `localhost` - which
+      # inside a container is that container. The host is the `postgres` service, by the name
+      # it has on the shared network. Interpolated from the same `.env` (POSTGRES_USER,
+      # POSTGRES_PASSWORD, POSTGRES_DB), so credentials are not written twice.
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public"
+    # No postgres service and no depends_on: the database belongs to the bot's project, and
+    # it is already running by the time this stack starts. A second Postgres here would be a
+    # second copy of the data.
+    networks:
+      - foxsphere
+
+  # Caddy: the panel's static files, `/api/*` proxied to admin-api:3001, and a 404 for /docs
+  # and /openapi.json. The container listens on :80 (EXPOSE 80 in the image), which is why the
+  # right-hand side of the mapping is 80 and 5174 exists only on the host - `5174:5174` would
+  # map the host port onto a port nothing listens on.
+  admin-web:
+    image: ghcr.io/luckyfoxcode/foxsphere-admin-web:latest
+    container_name: foxsphere-admin-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5174:80"
+    # Start order only, not readiness: Caddy dials the upstream per request, so this keeps a
+    # fresh deploy from serving 502s for the first second. Readiness is admin-api's own
+    # HEALTHCHECK, probed from inside that container, which is what `up -d --wait` waits on.
+    depends_on:
+      - admin-api
+    networks:
+      - foxsphere
+
+networks:
+  # external + an explicit `name`, because the real network on the VM is the bot's, with its
+  # project prefix: foxsphere_foxsphere. Without `name`, compose would look for a network
+  # called foxsphere-admin_foxsphere; external networks are never created automatically, so
+  # the deploy would stop on a name compose invented. `external: true` is what keeps this
+  # stack from creating a network of its own - two networks would mean two Postgres-facing
+  # stacks, which is the split this file exists to avoid.
+  foxsphere:
+    external: true
+    name: foxsphere_foxsphere

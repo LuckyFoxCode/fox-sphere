@@ -46,8 +46,10 @@ app.use(cookieParser());
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
-// A docs defect must not take the API down with it: without the guard, a route
-// with incomplete OpenAPI metadata throws at import and nothing serves at all.
+// The spec is generated here, at import, but not served until much further down - behind
+// requireSession. A docs defect must not take the API down with it either: without this guard a
+// route with incomplete OpenAPI metadata throws at import and nothing serves at all. (`pnpm
+// openapi:dump` fails the same way, so CI catches the real cause long before this path matters.)
 let openApiSpec: ReturnType<typeof generateOpenAPISpec> | null = null;
 try {
   openApiSpec = generateOpenAPISpec();
@@ -59,34 +61,12 @@ try {
   );
 }
 
-if (openApiSpec) {
-  const spec = openApiSpec;
-  app.use("/docs", swaggerUi.serve, swaggerUi.setup(spec));
-  app.get("/openapi.json", (_req, res) => res.json(spec));
-}
-
-// The session guards the DATA, not the documentation.
-//
-// Swagger's page is fetched by the browser itself and its "Try it out" buttons issue their own
-// requests — neither goes through apps/admin's fetch wrapper, and that wrapper is the only thing
-// turning a 401 into a bounce to /api/auth/twitch/login. A guard mounted above /docs would hand an
-// anonymous visitor a JSON 401 instead of the page, and would buy little: a browser already
-// holding fx_session WOULD send it, because cookies are host-scoped and port-agnostic, so a page
-// on :3001 calling :3001/api is a cookie-bearing request. The docs are also read-only and carry
-// no viewer data; what is worth protecting is the route table that leaks nothing and the
-// payloads that leak balances.
-//
-// The trade-off: the route list is readable by anything that can reach this server. That is
-// acceptable while apps/api is local-only and undeployed. When it goes to production, delete
-// this block rather than locking it — a Swagger UI for an internal admin API has no business
-// being public, and dropping it is simpler than authenticating it.
-
 // The OAuth routes are mounted directly, NOT through route(), and are absent from the spec on
 // purpose: they answer with 302 redirects, which the response-schema model in define-route.ts
 // cannot express and which orval would turn into a hook that throws when called - a browser
 // `fetch` follows the redirect to Twitch's HTML login page and the generated parser chokes on it.
 // The only correct way to start the flow is window.location.assign, which does not use the
-// generated client at all. Health, docs and these three routes are the documented exceptions to
+// generated client at all. Health and these three routes are the documented exceptions to
 // "never call router.get directly".
 app.get("/api/auth/twitch/login", (_req, res) => {
   const state = createStateValue();
@@ -151,6 +131,25 @@ app.post("/api/auth/twitch/logout", (_req, res) => {
 });
 
 app.use(requireSession);
+
+// `/docs` and `/openapi.json` sit behind the guard like every other route here. They used to be
+// mounted ABOVE it, on the claim that Swagger cannot carry a session — and that claim was wrong
+// twice over. Cookies are host-scoped and port-agnostic, so a browser holding `fx_session` sends
+// it here no matter what rendered the page; and `src/lib/session.ts` has no fetch wrapper left to
+// act on a 401 anyway, so there was no redirect-to-login to preserve. There was also less to
+// protect than it looked: `apps/api/openapi.json` is committed and orval builds the panel's
+// client from it, so the route table is already published in the repository. Hiding it from this
+// process protected nothing that git does not publish anyway.
+//
+// What actually keeps the deployed panel closed is at the edge, not here:
+// `.docker/Caddyfile.admin` answers 404 for both paths before a request reaches this app, and
+// the only published port is bound to loopback. This guard is the second layer, not the first -
+// keep it, but do not believe removing it would be the thing that mattered.
+if (openApiSpec) {
+  const spec = openApiSpec;
+  app.use("/docs", swaggerUi.serve, swaggerUi.setup(spec));
+  app.get("/openapi.json", (_req, res) => res.json(spec));
+}
 
 for (const { prefix, router } of modules) {
   app.use(prefix, router);

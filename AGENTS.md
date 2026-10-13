@@ -18,7 +18,7 @@ use a topic prefix instead, with the suffix abbreviating the action (`generate`,
 | `pnpm build` | `build:p`, then the frontend (overlay) Vite build |
 | `pnpm build:all` | `pnpm -r build` - every workspace member |
 | `pnpm dev:b` | `apps/bot-runtime` Twitch worker (chat bot + EventSub), `tsx watch src/worker.ts` - an alias of `worker:t` kept for tooling that calls the `dev` script |
-| `pnpm dev:api` | Admin-panel backend for `apps/api`, `tsx watch src/server.ts` on `:3001`. `apps/api` is local-only (not in compose), so this is now the normal way to run it. `:api` is the explicit suffix because `:a` is taken by admin (`dev:a`). |
+| `pnpm dev:api` | Admin-panel backend for `apps/api`, `tsx watch src/server.ts` on `:3001`. Not in the dev compose stack, so this is how you run it in dev. `:api` is the explicit suffix because `:a` is taken by admin (`dev:a`). |
 | `pnpm worker:t` | Twitch worker (chat bot + EventSub) - the normal way to run the bot locally in dev, so its logs land in the terminal. |
 | `pnpm dev:server:b` | `apps/bot-runtime` HTTP + Socket.io backend (`tsx watch src/server.ts`) on `:3000` - the bot's own server app, run in `docker compose` (normal) or here to run it out-of-container. |
 | `pnpm dev:a` | Vite dev server for the `admin` frontend on `:5174`, proxying `/api` to `:3001`. |
@@ -36,13 +36,15 @@ use a topic prefix instead, with the suffix abbreviating the action (`generate`,
 | `pnpm --filter bot-runtime backfill:channels` | One-shot script that copies the legacy `User` / `UserLottery` balances into `Viewer` / `ChannelUser` for one channel (login as a positional argument, default `TWITCH_CHANNEL_NAME`). **Insert-only by default**: it creates the `ChannelUser` rows that are absent and never updates an existing one. `--sync` is the opt-in converging mode - it upserts over all 14 copied fields, and it is the one manual run that belongs before Release B. Safe to run on every deploy - see `apps/bot-runtime/scripts/backfill-channels.ts`. In `deploy.yml` it runs under the step's `set -e` with no `|| true`, and **after** `migrate:deploy`, so a DB blip, a partial environment, a `P2002` on `Channel` (a row with the same `twitchId` already exists under a different login - `twitchId` is `@unique`) or an unknown flag all abort the deploy **before** `compose up -d`. That is a stopped deploy, not an outage: the old container is still running and still serving chat, and nothing is lost. |
 | `pnpm test` | `vitest run` in every member that has tests - `apps/admin`, `apps/overlay`, `packages/backend-shared` |
 | `pnpm new:pkg` | Scaffold a workspace package - see `docs/adding-a-package.md` |
+| `ssh -L 5174:localhost:5174 <vm>` | Open the **deployed** admin panel at `http://localhost:5174`. The only way in - see below. |
+| `.github/workflows/deploy-admin.yml` | Release the **deployed** admin panel: builds `admin-api` + `admin-web`, pushes them to GHCR, then SSHes to the VM and runs `pull` then `up -d --wait` against `docker-compose.admin.yml`. **Manual dispatch only** - the Actions tab button, with no `push.tags` trigger where `deploy.yml` has one; the bot is released by cutting a `v*` tag, the panel by hand. No migrations and no backfill: `apps/api` runs neither, and the schema it reads is migrated by the bot's release. |
 
 `pnpm start:b` is broken - see Gotchas.
 
 `docker compose up` runs Postgres 18 and the `bot-runtime` HTTP backend (`:3000`) with the
 source bind-mounted — the Twitch backend's server app (health on `/health`, Socket.io).
-The Twitch worker (bot) and both local-only apps — the admin backend `apps/api` on `:3001`
-(swagger on `/docs/`) and the `admin` frontend on `:5174` — are **not** in compose; run each
+The Twitch worker (bot) and both admin apps — the backend `apps/api` on `:3001`
+and the `admin` frontend on `:5174` — are **not** in the dev stack; run each
 locally so their logs land in the terminal:
 
 ```bash
@@ -50,6 +52,17 @@ pnpm worker:t        # the Twitch worker (chat bot + EventSub)
 pnpm dev:api         # the admin-panel backend on :3001
 pnpm dev:a           # the admin frontend on :5174
 ```
+
+Production runs the panel differently, as its own compose project. On the VM,
+`docker-compose.admin.yml` is placed beside the bot's `compose.yaml` and starts the two built
+images as project `foxsphere-admin`; it publishes exactly one host port, `127.0.0.1:5174`, and
+`admin-api` publishes none. The tunnel above is therefore the only way to open the panel -
+nothing off the VM reaches it, and `:3001` is not on the host at all. The two stacks share
+`~/foxsphere/.env` and the bot's Postgres, and nothing else.
+
+The panel reaches the VM by `.github/workflows/deploy-admin.yml` alone: a **manual dispatch**, not
+a tag, because nothing in chat reports a panel version the way the overlay reports the bot's. One
+run at a time, and never canceled mid-`up`.
 
 ## First run
 
@@ -81,18 +94,21 @@ usable as they ship:
   `ADMIN_OAUTH_REDIRECT_URI` ships with the dev value `http://localhost:5174/api/auth/twitch/callback`
   and must be changed to a redirect URL registered in the Twitch console byte for byte, including
   scheme and port; the **Vite** port `5174`, not the API port, because `/api` is proxied and the
-  browser only ever sees the proxy. `ADMIN_TWITCH_USER_ID` is the single Twitch account allowed in.
+  browser only ever sees the proxy. That same URL is what production uses, reached through the
+  tunnel rather than through Vite. `ADMIN_TWITCH_USER_ID` is the single Twitch account allowed in.
   **All three admin variables are read with `process.env`, not `getEnv`, and that is deliberate:**
-  only `apps/api` acts on them and `apps/api` is not deployed, so a `getEnv` would stop the
-  deployed bot from booting over a panel secret it never uses. An unset allowlist fails closed at
-  the consumer instead - `identity.userId !== undefined` refuses every login - which is what an
-  allowlist wants, and costs the panel rather than the stream. This was learned the hard way:
+  only `apps/api` acts on them - `bot-runtime` never reads them while importing the same
+  `config` module, so a `getEnv` would stop the deployed bot from booting over a panel secret it
+  never uses. An unset allowlist fails closed at the consumer instead - `identity.userId !== undefined`
+  refuses every login - which is what an allowlist wants, and costs the panel rather than the stream.
+  This was learned the hard way:
   `v1.15.0` shipped `ADMIN_TWITCH_USER_ID` on `getEnv`, and the deploy's `backfill:channels` step
   died on the missing variable under `set -e`, after both images were built and pushed and before
   `docker compose up -d`. Prod kept serving chat on the old container - a stopped deploy, not an
   outage - but the release did not ship until the VM's `.env` gained the line.
   (In `.env.prod.example` all three ship as placeholders - two are the literal `CHANGE_ME`, and
-  `ADMIN_SESSION_SECRET` ships as `CHANGE_ME_openssl_rand_hex_32`.)
+  `ADMIN_SESSION_SECRET` ships as `CHANGE_ME_openssl_rand_hex_32`. The admin stack reads the VM's
+  single `~/foxsphere/.env`, the same file the bot reads - see `docker-compose.admin.yml`.)
 
 `PORT`, `NODE_ENV`, `DEBUG`, `COMMAND_PREFIX` and `ALLOWED_ORIGIN` ship with working values
 and need no edit.
@@ -110,9 +126,9 @@ override applies only inside compose, never to a native `pnpm dev:b`.
 
 | Member | Stack | Role |
 |---|---|---|
-| `apps/api` | Express 5 | Admin-panel backend - **local-only**, not deployed. HTTP only on `:3001` (swagger `/docs`): the feature modules, the OpenAPI spec, and no realtime surface at all - sockets and the worker bridge belong to `bot-runtime` |
+| `apps/api` | Express 5 | Admin-panel backend - **deployed**, as `admin-api` in the `foxsphere-admin` compose project. HTTP only on `:3001` inside its container: the feature modules, the OpenAPI spec, and no realtime surface at all - sockets and the worker bridge belong to `bot-runtime`. **Publishes no host port**; Caddy reaches it by service name on the shared network. Swagger at `/docs`, behind the session guard |
 | `apps/bot-runtime` | Express 5 (runtime), Prisma 7 + `@prisma/adapter-pg`, Twurple | Twitch backend - the deployed bot. Owns its own HTTP + Socket.io (`src/app.ts`, health on `/health`) and the worker (chat bot + EventSub) in one package. `server.ts` listens on `:3000`; in production `prod.ts` starts the HTTP listener and the worker in one process |
-| `apps/admin` | Vue 3.5, Vite 8, Tailwind 4 | Admin-panel frontend, dev on `:5174`. Not deployed |
+| `apps/admin` | Vue 3.5, Vite 8, Tailwind 4 | Admin-panel frontend, dev on `:5174`. **Deployed** as `admin-web`, the Caddy container in the same `foxsphere-admin` project - the only container with a host port, `127.0.0.1:5174` |
 | `apps/overlay` | Vue 3.5, Vite 8, Tailwind 4 | OBS browser-source overlay |
 | `packages/types` | tsdown | Socket event and domain contracts |
 | `packages/shared-schemas` | tsdown, zod | Request and response DTOs |
@@ -130,7 +146,7 @@ service to shared.
 **Dev and production run different process shapes:**
 
 - **dev - several processes.** `apps/bot-runtime/src/server.ts` serves the Twitch backend's HTTP and Socket.io on `:3000` (runs in `docker compose`); `apps/bot-runtime/src/worker.ts` runs the chat bot and EventSub (run locally with `pnpm worker:t`); `apps/api/src/server.ts` runs the admin backend on `:3001` (locally, `pnpm dev:api`); the `admin` frontend runs on `:5174` (`pnpm dev:a`) and the overlay on `:5173` (`pnpm dev:f`).
-- **production - one process for the bot.** `apps/bot-runtime/src/prod.ts` starts its own HTTP listener and then boots the worker in the same process, so the worker's `forwardEventToBackend()` POST reaches a listener in its own process. The HTTP hop is redundant there but kept so dev and production share one code path - the `globalEventBus` lives inside `worker.ts` and is never shared with `app.ts`. `apps/api` and `apps/admin` are not deployed.
+- **production - one process for the bot.** `apps/bot-runtime/src/prod.ts` starts its own HTTP listener and then boots the worker in the same process, so the worker's `forwardEventToBackend()` POST reaches a listener in its own process. The HTTP hop is redundant there but kept so dev and production share one code path - the `globalEventBus` lives inside `worker.ts` and is never shared with `app.ts`. `apps/api` and `apps/admin` are deployed, but as a second process pair in their own project: `admin-api` is a plain HTTP listener and `admin-web` is static files behind Caddy, so the bot's process shape is not involved.
 
 The event path is the same in both:
 
@@ -192,7 +208,7 @@ Two consequences for code written today:
 | **`TwitchToken` has no `@id`.** Its unique criterion is `twitchUserId` - that is the key for `findUnique` and `upsert`. | `packages/db/prisma/schema.prisma` |
 | **Dev runs several processes, production runs one.** The difference is process count, not transport: `forwardEventToBackend()` POSTs to `/api/internal/events` in both, and in production that POST simply lands in the same process. | `apps/bot-runtime/src/prod.ts`, `apps/bot-runtime/src/worker.ts` |
 | **`/api/internal/events` is unauthenticated** and re-emits arbitrary `event` and `data` to every connected socket. Caddy now 404s `/api/internal/*` at the edge, so it is reachable only in-process; keep that rule first in the `route` block, and never expose the port directly. It exists in `bot-runtime` only. | `apps/bot-runtime/src/app.ts`, `.docker/Caddyfile` |
-| **`apps/api` routes need a Twitch session cookie, and its `/docs` is deliberately outside that guard.** Every module route sits behind `requireSession`, which verifies an HMAC-signed `fx_session` cookie against `ADMIN_SESSION_SECRET`; `GET /api/auth/me` is the module route that returns the signed-in login (from `res.locals`, not by re-reading the cookie). The session is stateless: the cookie carries `{sub, login, exp}` plus its signature and the server stores nothing, so a restart does not log anyone out and a stolen cookie cannot be revoked server-side except by rotating the secret (which logs out everyone). Three consequences. Only `config.adminTwitchUserId` - a single Twitch user id - is allowed in; a login by anyone else is refused at the callback and no cookie is issued. `ADMIN_SESSION_SECRET` and `ADMIN_OAUTH_REDIRECT_URI` are read with `process.env`, **not** `getEnv`, because only `apps/api` reads them and a `getEnv` there would stop the deployed Twitch bot from booting over secrets it never uses - an unset secret fails **closed** (500 on every admin route) rather than open. And `/docs` + `/openapi.json` are mounted *above* the guard, so an anonymous visitor gets the page instead of a JSON 401. That is the whole reason: Swagger's page and its "Try it out" requests are issued by the browser, not through `apps/admin`, so they bypass the `fetch` wrapper's 401-to-login redirect. They are not incapable of carrying a session - a browser already holding `fx_session` **would** send it, since cookies are host-scoped and port-agnostic - so do not copy the older claim that "Swagger cannot carry a session". The trade is documented in `app.ts` - when `apps/api` is deployed, **delete** the docs block rather than locking it. | `apps/api/src/shared/middleware/require-session.ts`, `apps/api/src/shared/auth/session.ts`, `apps/api/src/app.ts` |
+| **`apps/api` routes need a Twitch session cookie, and `/docs` is behind the same guard, not above it.** Every module route sits behind `requireSession`, which verifies an HMAC-signed `fx_session` cookie against `ADMIN_SESSION_SECRET`; `GET /api/auth/me` is the module route that returns the signed-in login (from `res.locals`, not by re-reading the cookie). The session is stateless: the cookie carries `{sub, login, exp}` plus its signature and the server stores nothing, so a restart does not log anyone out and a stolen cookie cannot be revoked server-side except by rotating the secret (which logs out everyone). Three consequences. Only `config.adminTwitchUserId` - a single Twitch user id - is allowed in; a login by anyone else is refused at the callback and no cookie is issued. `ADMIN_SESSION_SECRET` and `ADMIN_OAUTH_REDIRECT_URI` are read with `process.env`, **not** `getEnv`, because only `apps/api` reads them and a `getEnv` there would stop the deployed Twitch bot from booting over secrets it never uses - an unset secret fails **closed** (500 on every admin route) rather than open. And `/docs` + `/openapi.json` are mounted *behind* the guard, deliberately: Swagger's page and its "Try it out" requests are issued by the browser, so a browser already holding `fx_session` **would** send it - cookies are host-scoped and port-agnostic - and `src/lib/session.ts` has had no `fetch` wrapper since it was reduced to `login()`/`logout()`, so there was no 401-to-login redirect to protect. **Do not copy the older claim that "Swagger cannot carry a session"**; it was wrong, and this line is here because it cost a round to unlearn. Two things make the route table worth gating anyway: `.docker/Caddyfile.admin` answers 404 for both paths before a request reaches the app, and the only published port is bound to loopback - so that edge rule is the real lock and this guard is the second one. Note the spec itself is fully public in the repo either way: `apps/api/openapi.json` is committed and orval builds the panel's client from it. | `apps/api/src/shared/middleware/require-session.ts`, `apps/api/src/shared/auth/session.ts`, `apps/api/src/app.ts`, `.docker/Caddyfile.admin` |
 | **`apps/admin` reaches the OAuth login by navigation, never through a generated call, and nothing redirects on a 401.** `src/api/generated/` is orval output, committed, and CI asserts `gen:api` reproduces it byte for byte - so anything added there is overwritten on the next generation. `src/lib/session.ts` holds `login()` and `logout()` and nothing else: there is **no `fetch` wrapper**. It used to be one - `installSession()` redirected any 401 to the login route, which meant pressing Logout threw you back into a Twitch window. Login is now an explicit button. `login()` must be reached with `window.location.assign`, never through the generated client - a `fetch` follows the 302 to Twitch's HTML login page and the generated parser throws on it, which is also why the OAuth routes are absent from the spec. `useSessionQuery()` is the single source of truth for who is signed in: `GET /api/auth/me` answers 200 for the admin, 401 for nobody, 5xx for a broken backend. It maps those to `sessionState`, one of `loading`, `admin`, `guest`, `error`, and **`guest` must never be inferred from an empty login** - a dead `apps/api` also yields an empty login, and the sidebar would then offer a Login button against an API that is not there to accept it. Logout is a `POST` that answers 204; it must not redirect, and the sidebar button flips to Login only because the mutation invalidates the session query. `SameSite=Lax` withholds the cookie from a cross-site POST, which is what makes logout safe without a CSRF token. | `apps/admin/src/lib/session.ts`, `apps/admin/src/composables/useSession.ts`, `apps/admin/src/components/nav/LogoutButton.vue` |
 | **CORS is inconsistent between the two backends, and neither has an allowlist.** `apps/bot-runtime` calls bare `cors()`; `apps/api` calls `cors({ origin: true, credentials: true })`, which reflects whatever `Origin` it is given rather than sending `*`. Both accept any origin, so the difference is in the headers, not in the policy - and reflecting the request's own origin is marginally **looser** than bare `cors()`: it lets a cross-origin request go out at all, where `SameSite=Lax` then withholds the session cookie from the response, so the caller gets a 401 rather than a refusal. In `bot-runtime` the origin list gates **socket** connections only (`io`'s `cors` pins `config.allowedOrigin`), so a missing origin fails the WebSocket upgrade while plain HTTP keeps working - a confusing pair to debug, and the one thing here that is actually an allowlist. Neither app guards its data with CORS: `apps/api` is guarded by `requireSession`, `bot-runtime` has no guard on `/api/internal/events` at all. | `apps/bot-runtime/src/app.ts`, `apps/api/src/app.ts` |
 | **Express 5 forwards rejected promises to the error middleware automatically.** No `asyncHandler`, no `try/catch` then `next(err)`. The one `errorHandler` is shared: `packages/backend-shared/src/error-handler.ts` - it was duplicated byte-for-byte in both apps. | `apps/bot-runtime/src/app.ts`, `apps/api/src/app.ts`, `packages/backend-shared/src/error-handler.ts` |
@@ -211,7 +227,7 @@ Two consequences for code written today:
 
 ## Verification
 
-`.github/workflows/ci.yml` runs this gate on every PR and on pushes to `main`/`dev` (plus a build of both deployed images). The suite covers units only - never extend "tests pass" to mean the bot, the database or the socket path work. The admin coverage step enforces the 90% threshold from `apps/admin/vitest.config.ts` over the admin's business-logic files. Locally the gate is:
+`.github/workflows/ci.yml` runs this gate on every PR and on pushes to `main`/`dev` (plus a build of all four deployed images - `bot-runtime` and `web` from `deploy.yml`, `admin-api` and `admin-web` from `deploy-admin.yml`, which is manual-dispatch and not tag-triggered). The suite covers units only - never extend "tests pass" to mean the bot, the database or the socket path work. The admin coverage step enforces the 90% threshold from `apps/admin/vitest.config.ts` over the admin's business-logic files. Locally the gate is:
 
 ```bash
 pnpm install

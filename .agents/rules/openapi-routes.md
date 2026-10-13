@@ -40,7 +40,7 @@ import { NotFoundError } from "@fox-sphere/backend-shared";
 import { createModule } from "../../shared/openapi";
 import { getUserById } from "./user.service";
 
-const { router, route } = createModule("Users");   // tag -> Swagger group + orval folder
+const { router, route } = createModule("Users");   // tag -> the spec group + orval folder
 
 route(
   {
@@ -80,9 +80,19 @@ passed to `route()` never repeat it.
 
 ### What stays outside the spec
 
-Three categories are mounted directly on `app` and are deliberately absent from the spec:
-`/health`, `/openapi.json` + `/docs`, and the three Twitch OAuth routes
+Two categories are mounted directly on `app` and are deliberately absent from the spec:
+`/health`, and the three Twitch OAuth routes
 (`/api/auth/twitch/login`, `/callback`, `/logout`).
+
+`/openapi.json` + `/docs` are a third category, and the only one that is mounted **behind**
+`requireSession` rather than beside `/health`. They are absent from the spec for the same
+structural reason as the OAuth routes - they are mounted on `app`, not through `route()` - but
+they do serve data, so the guard applies. The claim that Swagger cannot sit behind a session is
+wrong: cookies are host-scoped and port-agnostic, so a browser holding `fx_session` sends it
+whatever rendered the page, and the panel has had no `fetch` wrapper to lose since
+`src/lib/session.ts` was reduced to `login()`/`logout()`. What does keep `/docs` closed in
+production is the edge - `.docker/Caddyfile.admin` 404s both paths, and the only published port
+is bound to loopback.
 
 The OAuth routes answer with a 302. `define-route.ts` models responses as JSON schemas, so a
 redirect does not fit, and orval would generate a hook whose `fetch` follows the redirect to
@@ -91,7 +101,7 @@ Twitch's HTML login page and then throws parsing it. The only correct way to sta
 actively wrong, not merely unused.
 
 The invariant still holds where it matters: a JSON route cannot be mounted without registering
-its path. These three are exempt because they are not JSON routes. Note that the spec therefore
+its path. These are exempt because they are not JSON routes. Note that the spec therefore
 describes no authentication at all - it never described `X-Admin-Key` either.
 
 ## The verbs
@@ -212,5 +222,8 @@ pnpm gen:api         # regenerates the admin client from that file
 and type-checks without a running server. A route change that skips the dump leaves the
 admin client stale, and nothing fails loudly - so run both, in the same commit.
 
-`GET /openapi.json` on the running server serves the same document; `/docs` is Swagger UI
-over it.
+The running server serves a rendering of that document at `/docs` and `/openapi.json`, behind
+`requireSession` - so it needs a signed-in panel session, which the repo's own operator has and
+an anonymous visitor does not. In production `.docker/Caddyfile.admin` 404s both paths before
+the request reaches the app. `apps/admin` reads the committed copy regardless, which is why the
+whole chain works without a server.

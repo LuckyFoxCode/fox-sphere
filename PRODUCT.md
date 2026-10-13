@@ -23,7 +23,7 @@ A self-hosted, modular Twitch bot with a live overlay that goes beyond alerts �
 
 - The bot-runtime connects to Twitch via EventSub and IRC, processes chat commands and events, and pushes real-time updates to the overlay through Socket.io
 - The overlay runs as an OBS browser source on a single monitor/stream setup
-- The admin panel runs locally (not deployed) on `:5174` and talks to an Express backend on `:3001`
+- The admin panel is deployed as its own compose stack (`foxsphere-admin`) on the same VM, published on `127.0.0.1:5174` and reached through an SSH tunnel; `/api` is proxied to an Express backend on `:3001` that publishes no host port at all
 - Development uses a pnpm monorepo with multiple local processes; production runs bot-runtime as a single process
 - Postgres database stores channel config, user data, tokens, and system state
 
@@ -31,16 +31,16 @@ A self-hosted, modular Twitch bot with a live overlay that goes beyond alerts �
 
 - Real-time chat, XP/leveling, lottery, Hero lane, timer widgets on stream
 - Multi-channel architecture (planned multi-tenant per `multi-tenant-architecture.md`)
-- Admin panel is local-only, not deployed to production
+- Admin panel is deployed, but never publicly reachable — loopback-bound port plus an SSH tunnel, behind a single allowlisted Twitch login
 - Overlay is strictly OBS browser source — no mobile, no public-facing version
-- The bot-runtime backend is the only deployed service
+- Four deployed images in two independent stacks: `bot-runtime` + `web` (rolled out by a version tag), `admin-api` + `admin-web` (rolled out by hand); the two stacks share the VM's `.env` and its Postgres, and nothing else
 - No external CDN or asset pipeline for overlay assets
 - Express 5, Vue 3.5, Prisma 7, Tailwind 4, TypeScript 6
 
 ## Product Principles
 
 1. **Real-time first** — every feature is driven by live event data, not polling
-2. **Self-contained** — one repo, one deployable, minimal external dependencies
+2. **Self-contained** — one repo, one product, minimal external dependencies. The deployable unit is a process, not a fleet: the bot runs as one, the panel as one other, and the two roll out separately
 3. **Modular by feature** — each widget/bot command is an isolated module
 4. **Stream-native** — the overlay is designed for OBS, not repurposed from a web app
 5. **Local admin** — the admin panel is a developer tool, not a SaaS product
