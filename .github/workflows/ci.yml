@@ -15,11 +15,32 @@ concurrency:
 jobs:
   gate:
     runs-on: ubuntu-latest
+
+    # apps/bot-runtime's specs talk to a real Postgres - see
+    # apps/bot-runtime/src/__tests__/helpers/test-db.ts. The name of that database is
+    # not negotiable: assertTestDatabase refuses anything that does not end in `_test`,
+    # so a `ci` database here would turn the gate red on the guard rather than on a bug.
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: fox_user
+          POSTGRES_PASSWORD: fox_password
+          POSTGRES_DB: foxsphere_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     # `config` (packages/backend-shared) throws on any missing variable, and almost
     # everything imports it transitively - openapi:dump included. These are throwaway
-    # placeholders: nothing here connects to Postgres or Twitch.
+    # placeholders: only the bot-runtime specs use them for anything, and they only
+    # reach the Postgres above. Nothing here connects to Twitch.
     env:
-      DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci?schema=public"
+      DATABASE_URL: "postgresql://fox_user:fox_password@localhost:5432/foxsphere_test?schema=public"
       COMMAND_PREFIX: "!"
       ALLOWED_ORIGIN: "http://localhost:5173"
       ADMIN_TWITCH_USER_ID: "ci"
@@ -85,6 +106,11 @@ jobs:
 
       - name: build
         run: pnpm build
+
+      # The service starts empty. `deploy`, never `dev`: a wrong DATABASE_URL here would
+      # otherwise reset the wrong database, and `resetDb()` truncates on sight.
+      - name: migrate the test database
+        run: pnpm --filter @fox-sphere/db prisma:migrate:deploy
 
       - name: test
         run: pnpm test
