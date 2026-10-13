@@ -70,11 +70,27 @@
 
   WHAT STILL ABORTS, AND WHY IT CANNOT BE PAPERED OVER
 
-  The channel itself. This migration resolves the single `Channel` row the legacy
-  single-channel bot belonged to, and refuses when that row is not unambiguous: zero channels
-  means there is nothing to scope the history to, and more than one means any choice would
-  silently file a viewer's history under the wrong channel. Neither is something this file
-  may guess at - `Channel` is configuration, not data to be derived.
+  The channel itself, but only when there is history to file. This migration resolves the
+  single `Channel` row the legacy single-channel bot belonged to, and refuses when that row
+  is not unambiguous: zero channels means there is nothing to scope the history to, and more
+  than one means any choice would silently file a viewer's history under the wrong channel.
+  Neither is something this file may guess at - `Channel` is configuration, not data to be
+  derived.
+
+  Why the condition is "history AND no unambiguous channel" rather than just "no
+  unambiguous channel": an empty database is not a misconfiguration. `.github/workflows/ci.yml`
+  creates a brand-new empty `foxsphere_test` and migrates the whole chain over it, and a
+  first run on a fresh clone (`pnpm prisma:m`) does the same, so requiring a `Channel` row
+  unconditionally makes this schema un-migratable on any empty database - it would turn the
+  `gate` job red on every PR and break the documented first run. Nothing in the migration
+  chain seeds a `Channel` row, so an empty database has none.
+
+  With no history rows there is nothing to misfile: both `INSERT`s select from `User` rows
+  that do not exist, every `UPDATE` matches nothing, and the remap is a no-op. The one place
+  the empty case could still bite is the `ChannelUser` INSERT's scalar subquery, which yields
+  NULL when `Channel` is empty - but with no candidate rows it is never evaluated per row and
+  no NOT NULL check ever happens. An assertion that fires when there is nothing to assert is
+  not a safety check; it is an obstacle.
 
   WHY THE PREFLIGHT IS OUTSIDE THE TRANSACTION
 
@@ -89,15 +105,29 @@
 
 DO $$
 DECLARE
+  history_users integer;
   channel_count integer;
   channel_names text;
 BEGIN
+  SELECT count(*) INTO history_users FROM (
+      SELECT "userId" FROM "CoinHistory"
+      UNION SELECT "userId" FROM "XpHistory"
+      UNION SELECT "userId" FROM "WatchStreak"
+      UNION SELECT "userId" FROM "UserHero"
+  ) refs;
+
+  -- Nothing references a channel, so nothing can be filed under the wrong one.
+  IF history_users = 0 THEN
+    RETURN;
+  END IF;
+
   SELECT count(*), string_agg("login", ', ' ORDER BY "login") INTO channel_count, channel_names
   FROM "Channel";
 
   IF channel_count <> 1 THEN
     RAISE EXCEPTION
-      'channel_user_history: expected exactly 1 Channel row to scope history to, found % (%). The legacy tables belonged to one channel, so this migration will not guess which. Fix the Channel rows, then run `prisma migrate resolve --rolled-back 20261013182939_channel_user_history` - Prisma refuses to re-run a failed migration (P3009) until that is issued - and run this migration again.',
+      'channel_user_history: % user(s) have history rows and there are % Channel row(s) (%), and this migration will not guess which channel a viewer''s history belongs to. Fix the Channel rows, then run `prisma migrate resolve --rolled-back 20261013182939_channel_user_history` - Prisma refuses to re-run a failed migration (P3009) until that is issued - and run this migration again.',
+      history_users,
       channel_count,
       coalesce(channel_names, 'none');
   END IF;
