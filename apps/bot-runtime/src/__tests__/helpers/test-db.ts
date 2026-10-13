@@ -25,9 +25,15 @@ export const assertTestDatabase = (url: string): void => {
  * The check is repeated here, not only in `resetDb`, because `prisma` is exported
  * from `@fox-sphere/backend-shared` and a test could take it directly - which would
  * be a way around the one thing this file exists for.
+ *
+ * `url` exists so the guard itself is testable: without it there would be no way to point
+ * this at a non-test database and prove it refuses. It does NOT redirect the connection -
+ * the client returned is the shared singleton, bound to `config.databaseUrl` at import - it
+ * decides whether the helper is allowed to act at all, and it is checked before the client
+ * is touched.
  */
-export const testDb = (): PrismaClient => {
-  assertTestDatabase(config.databaseUrl);
+export const testDb = (url: string = config.databaseUrl): PrismaClient => {
+  assertTestDatabase(url);
   return prisma;
 };
 
@@ -38,9 +44,18 @@ export const testDb = (): PrismaClient => {
  * added after this file has to be covered without editing it. `CASCADE` reaches the
  * tables something else points at, and `RESTART IDENTITY` rewinds the sequences so
  * `autoincrement` ids are predictable again from one run to the next.
+ *
+ * `url` is `testDb`'s parameter, for the same reason and with the same caveat: it gates
+ * the helper, it does not choose the connection. The guard is the FIRST statement of the
+ * body - ahead of the catalog read, let alone the `TRUNCATE` - and `reset-db.spec.ts` is
+ * what holds it there, because a guard that runs second is a guard on an empty database.
+ *
+ * The parameter is also why you must not write `beforeEach(resetDb)`: vitest calls a hook
+ * with an argument, that argument lands here, and `new URL(<function>)` throws "Invalid
+ * URL". `beforeEach(async () => { await resetDb(); })` is the form that works.
  */
-export const resetDb = async (): Promise<void> => {
-  assertTestDatabase(config.databaseUrl);
+export const resetDb = async (url: string = config.databaseUrl): Promise<void> => {
+  assertTestDatabase(url);
 
   const tables = await prisma.$queryRaw<{ tablename: string }[]>`
     SELECT tablename::text AS tablename FROM pg_tables WHERE schemaname = current_schema()

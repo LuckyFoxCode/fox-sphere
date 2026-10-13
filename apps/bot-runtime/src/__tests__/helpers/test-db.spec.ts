@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertTestDatabase } from "./test-db";
+import { assertTestDatabase, testDb } from "./test-db";
 
 const urlFor = (database: string): string =>
   `postgresql://fox_user:fox_password@localhost:5432/${database}?schema=public`;
@@ -34,5 +34,17 @@ describe("assertTestDatabase", () => {
     expect(() =>
       assertTestDatabase("postgresql://u:p@localhost:5432/foxsphere_test/backup?schema=public"),
     ).toThrow('Refusing to run against "foxsphere_test/backup"');
+  });
+});
+
+// `testDb` repeats the guard because `prisma` is exported from `@fox-sphere/backend-shared`
+// and a test could take it directly, which would be a way around the only thing this file
+// exists for. `reset-db.spec.ts` holds the same assertion for `resetDb`, where the ordering
+// against the `TRUNCATE` is the part that matters.
+describe("testDb", () => {
+  it("refuses to hand out the client for a non-test database", () => {
+    expect(() => testDb(urlFor("foxsphere_db"))).toThrow(
+      'Refusing to run against "foxsphere_db": the test database name must end with _test',
+    );
   });
 });

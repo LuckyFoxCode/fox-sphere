@@ -87,6 +87,14 @@ against "<name>"`, while a missing variable in the test environment says `Enviro
 configuration error: Variable [X] is missing or empty in .env` and comes out of
 `config.ts` at import.
 
+**The ordering is under test, not just asserted in a comment.** `resetDb(url = config.databaseUrl)`
+takes a URL so the guard itself can be pointed at `foxsphere_db` from a spec, and
+`reset-db.spec.ts` asserts both that the promise rejects with the guard's message and that
+neither `$queryRaw` nor `$executeRawUnsafe` was called. The spies are what make the
+*ordering* the assertion: the client is the shared singleton, so a guard dropped below the
+catalog read still throws the same message and still looks correct. Deleting the guard, or
+moving it one line down, turns that spec red - which is the only reason it will stay there.
+
 ### `.env.test` is the test environment, and it is gitignored
 
 `packages/backend-shared/src/config.ts` builds `config` through `getEnv`, which **throws
@@ -116,7 +124,7 @@ key directly, and it is a **Postgres service plus a `prisma migrate deploy` step
 local file, that the one database-backed spec depends on. Its `DATABASE_URL` has to name
 `foxsphere_test` like any other - a `ci`-named database fails the guard, not the test.
 
-### Three traps worth knowing
+### Four traps worth knowing
 
 - **Vitest 4 does not exclude `dist` by default** (`configDefaults.exclude` is
   `node_modules` and `.git` only), and `apps/bot-runtime`'s `build` is `tsc` over an
@@ -128,6 +136,12 @@ local file, that the one database-backed spec depends on. Its `DATABASE_URL` has
   its rows mid-test - reproducible, not theoretical. `fileParallelism: false` in
   `apps/bot-runtime/vitest.config.ts` serializes them; it costs nothing here because
   the pure specs take milliseconds.
+- **`beforeEach(resetDb)` does not work - vitest calls a hook with an argument**, and that
+  argument lands in `resetDb`'s first parameter, so `new URL(<function>)` throws "Invalid
+  URL". Write `beforeEach(async () => { await resetDb(); })`. The URL parameter exists so
+  `assertTestDatabase` is testable against a non-test database without a second machine,
+  and it does NOT redirect the connection: the client is the shared singleton, bound to
+  `config.databaseUrl` at import.
 - **`resetDb()` must never truncate `_prisma_migrations`.** It is the journal of applied
   migrations, not data: emptying it leaves a fully-migrated database claiming to have no
   migrations, and the next `prisma migrate deploy` against it fails with `relation "User"
