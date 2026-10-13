@@ -127,16 +127,19 @@ jobs:
             # redundancy. The compose file already declares `name: foxsphere-admin`, but that is
             # the WEAKEST of compose's three sources for a project name:
             #     -p flag  >  COMPOSE_PROJECT_NAME  >  the compose file's `name:`
-            # `cd ~/foxsphere` makes compose auto-load that directory's .env, which is the bot's
-            # real, operator-owned, never-committed file - the one input here this repo does not
-            # control. So a single `COMPOSE_PROJECT_NAME=foxsphere` line added to it (nothing in
-            # this repo, a template or the history carries one today) would have outranked the
-            # `-p` on all THREE compose commands below - the pull, the up, and the log dump in
-            # the failure path - moving every one of them into the bot's project, where
-            # --remove-orphans would have deleted the bot's containers. `-p` is the one source
-            # nothing outside the command line can override, which is what makes this stack's
-            # isolation a property of the command instead of a property of an environment nobody
-            # reviews.
+            # `-p` beats the other two outright - set COMPOSE_PROJECT_NAME and the flag still
+            # wins - so it cannot be outranked, only left off. Drop it and the name comes from
+            # the source this repo does NOT control: `cd ~/foxsphere` makes compose auto-load
+            # that directory's .env, the bot's real, operator-owned, never-committed file, and
+            # one COMPOSE_PROJECT_NAME line in it (nothing here, in a template or in the history
+            # carries one today) moves all three commands below into the bot's project - the
+            # pull, the up, and the failure path's log dump, the last then reporting the bot's
+            # containers as this panel's. Only if that line is absent does the compose file's own
+            # `name:` catch it, and `up -d --remove-orphans` is what being caught costs: in the
+            # bot's project it has nothing of its own to remove and the whole bot stack to
+            # orphan. `-p` is the one source nothing outside the command line can override, which
+            # is what makes this stack's isolation a property of the command instead of a
+            # property of an environment nobody reviews.
             #
             # pull BEFORE up -d, and that is not optional tidiness. Both images are `:latest`
             # with no pull_policy, so a bare `up -d` starts what is already on disk: the

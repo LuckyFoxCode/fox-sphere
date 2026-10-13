@@ -81,7 +81,7 @@ ENV BOT_VERSION=$BOT_VERSION
 COPY --from=build --chown=node:node /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
 # Only the deployed app plus the packages it imports. `apps/api` and `apps/admin` ship in
 # their own images - copying all of ./apps used to ship their source AND install their
-# dependencies (vue, @tanstack/vue-query, swagger-ui-express) into the production image.
+# dependencies (vue, vue-router, @tanstack/vue-query, openapi3-ts) into the production image.
 # `pnpm install --frozen-lockfile` tolerates workspace members that are absent from the
 # context, so the lockfile stays authoritative with only these two directories present.
 COPY --from=build --chown=node:node /app/apps/bot-runtime ./apps/bot-runtime
