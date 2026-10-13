@@ -17,6 +17,18 @@ name: deploy-admin
 on:
   workflow_dispatch: {}
 
+# One deploy at a time, and never cancel a running one. deploy.yml fires once per tag, so it
+# never needed this; a button can be double-clicked, and two overlapping SSH sessions doing
+# `pull` then `up -d --remove-orphans` against one project ends in an ambiguous red. The group is
+# the bare name, with no ${{ github.ref }}: both dispatches hit the same VM and the same project
+# whatever branch they were started from, so they serialize. `cancel-in-progress: false` queues
+# the second run rather than killing the first - canceling an SSH session mid-`up` is the one
+# outcome that leaves the VM in a state nobody asked for. ci.yml can afford cancel-in-progress:
+# true because it builds nothing on the VM.
+concurrency:
+  group: deploy-admin
+  cancel-in-progress: false
+
 env:
   REGISTRY: ghcr.io
   OWNER: luckyfoxcode
@@ -111,14 +123,40 @@ jobs:
             # (never committed). `-f` is required: compose would otherwise auto-detect the bot's
             # compose.yaml and roll out the wrong project.
             cd ~/foxsphere
-            # pull BEFORE up -d, and this is not optional tidiness. Both images are `:latest`
+            # `-p foxsphere-admin` is repeated on every compose command below, and it is not
+            # redundancy. The compose file already declares `name: foxsphere-admin`, but that is
+            # the WEAKEST of compose's three sources for a project name:
+            #     -p flag  >  COMPOSE_PROJECT_NAME  >  the compose file's `name:`
+            # `cd ~/foxsphere` makes compose auto-load that directory's .env, which is the bot's
+            # real, operator-owned, never-committed file - the one input here this repo does not
+            # control. So a single `COMPOSE_PROJECT_NAME=foxsphere` line added to it (nothing in
+            # this repo, a template or the history carries one today) would silently move BOTH
+            # commands into the bot's project, and --remove-orphans would delete the bot's
+            # containers. `-p` is the one source nothing outside the command line can override,
+            # which is what makes this stack's isolation a property of the command instead of a
+            # property of an environment nobody reviews.
+            #
+            # pull BEFORE up -d, and that is not optional tidiness. Both images are `:latest`
             # with no pull_policy, so a bare `up -d` starts what is already on disk: the
             # previous release, reported as a success. docker-compose.admin.yml says the same
             # thing in its own header, and this line is the dependency it warns about.
-            docker compose -f docker-compose.admin.yml pull
+            docker compose -p foxsphere-admin -f docker-compose.admin.yml pull
             # --wait blocks on the healthchecks, so a crash-looping container fails the deploy
-            # instead of passing silently. --remove-orphans is scoped by the project name
-            # foxsphere-admin (from the compose file), so it cannot reach the bot's containers.
-            docker compose -f docker-compose.admin.yml up -d --wait --wait-timeout 60 --remove-orphans
+            # instead of passing silently. --remove-orphans then removes only what shares this
+            # pinned project name, which is why the bot's containers are out of its reach.
+            #
+            # --wait-timeout 120, not the 60 the brief proposed: admin.Dockerfile declares
+            # HEALTHCHECK --interval=30s --start-period=15s --retries=3, so 60s buys about one
+            # probe on the cold-start path (tsx + Prisma client init). deploy.yml waits 120 on an
+            # identical interval/retries profile. Deliberate deviation - a timeout that fires on
+            # a slow first boot and reports nothing is worse than one that waits.
+            #
+            # Dump logs on failure, both services, because either can be the failing one - the
+            # case --wait exists for is documented and fail-closed: an unset ADMIN_SESSION_SECRET
+            # 500s every route behind requireSession, so admin-api reports unhealthy while
+            # admin-web (no healthcheck of its own) is simply fine. "deploy failed" with no logs
+            # means SSHing in to find out why.
+            docker compose -p foxsphere-admin -f docker-compose.admin.yml up -d --wait --wait-timeout 120 --remove-orphans \
+              || { docker compose -p foxsphere-admin -f docker-compose.admin.yml logs --tail=100 admin-api admin-web; exit 1; }
             docker image prune -f || true   # cosmetic; must not abort before the logout
             docker logout ghcr.io

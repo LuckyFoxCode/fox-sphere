@@ -37,6 +37,7 @@ use a topic prefix instead, with the suffix abbreviating the action (`generate`,
 | `pnpm test` | `vitest run` in every member that has tests - `apps/admin`, `apps/overlay`, `packages/backend-shared` |
 | `pnpm new:pkg` | Scaffold a workspace package - see `docs/adding-a-package.md` |
 | `ssh -L 5174:localhost:5174 <vm>` | Open the **deployed** admin panel at `http://localhost:5174`. The only way in - see below. |
+| `.github/workflows/deploy-admin.yml` | Release the **deployed** admin panel: builds `admin-api` + `admin-web`, pushes them to GHCR, then SSHes to the VM and runs `pull` then `up -d --wait` against `docker-compose.admin.yml`. **Manual dispatch only** - the Actions tab button, with no `push.tags` trigger where `deploy.yml` has one; the bot is released by cutting a `v*` tag, the panel by hand. No migrations and no backfill: `apps/api` runs neither, and the schema it reads is migrated by the bot's release. |
 
 `pnpm start:b` is broken - see Gotchas.
 
@@ -58,6 +59,10 @@ images as project `foxsphere-admin`; it publishes exactly one host port, `127.0.
 `admin-api` publishes none. The tunnel above is therefore the only way to open the panel -
 nothing off the VM reaches it, and `:3001` is not on the host at all. The two stacks share
 `~/foxsphere/.env` and the bot's Postgres, and nothing else.
+
+The panel reaches the VM by `.github/workflows/deploy-admin.yml` alone: a **manual dispatch**, not
+a tag, because nothing in chat reports a panel version the way the overlay reports the bot's. One
+run at a time, and never canceled mid-`up`.
 
 ## First run
 
