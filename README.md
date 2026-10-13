@@ -130,8 +130,8 @@ apps/api/src/modules/<feature>/<feature>.routes.ts     createModule() + route()
         │  pnpm openapi:dump
         ▼
 apps/api/openapi.json                                  committed - generated; the app serves a
-         │                                              rendering of it at /docs, behind the
-         │                                              session guard, and at /openapi.json
+        │                                              rendering of it at /docs, behind the
+        │                                              session guard, and at /openapi.json
         │  pnpm gen:api   (orval)
         ▼
 apps/admin/src/api/generated/                          committed
