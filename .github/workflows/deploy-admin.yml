@@ -130,11 +130,13 @@ jobs:
             # `cd ~/foxsphere` makes compose auto-load that directory's .env, which is the bot's
             # real, operator-owned, never-committed file - the one input here this repo does not
             # control. So a single `COMPOSE_PROJECT_NAME=foxsphere` line added to it (nothing in
-            # this repo, a template or the history carries one today) would silently move BOTH
-            # commands into the bot's project, and --remove-orphans would delete the bot's
-            # containers. `-p` is the one source nothing outside the command line can override,
-            # which is what makes this stack's isolation a property of the command instead of a
-            # property of an environment nobody reviews.
+            # this repo, a template or the history carries one today) would have outranked the
+            # `-p` on all THREE compose commands below - the pull, the up, and the log dump in
+            # the failure path - moving every one of them into the bot's project, where
+            # --remove-orphans would have deleted the bot's containers. `-p` is the one source
+            # nothing outside the command line can override, which is what makes this stack's
+            # isolation a property of the command instead of a property of an environment nobody
+            # reviews.
             #
             # pull BEFORE up -d, and that is not optional tidiness. Both images are `:latest`
             # with no pull_policy, so a bare `up -d` starts what is already on disk: the

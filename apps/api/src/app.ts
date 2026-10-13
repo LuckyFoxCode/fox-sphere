@@ -46,12 +46,17 @@ app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
 // There is no /docs and no /openapi.json here. Both used to be mounted above requireSession, so
 // an anonymous visitor got the page instead of a JSON 401 — the right trade while this app was
-// local-only and an open route table cost nothing. This app is deployed now, and Swagger cannot
-// be gated the way the data is: its page is fetched by the browser itself and its "Try it out"
-// buttons issue their own requests, neither of which passes through apps/admin's fetch wrapper —
-// and that wrapper is the only thing turning a 401 into a bounce to /api/auth/twitch/login. So
-// the block was deleted rather than locked. `.docker/Caddyfile.admin` answers 404 for both paths
-// as well, which means the answer does not depend on anything in this file staying true.
+// local-only and an open route table cost nothing. This app is deployed now, and the page cannot
+// be gated the way the data is: Swagger fetches its page and issues its "Try it out" requests
+// from the browser itself, straight at this origin, and nothing in that path could act on a 401.
+// The panel has no fetch wrapper left to borrow — `src/lib/session.ts` holds login() and
+// logout(), and login is an explicit button the operator presses — so a 401 there renders as raw
+// JSON on a page that would otherwise have worked. Note the asymmetry that settles it the other
+// way: cookies are host-scoped and port-agnostic, so a browser already holding fx_session *would*
+// send it with Swagger's own requests. Those requests can be authenticated; the page cannot, and
+// the page is the route table. So the block was deleted rather than locked - and
+// `.docker/Caddyfile.admin` answers 404 for both paths as well, so the answer does not depend on
+// anything in this file staying true.
 //
 // The spec itself is untouched: `pnpm openapi:dump` still writes apps/api/openapi.json and orval
 // still turns that file into the panel's typed client, and both are committed. Only the

@@ -40,7 +40,7 @@ A self-hosted, modular Twitch bot with a live overlay that goes beyond alerts �
 ## Product Principles
 
 1. **Real-time first** — every feature is driven by live event data, not polling
-2. **Self-contained** — one repo, one deployable, minimal external dependencies
+2. **Self-contained** — one repo, one product, minimal external dependencies. The deployable unit is a process, not a fleet: the bot runs as one, the panel as one other, and the two roll out separately
 3. **Modular by feature** — each widget/bot command is an isolated module
 4. **Stream-native** — the overlay is designed for OBS, not repurposed from a web app
 5. **Local admin** — the admin panel is a developer tool, not a SaaS product

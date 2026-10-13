@@ -26,6 +26,11 @@
 # `docker logout ghcr.io`, so an operator's later `up` would fail to pull and refuse to start
 # at all, rather than starting the image that is already on disk.)
 #
+# What `--wait` is NOT is a database check. It blocks on admin.Dockerfile's HEALTHCHECK, and that
+# check is `/health` - a static route (apps/api/src/app.ts) that answers ok on a container whose
+# DATABASE_URL points nowhere, behind a green deploy. There is no cheap probe to fix that with:
+# every DB-backed route sits behind `requireSession`, so no unauthenticated one exists.
+#
 # This is not the dev stack. Locally the panel is `pnpm dev:api` + `pnpm dev:a`, and the network
 # this file attaches to exists only on the VM.
 #

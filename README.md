@@ -34,7 +34,7 @@ fox-sphere/
 │   └── db/                   # Prisma schema & migrations (@fox-sphere/db)
 ├── docs/                     # Guides & workflows
 ├── .docker/                  # Dockerfiles
-├── .github/workflows/        # ci (the gate) + deploy
+├── .github/workflows/        # ci (the gate) + deploy + deploy-admin (manual dispatch)
 ├── package.json              # Global scripts & orchestration
 └── pnpm-workspace.yaml       # Workspace definition (apps/*, packages/*)
 ```
