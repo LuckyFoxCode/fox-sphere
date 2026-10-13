@@ -20,17 +20,31 @@
 		# keeping that true. Routing already closes it too: only /api/* is proxied, so /docs
 		# never reaches the backend either way. A rule whose safety rests on some future
 		# `handle` not existing is not a rule, so it is written down. Keep both first.
-		handle /docs {
+		#
+		# One glob token per rule, not a bare `/docs`: a path matcher is an exact match by
+		# default, so `/docs` missed `/docs/` - the form `app.use("/docs", ...)` served and the
+		# one the docs used to teach - which then fell through to the SPA below and answered
+		# it with index.html. AGENTS.md states the 404 unconditionally, so the rule has to cover
+		# what it claims. It is a glob rather than the narrower `/docs` + `/docs/*` pair because
+		# `handle` takes exactly one matcher token and that pair does not parse. The trailing
+		# `*` also matches `/docsSomething`; nothing in the panel is routed there.
+		handle /docs* {
 			respond 404
 		}
-		handle /openapi.json {
+		handle /openapi.json* {
 			respond 404
 		}
 
 		# The panel's API, same-origin: this replaces Vite's dev proxy
-		# (apps/admin/vite.config.ts) in production, which is why fx_session is sent on every
-		# call without any CORS involvement. reverse_proxy upgrades WebSockets automatically,
-		# though apps/api is HTTP only and has no socket server.
+		# (apps/admin/vite.config.ts) in production, so every call is first-party and no CORS
+		# decision is involved. That is a claim about the requests, not about fx_session being
+		# storable: shared/auth/session.ts marks the cookie `secure` when
+		# NODE_ENV=production, which the backend image sets, while this edge is plain HTTP, so
+		# the browser accepts it only under its potentially-trustworthy-origin exemption for
+		# localhost (Chrome and Firefox; historically inconsistent in WebKit). Give this edge a
+		# hostname instead of an SSH tunnel and that exemption is gone - the cookie is then
+		# never set. reverse_proxy upgrades WebSockets automatically, though apps/api is HTTP
+		# only and has no socket server.
 		handle /api/* {
 			reverse_proxy admin-api:3001
 		}

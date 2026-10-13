@@ -1,7 +1,7 @@
 # api
 
-The admin-panel backend. Express 5 + Zod, with the OpenAPI spec and the Swagger UI
-generated from the route declarations themselves.
+The admin-panel backend. Express 5 + Zod, with the OpenAPI spec generated from the
+route declarations themselves.
 
 **Local-only.** It is not in `docker compose`, not built by CI, and never deployed - it
 exists to serve `apps/admin` and to produce the spec that the admin's API client is
@@ -13,9 +13,15 @@ pnpm dev:api          # from the repo root - tsx watch, :3001
 
 | URL | What |
 |---|---|
-| http://localhost:3001/docs/ | Swagger UI (trailing slash; `/docs` redirects) |
-| http://localhost:3001/openapi.json | the generated spec |
+| http://localhost:3001/api/* | the panel's routes, behind the session guard |
 | http://localhost:3001/health | `{"status":"ok"}` |
+
+There is no `/docs` and no `/openapi.json` here. The spec is still **generated and committed** —
+`pnpm openapi:dump` writes `apps/api/openapi.json`, orval turns that into the panel's typed
+client, and CI fails the PR if either is stale. What is gone is only the *serving* of that
+document: Swagger cannot sit behind `requireSession`, because its page and its "Try it out"
+requests are issued by the browser rather than through the panel's `fetch` wrapper, and this app
+is deployed now. Restoring it means authenticating it first, not re-mounting it above the guard.
 
 It needs Postgres (`docker compose up -d postgres`) and a complete `.env` at the repo root -
 `config` throws on the first missing variable.
@@ -86,7 +92,7 @@ import { NotFoundError } from "@fox-sphere/backend-shared";
 import { createModule } from "../../shared/openapi";
 import { getUserById } from "./user.service";
 
-const { router, route } = createModule("Users"); // tag: Swagger group + orval folder
+const { router, route } = createModule("Users"); // tag: the spec group + orval folder
 
 route(
   {
@@ -240,7 +246,7 @@ and the UI has no branch for it.
 
 ```
 src/
-  app.ts                    express app, module mounts, swagger, 404 - no listen()
+  app.ts                    express app, module mounts, 404 - no listen()
   server.ts                 listen() on :3001
   port.ts                   API_PORT, default 3001
   dump-openapi.ts           writes openapi.json
