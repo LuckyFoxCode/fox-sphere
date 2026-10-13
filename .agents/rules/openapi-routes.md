@@ -84,11 +84,15 @@ Two categories are mounted directly on `app` and are deliberately absent from th
 `/health`, and the three Twitch OAuth routes
 (`/api/auth/twitch/login`, `/callback`, `/logout`).
 
-`/openapi.json` + `/docs` were a third category and no longer exist: the block was deleted from
-`apps/api/src/app.ts` when the app was deployed, because Swagger cannot sit behind
-`requireSession` (the browser fetches its page and issues its own "Try it out" requests, so
-neither passes through the client's 401-to-login redirect), and `.docker/Caddyfile.admin` 404s
-both paths as well. The spec generation itself is untouched - see the end of this file.
+`/openapi.json` + `/docs` are a third category, and the only one that is mounted **behind**
+`requireSession` rather than beside `/health`. They are absent from the spec for the same
+structural reason as the OAuth routes - they are mounted on `app`, not through `route()` - but
+they do serve data, so the guard applies. The claim that Swagger cannot sit behind a session is
+wrong: cookies are host-scoped and port-agnostic, so a browser holding `fx_session` sends it
+whatever rendered the page, and the panel has had no `fetch` wrapper to lose since
+`src/lib/session.ts` was reduced to `login()`/`logout()`. What does keep `/docs` closed in
+production is the edge - `.docker/Caddyfile.admin` 404s both paths, and the only published port
+is bound to loopback.
 
 The OAuth routes answer with a 302. `define-route.ts` models responses as JSON schemas, so a
 redirect does not fit, and orval would generate a hook whose `fetch` follows the redirect to
@@ -218,6 +222,8 @@ pnpm gen:api         # regenerates the admin client from that file
 and type-checks without a running server. A route change that skips the dump leaves the
 admin client stale, and nothing fails loudly - so run both, in the same commit.
 
-The running server serves no rendering of that document: `/openapi.json` and `/docs` are not
-mounted. `pnpm openapi:dump` is the only way to read it, and `apps/admin` reads the committed
-copy - which is why the whole chain works without a server.
+The running server serves a rendering of that document at `/docs` and `/openapi.json`, behind
+`requireSession` - so it needs a signed-in panel session, which the repo's own operator has and
+an anonymous visitor does not. In production `.docker/Caddyfile.admin` 404s both paths before
+the request reaches the app. `apps/admin` reads the committed copy regardless, which is why the
+whole chain works without a server.

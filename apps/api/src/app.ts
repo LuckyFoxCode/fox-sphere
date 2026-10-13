@@ -1,8 +1,9 @@
-import { config, errorHandler, NotFoundError } from "@fox-sphere/backend-shared";
+import { config, errorHandler, Logger, NotFoundError } from "@fox-sphere/backend-shared";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { type Express } from "express";
 import { createServer } from "http";
+import swaggerUi from "swagger-ui-express";
 import {
   SESSION_COOKIE,
   STATE_COOKIE,
@@ -15,6 +16,7 @@ import {
   validateToken,
 } from "./shared/auth";
 import { requireSession } from "./shared/middleware";
+import { generateOpenAPISpec } from "./shared/openapi";
 import { modules } from "./modules";
 
 const app: Express = express();
@@ -44,24 +46,20 @@ app.use(cookieParser());
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
-// There is no /docs and no /openapi.json here. Both used to be mounted above requireSession, so
-// an anonymous visitor got the page instead of a JSON 401 — the right trade while this app was
-// local-only and an open route table cost nothing. This app is deployed now, and the page cannot
-// be gated the way the data is: Swagger fetches its page and issues its "Try it out" requests
-// from the browser itself, straight at this origin, and nothing in that path could act on a 401.
-// The panel has no fetch wrapper left to borrow — `src/lib/session.ts` holds login() and
-// logout(), and login is an explicit button the operator presses — so a 401 there renders as raw
-// JSON on a page that would otherwise have worked. Note the asymmetry that settles it the other
-// way: cookies are host-scoped and port-agnostic, so a browser already holding fx_session *would*
-// send it with Swagger's own requests. Those requests can be authenticated; the page cannot, and
-// the page is the route table. So the block was deleted rather than locked - and
-// `.docker/Caddyfile.admin` answers 404 for both paths as well, so the answer does not depend on
-// anything in this file staying true.
-//
-// The spec itself is untouched: `pnpm openapi:dump` still writes apps/api/openapi.json and orval
-// still turns that file into the panel's typed client, and both are committed. Only the
-// human-readable rendering of it is gone. Bringing it back means authenticating it first, not
-// moving the mount back up here.
+// The spec is generated here, at import, but not served until much further down - behind
+// requireSession. A docs defect must not take the API down with it either: without this guard a
+// route with incomplete OpenAPI metadata throws at import and nothing serves at all. (`pnpm
+// openapi:dump` fails the same way, so CI catches the real cause long before this path matters.)
+let openApiSpec: ReturnType<typeof generateOpenAPISpec> | null = null;
+try {
+  openApiSpec = generateOpenAPISpec();
+} catch (error) {
+  Logger.error(
+    "OpenAPI",
+    "Spec generation failed - /docs and /openapi.json are disabled, the API still serves",
+    error,
+  );
+}
 
 // The OAuth routes are mounted directly, NOT through route(), and are absent from the spec on
 // purpose: they answer with 302 redirects, which the response-schema model in define-route.ts
@@ -133,6 +131,25 @@ app.post("/api/auth/twitch/logout", (_req, res) => {
 });
 
 app.use(requireSession);
+
+// `/docs` and `/openapi.json` sit behind the guard like every other route here. They used to be
+// mounted ABOVE it, on the claim that Swagger cannot carry a session — and that claim was wrong
+// twice over. Cookies are host-scoped and port-agnostic, so a browser holding `fx_session` sends
+// it here no matter what rendered the page; and `src/lib/session.ts` has no fetch wrapper left to
+// act on a 401 anyway, so there was no redirect-to-login to preserve. There was also less to
+// protect than it looked: `apps/api/openapi.json` is committed and orval builds the panel's
+// client from it, so the route table is already published in the repository. Hiding it from this
+// process protected nothing that git does not publish anyway.
+//
+// What actually keeps the deployed panel closed is at the edge, not here:
+// `.docker/Caddyfile.admin` answers 404 for both paths before a request reaches this app, and
+// the only published port is bound to loopback. This guard is the second layer, not the first -
+// keep it, but do not believe removing it would be the thing that mattered.
+if (openApiSpec) {
+  const spec = openApiSpec;
+  app.use("/docs", swaggerUi.serve, swaggerUi.setup(spec));
+  app.get("/openapi.json", (_req, res) => res.json(spec));
+}
 
 for (const { prefix, router } of modules) {
   app.use(prefix, router);

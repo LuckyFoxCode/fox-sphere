@@ -15,19 +15,20 @@
 	# `route` preserves this order, which is the whole reason it is here. A bare chain of
 	# `handle` blocks is sorted by Caddy rather than read in the order written.
 	route {
-		# apps/api no longer mounts Swagger - the block was deleted from src/app.ts - and this
-		# 404 is the second lock on the same door, so the answer does not depend on the app
-		# keeping that true. Routing already closes it too: only /api/* is proxied, so /docs
-		# never reaches the backend either way. A rule whose safety rests on some future
-		# `handle` not existing is not a rule, so it is written down. Keep both first.
+		# This 404 is the FIRST lock on the door, and the only one that matters at the edge.
+		# apps/api does mount Swagger again - behind requireSession, so an unauthenticated
+		# request would get a JSON 401 - but this rule means the deployed panel never asks:
+		# only /api/* is proxied, so /docs never reaches the backend by any path. A rule whose
+		# safety rests on some future `handle` not existing is not a rule, so it is written
+		# down rather than inferred from the routing above. Keep it first.
 		#
 		# One glob token per rule, not a bare `/docs`: a path matcher is an exact match by
-		# default, so `/docs` missed `/docs/` - the form `app.use("/docs", ...)` served and the
-		# one the docs used to teach - which then fell through to the SPA below and answered
-		# it with index.html. AGENTS.md states the 404 unconditionally, so the rule has to cover
-		# what it claims. It is a glob rather than the narrower `/docs` + `/docs/*` pair because
-		# `handle` takes exactly one matcher token and that pair does not parse. The trailing
-		# `*` also matches `/docsSomething`; nothing in the panel is routed there.
+		# default, so `/docs` missed `/docs/` - the form `app.use("/docs", ...)` serves - which
+		# then fell through to the SPA below and answered it with index.html. AGENTS.md states
+		# the 404 unconditionally, so the rule has to cover what it claims. It is a glob rather
+		# than the narrower `/docs` + `/docs/*` pair because `handle` takes exactly one matcher
+		# token and that pair does not parse. The trailing `*` also matches `/docsSomething`;
+		# nothing in the panel is routed there.
 		handle /docs* {
 			respond 404
 		}

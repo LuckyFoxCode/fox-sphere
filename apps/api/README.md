@@ -17,19 +17,21 @@ pnpm dev:api          # from the repo root - tsx watch, :3001
 | URL | What |
 |---|---|
 | http://localhost:3001/api/* | the panel's routes, behind the session guard |
+| http://localhost:3001/docs | Swagger UI, behind the same guard |
+| http://localhost:3001/openapi.json | the generated spec, behind the same guard |
 | http://localhost:3001/health | `{"status":"ok"}` |
 
 In production none of those URLs is reachable from the host: the panel is on
-`127.0.0.1:5174` and `/api/*` is proxied to this app.
+`127.0.0.1:5174`, `/api/*` is proxied to this app, and `.docker/Caddyfile.admin` answers 404 for
+`/docs` and `/openapi.json` before the request gets here. So in production the only copy of the
+spec anyone can read is the committed one — which is also the copy orval and CI work from.
 
-There is no `/docs` and no `/openapi.json` here. The spec is still **generated and committed** —
-`pnpm openapi:dump` writes `apps/api/openapi.json`, orval turns that into the panel's typed
-client, and CI fails the PR if either is stale. What is gone is only the *serving* of that
-document: Swagger cannot sit behind `requireSession`, because its page and its "Try it out"
-requests are issued by the browser itself rather than through the panel — `src/lib/session.ts`
-holds `login()` and `logout()` and no `fetch` wrapper that could turn a 401 into a redirect —
-and this app is deployed now. Restoring it means authenticating it first, not re-mounting it
-above the guard.
+`/docs` is mounted behind `requireSession`, not above it. It used to sit above the guard on the
+claim that Swagger cannot carry a session; that claim is wrong — cookies are host-scoped and
+port-agnostic, so a browser holding `fx_session` sends it whatever rendered the page, and
+`src/lib/session.ts` holds `login()` and `logout()` with no `fetch` wrapper that a 401 could turn
+into a redirect. The trade is the usual one: an anonymous visitor gets a JSON 401 instead of the
+page. In dev that costs nothing, because you are already signed in to use the panel at all.
 
 It needs Postgres (`docker compose up -d postgres`) and a complete `.env` at the repo root -
 `config` throws on the first missing variable.

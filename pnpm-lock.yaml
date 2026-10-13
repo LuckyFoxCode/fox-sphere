@@ -357,6 +357,9 @@ importers:
       openapi3-ts:
         specifier: ^4.6.1
         version: 4.6.1
+      swagger-ui-express:
+        specifier: ^5.0.1
+        version: 5.0.1(express@5.2.1)
       tsx:
         specifier: ^4.22.1
         version: 4.22.1
@@ -379,6 +382,9 @@ importers:
       '@types/node':
         specifier: ^24.12.4
         version: 24.13.3
+      '@types/swagger-ui-express':
+        specifier: ^4.1.8
+        version: 4.1.8
       eslint:
         specifier: ^10.4.0
         version: 10.9.1(jiti@2.7.0)

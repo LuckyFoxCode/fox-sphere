@@ -129,8 +129,9 @@ apps/api/src/modules/<feature>/<feature>.routes.ts     createModule() + route()
         │                                               declared once, in the same object)
         │  pnpm openapi:dump
         ▼
-apps/api/openapi.json                                  committed - generated only; the app
-        │                                              does not serve it at any path
+apps/api/openapi.json                                  committed - generated; the app serves a
+         │                                              rendering of it at /docs, behind the
+         │                                              session guard, and at /openapi.json
         │  pnpm gen:api   (orval)
         ▼
 apps/admin/src/api/generated/                          committed
