@@ -40,7 +40,7 @@ import { NotFoundError } from "@fox-sphere/backend-shared";
 import { createModule } from "../../shared/openapi";
 import { getUserById } from "./user.service";
 
-const { router, route } = createModule("Users");   // tag -> Swagger group + orval folder
+const { router, route } = createModule("Users");   // tag -> the spec group + orval folder
 
 route(
   {

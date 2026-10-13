@@ -3,9 +3,12 @@
 The admin-panel backend. Express 5 + Zod, with the OpenAPI spec generated from the
 route declarations themselves.
 
-**Local-only.** It is not in `docker compose`, not built by CI, and never deployed - it
-exists to serve `apps/admin` and to produce the spec that the admin's API client is
-generated from. The deployed Twitch backend is `apps/bot-runtime`, a separate app.
+**Deployed**, since this release, in its own compose project `foxsphere-admin`
+(`.docker/admin.Dockerfile` → `admin-api`, started by `docker-compose.admin.yml` on the VM
+beside the bot's stack, sharing its `.env` and its Postgres). It is not in the **dev** compose
+file - locally it runs on its own via `pnpm dev:api` - and it publishes no host port: the only
+caller is the panel's Caddy, which reaches it by service name on the shared network. The
+deployed Twitch backend remains `apps/bot-runtime`, a separate app and a separate stack.
 
 ```bash
 pnpm dev:api          # from the repo root - tsx watch, :3001
@@ -15,6 +18,9 @@ pnpm dev:api          # from the repo root - tsx watch, :3001
 |---|---|
 | http://localhost:3001/api/* | the panel's routes, behind the session guard |
 | http://localhost:3001/health | `{"status":"ok"}` |
+
+In production none of those URLs is reachable from the host: the panel is on
+`127.0.0.1:5174` and `/api/*` is proxied to this app.
 
 There is no `/docs` and no `/openapi.json` here. The spec is still **generated and committed** —
 `pnpm openapi:dump` writes `apps/api/openapi.json`, orval turns that into the panel's typed

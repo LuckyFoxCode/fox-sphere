@@ -1,8 +1,12 @@
 # admin
 
-Admin-panel frontend (Vue 3.5 + Vite + Tailwind 4). **Local-only** - CI type-checks and
-lints it and diff-checks its generated client, but never builds or deploys it. Dev server on `:5174`, proxying `/api` and `/socket.io` to the admin backend
-`apps/api` on `:3001`.
+Admin-panel frontend (Vue 3.5 + Vite + Tailwind 4). **Deployed** as `admin-web`
+(`.docker/admin-web.Dockerfile` - a Caddy container in the `foxsphere-admin` compose project on
+the VM), next to `apps/api` as `admin-api`. CI type-checks and lints it and diff-checks its
+generated client; shipping it is a separate manual workflow, and the two stacks share the
+bot's `.env` and Postgres. The panel is bound to `127.0.0.1:5174`, so it is opened through
+`ssh -L 5174:localhost:5174 <vm>`. In dev the server is `:5174`, proxying `/api` to the admin
+backend `apps/api` on `:3001` - there is no `/socket.io` proxy, because `apps/api` is HTTP only.
 
 ```bash
 pnpm dev:a          # from the repo root (runs gen:api, then vite)
