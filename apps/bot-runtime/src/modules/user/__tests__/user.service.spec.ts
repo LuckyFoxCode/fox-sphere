@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AppError, prisma } from "@fox-sphere/backend-shared";
+import { beforeEach, describe, expect, it } from "vitest";
+import { AppError, config, prisma } from "@fox-sphere/backend-shared";
 import { resetDb } from "../../../__tests__/helpers/test-db";
 import {
   seedOtherChannel,
@@ -7,20 +7,26 @@ import {
   TEST_CHANNEL_ID,
 } from "../../../__tests__/helpers/seed";
 import { HeroService } from "../../hero";
+import { LotteryService } from "../../lottery";
 import { StreamService } from "../../stream";
-import type { LotteryService } from "../../lottery";
 import { UserService } from "../user.service";
+import { XP_REWARDS } from "../user.constants";
 import type { ExchangePackage } from "../../twitch/twitch.constants";
 
-// The real `LotteryService` still writes the legacy `UserLottery` table — moving it is the next
-// brick, not this one — so a real instance would make these specs assert on a table this task
-// is cutting away from. Only `processMessageXp` is reached from the paths below, and what it is
-// given is the point: a `ChannelUser.id`.
-const processMessageXp = vi.fn(async (_userId: number, _baseXp?: number) => {});
-const lotteryService = { processMessageXp } as unknown as LotteryService;
-
+// The real `LotteryService`, not a stub. It read the legacy `UserLottery` join until this
+// release, and stubbing it is exactly how the mismatch below survived the balance move: a stub
+// accepts whatever it is handed, so the one thing worth asserting - that the weekly XP lands on
+// the same row the message XP did - was asserted on a `processMessageXp` mock instead.
 const makeUserService = () =>
-  new UserService(lotteryService, new StreamService(), new HeroService());
+  new UserService(
+    new LotteryService({
+      botId: config.twitch.botId,
+      userId: config.twitch.userId,
+      channelName: config.twitch.channelName,
+    }),
+    new StreamService(),
+    new HeroService(),
+  );
 
 const TWITCH_ID = "twitch_111";
 const USERNAME = "alice";
@@ -36,7 +42,6 @@ describe("UserService on ChannelUser", () => {
   beforeEach(async () => {
     await resetDb();
     await seedTestChannel();
-    processMessageXp.mockClear();
   });
 
   it("creates the viewer and this channel's balance row on the viewer's first touch", async () => {
@@ -67,7 +72,7 @@ describe("UserService on ChannelUser", () => {
   });
 
   it("creates nothing new when the same viewer is seen again", async () => {
-    const first = new UserService(lotteryService, new StreamService(), new HeroService());
+    const first = makeUserService();
     await first.ensureUserExists(TWITCH_ID, USERNAME);
 
     const before = await prisma.channelUser.findUniqueOrThrow({
@@ -228,17 +233,34 @@ describe("UserService on ChannelUser", () => {
     expect(await service.getUserCoins(TWITCH_ID)).toBe(250);
   });
 
-  it("hands the lottery service a ChannelUser id, not a User id", async () => {
+  // The join this release deletes, stated as an assertion: one chat message moves the weekly
+  // lottery XP and the message XP on the same balance row. It fails if the lottery is handed an
+  // id instead of the row, if it resolves that id against anything, and if either write lands on
+  // a different viewer.
+  it("files the weekly lottery XP on the same ChannelUser the message XP went to", async () => {
     const service = makeUserService();
     await service.ensureUserExists(TWITCH_ID, USERNAME);
 
     await service.addXpForMessage(TWITCH_ID, 1);
 
-    expect(processMessageXp).toHaveBeenCalledTimes(1);
     const channelUser = await prisma.channelUser.findFirstOrThrow();
-    expect(processMessageXp.mock.calls[0]?.[0]).toBe(channelUser.id);
-    // No `User` row exists at all in this test, so any id the lottery service could resolve
-    // against one is unreachable - which is exactly why the number has to be the right one.
+    expect(channelUser.xpThisWeek).toBe(XP_REWARDS.LOTTERY);
+    expect(channelUser.xp).toBe(1);
+
+    // A second viewer, so "the row that moved" is not merely the only row there is.
+    await makeUserService().ensureUserExists("twitch_222", "bob");
+    expect(
+      (
+        await prisma.channelUser.findFirstOrThrow({
+          where: { viewer: { twitchId: "twitch_222" } },
+        })
+      ).xpThisWeek,
+    ).toBe(0);
+
+    // No `User` row exists at all in this test, so there is no legacy row that could have
+    // absorbed any of it - and the guard the old code needed, which silently skipped the award,
+    // has nothing to pass on.
     expect(await prisma.user.count()).toBe(0);
+    expect(await prisma.userLottery.count()).toBe(0);
   });
 });

@@ -33,8 +33,11 @@ Types come from the generated client. Import `PrismaClient` and model types from
 
 ```ts
 import { PrismaClient } from "@fox-sphere/db";
-import type { User } from "@fox-sphere/db";
+import type { ChannelUser } from "@fox-sphere/db";
 ```
+
+`ChannelUser` and `Viewer` are what live code types against. `User` and `UserLottery` still
+generate cleanly, which is exactly the problem — see the frozen-tables section below.
 
 ## Generate before you type-check
 
@@ -74,10 +77,10 @@ route handler ever sees a `PrismaClientKnownRequestError`:
 import { ConflictError } from "@fox-sphere/backend-shared";
 
 try {
-  return await prisma.user.create({ data });
+  return await prisma.channelUser.create({ data });
 } catch (e) {
   if (e instanceof Error && "code" in e && e.code === "P2002") {
-    throw new ConflictError("User already exists");
+    throw new ConflictError("ChannelUser already exists");
   }
   throw e;
 }
@@ -112,8 +115,14 @@ at each of the call sites:
   happens to run first.
 - **Cache keys are `channelId`-scoped, not `twitchId`-scoped.** A key of `${channelId}:${twitchId}`
   is correct whether or not there is one channel, and a bare `twitchId` key is correct only
-  while `TWITCH_CHANNEL_NAME` is the single source of truth - which is exactly the assumption
-  phase 1 step 6 removes. Write the scoped key now.
+  while `TWITCH_CHANNEL_NAME` is the single source of truth — which is exactly the assumption
+  the cutover removes. `UserCache` and `CommandRegistry`'s `userCooldowns` both build the
+  scoped key, in one place each. Write the scoped key now.
+
+**The resolver is for choosing a channel, not for stamping a row.** It answers "which channel is
+this process serving", which is what `ensureChannelUser` needs to create a balance. It is not
+what a *history* write needs — that needs the channel the balance belongs to, and that answer
+is already on the row. Two lookups for one write is two chances to disagree.
 
 ## Traps in the current schema
 
@@ -126,11 +135,54 @@ at each of the call sites:
   plain column with no foreign key.** `CoinHistory`, `XpHistory`, `WatchStreak` and
   `UserHero` carry both since `20261013182939_channel_user_history`; only `channelUserId` is
   the relation, and it is the cascade target. Nothing in the database stops `channelId` from
-  drifting away from `ChannelUser.channelId`, so write both from the same channel context.
-- **`User` and `UserLottery` are frozen.** No bot code writes them after that same migration,
-  so a `ChannelUser` balance and a `User` balance legitimately differ. Do not "fix" a
-  divergence by writing `User`, and do not add columns to `User` - both are dropped in their
-  own migration at the end of phase 1.
+  drifting away from `ChannelUser.channelId`, so write both from the same channel context —
+  in practice, **read both off the `ChannelUser` row you already hold**, not from
+  `resolveChannelContext()`:
+
+  ```ts
+  const channelUser = await requireChannelUser(twitchId);
+  await prisma.coinHistory.create({
+    data: {
+      channelId: channelUser.channelId,
+      channelUserId: channelUser.id,
+      // ...
+    },
+  });
+  ```
+
+  Two of the three ways that pair used to go wrong are now behind us, and both are worth
+  remembering as reasons for the shape. `User.id` and `ChannelUser.id` are unrelated
+  autoincrement sequences, so handing a history write the wrong number satisfies the column
+  and files the row under a different viewer entirely. And a `UserLottery` row with no `where`
+  clause on the reset cleared every channel's week, because the table had no channel to filter
+  by in the first place.
+
+- **`User` and `UserLottery` are frozen.** No bot code reads or writes them after that same
+  migration, so a `ChannelUser` balance and a `User` balance legitimately differ, and `User`
+  is the wrong one. Do not "fix" a divergence by writing `User`, and do not add columns to
+  `User` — both are dropped in their own migration at the end of phase 1. The only code that
+  still reads them is `scripts/backfill-channels.ts` (insert-only on every deploy, destructive
+  behind `--sync`) and the migration that drops them.
+
+## `User` and `UserLottery` are frozen — and no bot code touches them
+
+This is the one row in the schema with no remaining writer, and the trap is that it looks
+perfectly usable. `User` still has `coins`, `xp`, `lvl`, `spinsCount`, `isPermanentVip`, and
+`UserLottery` still has `xpThisWeek`, `hasTicket`, `isLuckyVip`, and Prisma will happily
+generate a `prisma.user.findUnique` for you.
+
+Every one of those columns was copied onto `ChannelUser` — including the three lottery ones,
+so the lottery needs no join at all — and since the Release B cutover the bot's only writer is
+`ChannelUser`. `User` is a stale snapshot that diverges from the live balance by the minute.
+
+```bash
+# the check to run before you believe it
+grep -rn "prisma\.user\b\|prisma\.userLottery" apps/bot-runtime/src --include="*.ts"
+```
+
+Non-empty is the alarm. Every legitimate hit is inside `__tests__` and is
+`expect(await prisma.user.count()).toBe(0)` — the release's direction asserted as a test. A hit
+outside `__tests__` is an unfinished transfer, not a curiosity.
 
 ## Never edit generated output
 

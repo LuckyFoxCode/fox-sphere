@@ -1,6 +1,7 @@
 import { config, Logger } from "@fox-sphere/backend-shared";
 import { ApiClient } from "@twurple/api";
 import { ChatMessage } from "@twurple/chat";
+import { resolveChannelContext } from "../../channel";
 import { FishingService } from "../../fishing";
 import { RouletteService } from "../../roulette";
 import { StreamService } from "../../stream";
@@ -42,6 +43,17 @@ export class CommandRegistry {
   private commands = new Map<string, TwitchCommand>();
   private globalCooldowns = new Set<string>();
   private userCooldowns = new Map<string, Map<string, { expiresAt: number; notified: boolean }>>();
+
+  // Per-viewer command cooldown, keyed by channel as well as by Twitch id.
+  //
+  // A bare `twitchId` key is the same defect the `ChannelUser` cutover removes one level up:
+  // it reads correctly while the process serves one channel and then hands the second stream
+  // another stream's cooldown state — one stream's viewer gets told "wait N seconds" for a
+  // command they never ran. `UserCache` carries the same reasoning and the same key shape.
+  private cooldownKeyFor = async (twitchId: string): Promise<string> => {
+    const { channelId } = await resolveChannelContext();
+    return `${channelId}:${twitchId}`;
+  };
 
   constructor(
     private chatbotService: ChatbotService,
@@ -99,7 +111,10 @@ export class CommandRegistry {
 
   // Ставит кулдаун сразу, до запуска execute — закрывает гонку между
   // проверкой и установкой, пока команда выполняется.
-  private reserveCooldown(command: TwitchCommand, userId: string): void {
+  private reserveCooldown(
+    command: TwitchCommand,
+    userCooldownKey: string | null,
+  ): void {
     const cooldown = command.cooldown;
     if (!cooldown) return;
 
@@ -112,21 +127,28 @@ export class CommandRegistry {
       return;
     }
 
-    if (!this.userCooldowns.has(userId)) {
-      this.userCooldowns.set(userId, new Map());
+    // Unreachable in practice: the global branch above returns first, and `execute` only gets
+    // here with a key resolved. Kept so a future caller cannot write to a map named `""`.
+    if (!userCooldownKey) return;
+
+    if (!this.userCooldowns.has(userCooldownKey)) {
+      this.userCooldowns.set(userCooldownKey, new Map());
     }
-    this.userCooldowns.get(userId)!.set(command.name, {
+    this.userCooldowns.get(userCooldownKey)!.set(command.name, {
       expiresAt: Date.now() + cooldown.time,
       notified: false,
     });
     setTimeout(
-      () => this.userCooldowns.get(userId)?.delete(command.name),
+      () => this.userCooldowns.get(userCooldownKey)?.delete(command.name),
       cooldown.time,
     );
   }
 
   // Откатывает резерв при ошибке команды — попытка с ошибкой не тратит кулдаун.
-  private releaseCooldown(command: TwitchCommand, userId: string): void {
+  private releaseCooldown(
+    command: TwitchCommand,
+    userCooldownKey: string | null,
+  ): void {
     const cooldown = command.cooldown;
     if (!cooldown) return;
 
@@ -135,7 +157,9 @@ export class CommandRegistry {
       return;
     }
 
-    this.userCooldowns.get(userId)?.delete(command.name);
+    if (!userCooldownKey) return;
+
+    this.userCooldowns.get(userCooldownKey)?.delete(command.name);
   }
 
   public async execute(
@@ -163,39 +187,52 @@ export class CommandRegistry {
 
     const userId = msg.userInfo.userId;
 
-    if (command.cooldown) {
-      const { type } = command.cooldown;
-      const isOnCooldown =
-        type === "global"
-          ? this.globalCooldowns.has(command.name)
-          : this.userCooldowns.get(userId)?.has(command.name) ?? false;
-
-      if (isOnCooldown) {
-        const entry = this.userCooldowns.get(userId)?.get(command.name);
-        if (entry && command.cooldown.notifyMessage && !entry.notified) {
-          const remainingSeconds = Math.ceil(
-            (entry.expiresAt - Date.now()) / 1000,
-          );
-          await this.chatbotService.sendMessage(
-            channel,
-            command.cooldown.notifyMessage(user, remainingSeconds),
-          );
-          entry.notified = true;
-        }
-        Logger.debug(
-          "CommandRegistry",
-          `Ignored ${type} spam for ${config.commandPrefix}${commandName} from ${user}`,
-        );
-        return;
-      }
-
-      // Резервирование кулдауна ДО execute: длинные команды (спин ждёт анимацию
-      // колеса на оверлее) иначе оставляют окно, в котором спам проходит проверку
-      // и исполняется повторно.
-      this.reserveCooldown(command, userId);
-    }
+    // Resolved once per message, and only for a viewer-scoped cooldown: a global one is keyed by
+    // command name alone and has no channel to carry. Inside the `try` because the resolver
+    // throws on a deployment with no `Channel` row, and a command that cannot tell whose
+    // cooldown it is checking should not run at all.
+    let userCooldownKey: string | null = null;
 
     try {
+      if (command.cooldown && command.cooldown.type !== "global") {
+        userCooldownKey = await this.cooldownKeyFor(userId);
+      }
+
+      if (command.cooldown) {
+        const { type } = command.cooldown;
+        const entries = userCooldownKey
+          ? this.userCooldowns.get(userCooldownKey)
+          : undefined;
+        const isOnCooldown =
+          type === "global"
+            ? this.globalCooldowns.has(command.name)
+            : (entries?.has(command.name) ?? false);
+
+        if (isOnCooldown) {
+          const entry = entries?.get(command.name);
+          if (entry && command.cooldown.notifyMessage && !entry.notified) {
+            const remainingSeconds = Math.ceil(
+              (entry.expiresAt - Date.now()) / 1000,
+            );
+            await this.chatbotService.sendMessage(
+              channel,
+              command.cooldown.notifyMessage(user, remainingSeconds),
+            );
+            entry.notified = true;
+          }
+          Logger.debug(
+            "CommandRegistry",
+            `Ignored ${type} spam for ${config.commandPrefix}${commandName} from ${user}`,
+          );
+          return;
+        }
+
+        // Резервирование кулдауна ДО execute: длинные команды (спин ждёт анимацию
+        // колеса на оверлее) иначе оставляют окно, в котором спам проходит проверку
+        // и исполняется повторно.
+        this.reserveCooldown(command, userCooldownKey);
+      }
+
       await command.execute({ channel, user, text, msg, args });
       Logger.debug(
         "CommandRegistry",
@@ -205,7 +242,7 @@ export class CommandRegistry {
       // Неудачная попытка не съедает кулдаун — как и раньше, он ставился
       // только по успешному завершению команды.
       if (command.cooldown) {
-        this.releaseCooldown(command, userId);
+        this.releaseCooldown(command, userCooldownKey);
       }
 
       if (error instanceof CommandError) {

@@ -3,6 +3,16 @@ import type { ChannelUser, Viewer } from "@fox-sphere/db";
 import { resolveChannelContext } from "./channel-context";
 
 /**
+ * A balance row together with the identity it belongs to.
+ *
+ * `ChannelUser` carries no `twitchId` or `username` of its own - both live on `Viewer`, and
+ * every caller that has to name the viewer in a log line or an event payload has to reach
+ * through them. Folding the pair into the return type makes that one joined query instead of
+ * a second lookup whose result can disagree with the row it was fetched alongside.
+ */
+export type ChannelUserWithViewer = ChannelUser & { viewer: Viewer };
+
+/**
  * The identity half of a balance, upserted by `twitchId`.
  *
  * `Viewer` is who someone is; the coins are the pair's. Splitting them is what lets one person
@@ -68,11 +78,12 @@ export const ensureChannelUser = async (
  */
 export const findChannelUser = async (
   twitchId: string,
-): Promise<ChannelUser | null> => {
+): Promise<ChannelUserWithViewer | null> => {
   const { channelId } = await resolveChannelContext();
 
   return await prisma.channelUser.findFirst({
     where: { channelId, viewer: { twitchId } },
+    include: { viewer: true },
   });
 };
 
@@ -84,7 +95,9 @@ export const findChannelUser = async (
  * known about it - which is what turns this from `TypeError: Cannot read properties of null`
  * into something an operator can act on.
  */
-export const requireChannelUser = async (twitchId: string): Promise<ChannelUser> => {
+export const requireChannelUser = async (
+  twitchId: string,
+): Promise<ChannelUserWithViewer> => {
   const { channelId } = await resolveChannelContext();
   const channelUser = await findChannelUser(twitchId);
 

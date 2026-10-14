@@ -1,5 +1,5 @@
-import { prisma } from "@fox-sphere/backend-shared";
 import { Logger } from "@fox-sphere/backend-shared";
+import { findChannelUser } from "../../../channel";
 import { LOTTERY_CONFIG, LOTTERY_MESSAGES } from "../../../lottery";
 import { ChatbotService } from "../../chatbot.service";
 import { COOLDOWNS } from "../../twitch.constants";
@@ -24,13 +24,15 @@ export class TicketCommand implements TwitchCommand {
     try {
       const twitchId = ctx.msg.userInfo.userId;
 
-      const user = await prisma.user.findUnique({
-        where: { twitchId },
-        include: { lotteryContext: true },
-      });
+      // Three columns on this channel's balance row, where they used to be a `UserLottery`
+      // join reached through `User`. Read-only and `null`-tolerant on purpose: a viewer who has
+      // not earned XP yet has no progress to report, and `?ticket` should say so rather than
+      // fail. `ensureUserExists` has already run for this message, so `null` means a viewer the
+      // backfill never copied.
+      const channelUser = await findChannelUser(twitchId);
 
-      const xp = user?.lotteryContext?.xpThisWeek ?? 0;
-      const hasTicket = user?.lotteryContext?.hasTicket ?? false;
+      const xp = channelUser?.xpThisWeek ?? 0;
+      const hasTicket = channelUser?.hasTicket ?? false;
 
       const message = hasTicket
         ? LOTTERY_MESSAGES.TICKET_ALREADY_EARNED(ctx.user)

@@ -153,12 +153,13 @@ export class UserService {
       const lastLotteryTime = this.cache.getLastLotteryXpAt(channelId, twitchId);
 
       if (now - lastLotteryTime >= COOLDOWNS.XP_LOTTERY_COOLDOWN) {
-        // `channelUser.id`, not a `User.id`: the lottery side of this cutover moves its three
-        // columns (`xpThisWeek`, `hasTicket`, `isLuckyVip`) onto the same `ChannelUser` row,
-        // and `User.id` / `ChannelUser.id` are unrelated autoincrement sequences - handing it
-        // the wrong one would silently credit a different viewer.
+        // The balance row, not its id. `processMessageXp` writes the lottery's three columns on
+        // whatever row it is handed, and handing it a number is how weekly XP became a no-op
+        // for most viewers: `User.id` and `ChannelUser.id` are unrelated autoincrement
+        // sequences, so the id resolved against no one - or against an unrelated legacy viewer
+        // who happened to hold that number.
         await this.lotteryService.processMessageXp(
-          channelUser.id,
+          channelUser,
           Number(XP_REWARDS.LOTTERY),
         );
         this.cache.setLastLotteryXpAt(channelId, twitchId, now);

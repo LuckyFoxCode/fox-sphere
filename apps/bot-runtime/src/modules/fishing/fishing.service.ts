@@ -8,6 +8,7 @@ import {
   XP_CONFIG,
 } from "@fox-sphere/backend-shared";
 import { globalEventBus } from "../../shared/services";
+import { requireChannelUser } from "../channel";
 import { UserService } from "../user";
 import { FISHING_CONFIG } from "./fishing.constants";
 
@@ -137,17 +138,23 @@ export class FishingService {
 
   private async grantCatch(twitchId: string, caught: FishCatch): Promise<void> {
     if (caught.catchType === "coins" || caught.catchType === "xp") {
-      const user = await prisma.user.findUnique({
-        where: { twitchId },
-        select: { id: true },
-      });
-      if (!user) return;
+      // `requireChannelUser`, not a `User` lookup guarded by an early `return`. `User` is
+      // frozen from the Release B migration onward and `ensureChannelUser` no longer writes it,
+      // so every viewer whose first message landed after that deploy has no `User` row at all -
+      // and the old guard dropped the reward silently, for exactly those viewers, with nothing
+      // in the log. A thrown `NotFoundError` names the viewer and the channel instead, and
+      // `trackActivity` has already ensured the row exists before a `!тянуть` can reach here.
+      const channelUser = await requireChannelUser(twitchId);
 
       if (caught.catchType === "coins") {
         await this.userService.addCoins(twitchId, caught.coinAmount);
         await prisma.coinHistory.create({
           data: {
-            userId: user.id,
+            // Read off the balance row, never off a second context lookup: the ledger row and
+            // the coins it explains have to name the same pair, and taking both from one row is
+            // what makes that impossible to get wrong.
+            channelId: channelUser.channelId,
+            channelUserId: channelUser.id,
             amount: caught.coinAmount,
             reason: "FISH",
             details: `Fishing catch: ${caught.coinAmount} coins`,
@@ -157,7 +164,8 @@ export class FishingService {
         await this.userService.addXp(twitchId, caught.xpAmount);
         await prisma.xpHistory.create({
           data: {
-            userId: user.id,
+            channelId: channelUser.channelId,
+            channelUserId: channelUser.id,
             amount: caught.xpAmount,
             reason: "FISH",
             details: `Fishing catch: ${caught.xpAmount} XP`,

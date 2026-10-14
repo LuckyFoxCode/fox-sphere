@@ -1,8 +1,9 @@
-import { Logger, prisma } from "@fox-sphere/backend-shared";
+import { Logger } from "@fox-sphere/backend-shared";
 import { LotteryUserDto, TwitchAnnouncementColor } from "@fox-sphere/types";
 import type { ApiClient } from "@twurple/api";
 import { globalEventBus } from "../../../shared/services";
 import { delay } from "../../../shared/utils";
+import { findChannelUser } from "../../channel";
 import { LOTTERY_DELAYS, LOTTERY_MESSAGES } from "../../lottery";
 import type { TwitchConfig } from "../twitch.types";
 
@@ -153,11 +154,12 @@ export class LotteryVipRotation {
 
     for (const oldWinner of oldWinners) {
       try {
-        const currentDbUser = await prisma.user.findUnique({
-          where: { twitchId: oldWinner.twitchId },
-        });
+        // `isPermanentVip` is a `ChannelUser` column now; the `User` row this used to read is
+        // frozen and absent for anyone the backfill never copied, which would have read as
+        // "not a permanent VIP" and stripped a real one.
+        const currentChannelUser = await findChannelUser(oldWinner.twitchId);
 
-        if (currentDbUser?.isPermanentVip) {
+        if (currentChannelUser?.isPermanentVip) {
           Logger.debug(
             "ChatbotService",
             `Пропускаем снятие VIP с перманентного пользователя: ${oldWinner.username}`,

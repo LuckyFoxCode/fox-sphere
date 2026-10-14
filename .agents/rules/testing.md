@@ -21,6 +21,13 @@ Vitest, in four members only:
 | `apps/bot-runtime` | `src/__tests__/helpers/test-db.spec.ts` | `assertTestDatabase` in both directions - no database needed |
 | `apps/bot-runtime` | `src/__tests__/helpers/reset-db.spec.ts` | `resetDb` against the live `foxsphere_test` |
 | `apps/bot-runtime` | `src/modules/channel/__tests__/channel-context.spec.ts` | `resolveChannelContext` against the live `foxsphere_test` - resolves the row `TWITCH_CHANNEL_NAME` names, does not query again once resolved, does not cache a failed lookup, throws a message naming the variable and the script, and still reports the resolved channel under `NODE_ENV=production` |
+| `apps/bot-runtime` | `src/modules/user/__tests__/user.service.spec.ts` | the balance port - both rows created on a viewer's first touch, coins and a channel-points redemption on `ChannelUser`, one channel's balance never another's, the two channels' coin caches apart, and the weekly lottery XP filed on the same row the message XP went to |
+| `apps/bot-runtime` | `src/modules/lottery/__tests__/lottery.service.spec.ts` | the three lottery columns as `ChannelUser` columns - weekly XP accrual, the ticket threshold and its once-only guard, the broadcaster / bot / permanent-VIP exclusions, and a draw that resets only the channel it was run for |
+| `apps/bot-runtime` | `src/modules/fishing/__tests__/fishing.service.spec.ts` | a coin and an XP catch paid to a viewer with no legacy `User` row, the `CoinHistory` / `XpHistory` rows filed under that viewer's `(channelId, channelUserId)`, a bank catch feeding the jackpot only, and an unpayable viewer named rather than skipped |
+| `apps/bot-runtime` | `src/modules/roulette/__tests__/roulette.service.spec.ts` | the debit, the ledger rows, and per-channel isolation of one viewer's two balances |
+| `apps/bot-runtime` | `src/modules/user/__tests__/watch-streak.service.spec.ts` | first award and its repeat halves, and the two history rows it writes |
+| `apps/bot-runtime` | `src/modules/hero/__tests__/hero.service.spec.ts` | hero assignment and progression per viewer |
+| `apps/bot-runtime` | `src/modules/user/__tests__/user-cache.spec.ts` | the `${channelId}:${twitchId}` key and the two TTLs - pure |
 | `apps/overlay` | `src/utils/twitch/__tests__/parseTwitchEmotes.test.ts` | emote positions (code points, not UTF-16), urls, malformed emote maps |
 | `apps/overlay` | `src/constants/__tests__/rouletteSegments.test.ts` | segment catalog, rarity tiers, and tape strip constants |
 | `apps/overlay` | `src/utils/roulette/__tests__/tapeFill.test.ts` | tape strip fill algorithm - center winner, no adjacent duplicates, weights match backend |
@@ -30,14 +37,18 @@ Vitest, in four members only:
 | `apps/admin` | `src/views/__tests__/ChannelUsersView.test.ts` | viewers screen - list, leaderboard and viewer detail, with the route login and page state resolved before the hook call |
 
 `pnpm test` runs all of it (`pnpm -r test`); CI runs it in the gate. All of it is a pure
-function, a mounted component with the generated client stubbed, or - in two files - a real
+function, a mounted component with the generated client stubbed, or - in eight files - a real
 connection to a throwaway Postgres. So:
 
-- "Tests pass" means those units and nothing else. Never let it stand for the bot working,
-  and never let a database spec stand for "the bot writes what it should". The two are not
-  the same kind of claim: `reset-db.spec.ts` covers the harness, and
+- "Tests pass" means those units and nothing else. Never let it stand for the bot working.
+  The two are not the same kind of claim: `reset-db.spec.ts` covers the harness and
   `channel-context.spec.ts` covers the resolver - real bot code, but one function that reads
-  one row, with no Twitch and no chat behind it. Neither drives a feature.
+  one row, with no Twitch and no chat behind it. The service specs (`user`, `lottery`,
+  `roulette`, `watch-streak`, `hero`, `fishing`) go further and really do move a balance and
+  assert the ledger row beside it, which is what caught the `User` gate in `grantCatch` that
+  was silently dropping every new viewer's fishing coins. They still have **no** Twitch, **no**
+  socket and **no** chat message: none of them would catch a command that never fires or an
+  event that never reaches the overlay, and that remains true of the whole suite.
 - The gate is still build + lint + type-check + these tests, in that order.
 - Do not add a test file to a member that has no `test` script - bring the wiring with it,
   or the file rots unrun. That is what happened to the `create-vue` scaffold test this
@@ -157,3 +168,10 @@ local file, that the database-backed specs depend on. Its `DATABASE_URL` has to 
 An integration test asserting **channel A's overlay never receives channel B's event**.
 That is the property multi-tenancy exists to guarantee, and the one regression that stays
 invisible until a streamer sees someone else's alert on their own stream.
+
+**Still open.** What is proven today is one level down and narrower: the database tests hold
+one viewer's two `ChannelUser` balances apart, and both in-process maps that key by viewer —
+`UserCache` and `CommandRegistry`'s cooldown map — are keyed `${channelId}:${twitchId}`. The
+socket layer is still one global `io.emit` with no rooms, so the overlay-side half of that
+test cannot be written until phase-1 steps 9 and 10 land. Do not describe the database-level
+isolation as if it covered delivery.

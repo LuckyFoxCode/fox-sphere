@@ -65,6 +65,12 @@ What makes this **single-tenant** (serving exactly one customer):
 
 Point 3 is the dangerous one. The day a second channel exists, channel B's follow alert appears on channel A's stream. That is the single most important thing phase 1 fixes.
 
+> **Partly answered since.** Point 2 is no longer quite true: `ChannelUser` carries `channelId`
+> and is now the only table the bot writes, so the balance is channel-scoped. The legacy `User`
+> still holds those three columns globally and is frozen, awaiting its cleanup migration.
+> Points 1, 3 and 4 stand unchanged — identity is still env, broadcast is still global, and the
+> prefix is still one env var for the process. §14 carries the per-step status.
+
 ---
 
 ## 2. Vocabulary
@@ -376,13 +382,26 @@ no DDL at all. Prisma's Postgres connector always emits foreign keys that way �
 schema shape or flag that puts an inline `REFERENCES` inside `CREATE TABLE` — so a note
 claiming "zero `ALTER`, FK inside `CREATE TABLE`" describes SQL Prisma cannot generate.
 
-Step 5 is deliberately still ahead, and it is not additive either. `CoinHistory` is
-untouched: it still declares `userId Int` and a `User` relation, and carries no `channelId`
-— so the rule above does not apply to it yet, and there is nothing to filter on. Release B
-re-points it when the bot moves, and the column and the `channelId` filter land together,
-in one migration. A release that adds the column without the filter is the bug.
+Step 5 landed as its own migration, `20261013182939_channel_user_history`, and it was not
+additive: all four history tables (`CoinHistory`, `XpHistory`, `WatchStreak`, `UserHero`) now
+carry `channelId String` plus `channelUserId Int` pointing at `ChannelUser`, so the rule above
+applies to all of them and there is nothing left to filter *for*. It also had to seed the
+`ChannelUser` rows it remaps onto — it upserts `Viewer` by `twitchId` and inserts `ChannelUser`
+by `(channelId, viewerId)`, never updating one, for every `User` that has history rows but no
+target yet — because `deploy.yml` runs `migrate deploy` *before* the insert-only backfill, so
+a viewer who chatted since the last deploy would otherwise have had their history remapped
+onto nothing. It asserts a channel **only when the history tables actually hold rows**; with no
+history there is nothing to misfile, which is what lets an empty database migrate cleanly.
+
+`User` and `UserLottery` are still in the schema. They are frozen — read by nothing but the
+cleanup migration, the `backfill:channels` script and its own count report — and they are
+dropped in their own migration at the end of phase 1, never in this one.
 
 ### Release B: the deploy hook is no longer the hazard it was
+
+> **Status: the cutover has shipped.** Everything below was written before it, as a
+> prediction. It is kept, with the tense corrected, because the deadline it describes is still
+> live: `User` and `UserLottery` are frozen and awaiting their own cleanup migration.
 
 `.github/workflows/deploy.yml` runs `backfill:channels` on **every** deploy, between
 `prisma migrate deploy` and the container swap, and §14, step 14 ("Backfill and cutover")
@@ -390,21 +409,23 @@ used to carry a prerequisite that the step itself did not mention: delete that s
 same commit that first touches `ChannelUser`. The prerequisite is gone. The default mode is
 insert-only — it builds the rows and writes only the ones whose `(channelId, viewerId)` is
 absent, so an existing `ChannelUser` row is never handed to a write at all. There is no
-`update: balance`, no upsert, no path to reach. So the deploy step may stay across the
-cutover: when a release starts writing `ChannelUser`, the next deploy inserts nothing and
-changes no balance. It has one deadline, and §14 step 14 sets it — the step reads `User` and
+`update: balance`, no upsert, no path to reach. So the deploy step stayed across the cutover:
+a deploy-time run now finds every row already present, inserts none of them and changes no
+balance. It has one deadline, and §14 step 14 sets it — the step reads `User` and
 `UserLottery` in `reportCounts` and in the copy itself, so deleting the deploy step is
 required in the same migration and commit that drops those two tables, not before it. A
 deploy carrying that drop migration would otherwise throw against a missing table, and
 `deploy.yml` runs the step under `set -e` with no `|| true`, so it aborts the deploy — and so
 does every deploy after it, until the step is gone.
 
-What survives is the hazard in the *other* direction. `--sync` is the only converging mode:
-it upserts all 14 copied fields over every row, it has to be typed by a human, and it is
-only correct while `User` is still the source of truth. **One manual `--sync` run before the
-cutover is what brings `ChannelUser` back into agreement** with a live `User` that has
-drifted since the last deploy — after that run, or after the cutover, `--sync` is the
-destructive direction and nothing should invoke it.
+What survives is the hazard in the *other* direction, and it is now live. `--sync` is the only
+converging mode: it upserts all 14 copied fields over every row, and it is only correct while
+`User` is the source of truth. **One manual `--sync` run belongs immediately after the new bot
+container is up and before acceptance testing** — that is the moment it brings `ChannelUser`
+back into agreement with a live `User` that drifted during the deploy window. After that run,
+`--sync` is destructive and nothing should invoke it: `User` no longer moves, so the upsert
+overwrites live balances with a stale snapshot, and the `sum(coins)` check that follows is a
+report written after the rows are committed rather than a guard in front of them.
 
 The verification guidance is unchanged and still worth restating: verify the cutover against
 a backup, not against the legacy tables. From the cutover commit onward `User` is stale by
@@ -517,6 +538,11 @@ Each phase ships something that works on its own.
 Split the schema (`Channel` / `Viewer` / `ChannelUser`), write the backfill, scope economy and commands by channel, store per-channel tokens encrypted, replace `io.emit` with keyed rooms, thread `channelId` through the command engine.
 **Done when:** the existing channel behaves exactly as before on the new schema, and a second channel inserted by hand runs alongside it without leaking events.
 
+> **In progress.** Steps 1, 2 (minus `TwitchToken`), 6 and 7 have shipped; step 5 is
+> `resolveChannelContext()` and nothing more; step 14 is half done. Steps 3, 4, 8–13 are
+> open. The "done when" above is therefore **not** met: the schema half is, and the second
+> channel is not reachable yet. See §14 for the per-step status.
+
 > **This estimate was conservative.** Step 2 ("Tenant schema") lists `Channel` as work
 > to do, but `Channel` has existed since migration
 > `20260825171154_add_channel_model` — what Release A actually added was `Viewer` and
@@ -549,29 +575,33 @@ Deliberately not planned until there is evidence they're needed: shard manager w
 
 Dependency-ordered. Each step compiles and is testable before the next one starts.
 
-| # | Step | Notes |
-|---|---|---|
-| 1 | **Test harness** | Vitest + a `foxsphere_test` database inside the existing Postgres container, plus a `resetDb()` helper that truncates between tests. Careful: `shared/config` throws on any missing env var and every test imports it transitively, so `.env.test` must define every key `getEnv()` reads |
-| 2 | **Tenant schema** | add `Channel`, `Viewer`, `ChannelUser`; reshape `TwitchToken`. Additive only — `User` and `UserLottery` stay. Test: two channels, one viewer, two independent balances |
-| 3 | **Token encryption** | `encryptSecret` / `decryptSecret` (AES-256-GCM, `TOKEN_ENC_KEY` = 32 bytes hex). Test: round-trip, random IV, tampered payload rejected |
-| 4 | **Channel settings** | `channelSettingsSchema` in `shared-schemas`, defaults copied from today's `COOLDOWNS` / `XP_REWARDS` constants so behaviour doesn't change |
-| 5 | **`ChannelService`** | resolve a channel by login / twitchId / overlayKey, cache the parsed settings, `invalidate(channelId)` drops the cache. Returns a `ChannelContext` that every later component takes as its first argument |
-| 6 | **`ChannelUserService`** | port `UserService` with `channelId` everywhere; cache keys become `${channelId}:${twitchId}`, never a bare twitchId. Test: per-channel isolation, username updates, level-up, cooldown, leaderboard |
-| 7 | **Lottery per channel** | `processMessageXp(channelId, channelUserId)`, `runWeeklyLottery(ctx)`; the `UserLottery` join disappears. Test: a draw in channel A never touches channel B |
-| 8 | **`channelId` on every payload** | in `packages/types`, and `forwardEventToBackend(channelId, event, data)` |
-| 9 | **Socket rooms** | handshake carries `auth.key`; unknown key rejected; valid key joins `channel:<id>`; internal events emit with `io.to(room)`. Delete the old `io.emit`. Add `GET /api/overlay/config?key=`. Test: channel B's overlay does not receive channel A's event |
-| 10 | **Overlay reads its key** | `?key=` from the OBS URL, passed as socket auth. Four lines — verify by hand in a browser |
-| 11 | **Per-channel token loading** | `TokenService` encrypts on write, decrypts on read; `TwitchAuthFactory.create(tokenService, channels)` registers the bot plus one user per channel, skipping and logging a channel whose token is missing instead of aborting startup. Delete the env-seeding path |
-| 12 | **Chat and commands per channel** | `ChatbotService` joins every `ACTIVE` channel and keeps a `login → ChannelContext` map; `CommandContext` gains `channelId` and `settings`; cooldown keys become `${channelId}:…`; the prefix comes from settings, not env |
-| 13 | **EventSub per channel** | `subscribeChannel(ctx)` per broadcaster, each subscription wrapped in try/catch so one channel missing a scope doesn't stop the rest. `bootstrap()` loops over `listActive()`. Add a `seed:channel` CLI script that inserts a channel + tokens and prints the OBS URL |
-| 14 | **Backfill and cutover** | dump the database first. Run the backfill, verify viewer count and coin sums against the old tables, update the OBS URL with `?key=`, then delete `UserService` and drop the legacy tables in their own migration |
+Status as of the **Release B cutover** (`v1.16.0`). Read the column before trusting a step's
+description: several of these were implemented in a shape the original text does not name, and
+one — step 4 — was deliberately deferred and is now a documented debt rather than pending work.
+
+| # | Step | Status | Notes |
+|---|---|---|---|
+| 1 | **Test harness** | **done** | Vitest + a `foxsphere_test` database inside the existing Postgres container, plus a `resetDb()` helper that truncates between tests. Careful: `shared/config` throws on any missing env var and every test imports it transitively, so `.env.test` must define every key `getEnv()` reads |
+| 2 | **Tenant schema** | **done, minus `TwitchToken`** | add `Channel`, `Viewer`, `ChannelUser`; reshape `TwitchToken`. Additive only — `User` and `UserLottery` stay. Test: two channels, one viewer, two independent balances. Landed across three migrations; `Channel` already existed. **`TwitchToken` is still one global row per Twitch user and still stores plaintext** — that is step 11's work, not done |
+| 3 | **Token encryption** | open | `encryptSecret` / `decryptSecret` (AES-256-GCM, `TOKEN_ENC_KEY` = 32 bytes hex). Test: round-trip, random IV, tampered payload rejected |
+| 4 | **Channel settings** | **deferred, deliberately** | `channelSettingsSchema` in `shared-schemas`, defaults copied from today's `COOLDOWNS` / `XP_REWARDS` constants so behaviour doesn't change. **Not done on purpose.** Every tunable is still an env var, which is correct for exactly one channel and wrong the moment a second streamer arrives. See the `Channel.settings` debt gotcha in `AGENTS.md`. Do this before step 12 |
+| 5 | **`ChannelService`** | **partial** | resolve a channel by login / twitchId / overlayKey, cache the parsed settings, `invalidate(channelId)` drops the cache. Returns a `ChannelContext` that every later component takes as its first argument. What landed is `resolveChannelContext()`: one `findUnique` by `TWITCH_CHANNEL_NAME`, cached at module scope for the life of the process, with no settings, no `invalidate`, and no second channel — which is all one channel can use |
+| 6 | **`ChannelUserService`** | **done** | port `UserService` with `channelId` everywhere; cache keys become `${channelId}:${twitchId}`, never a bare twitchId. Test: per-channel isolation, username updates, level-up, cooldown, leaderboard. Landed as a port of `UserService` itself rather than a new service, plus `apps/bot-runtime/src/modules/channel/channel-user.ts` for the four lookup helpers. `UserCache` and `CommandRegistry`'s cooldown map are both keyed `${channelId}:${twitchId}` |
+| 7 | **Lottery per channel** | **done** | `processMessageXp(channelId, channelUserId)`, `runWeeklyLottery(ctx)`; the `UserLottery` join disappears. Test: a draw in channel A never touches channel B. Landed with the row rather than the id — `processMessageXp(channelUser)` — because `User.id` and `ChannelUser.id` are unrelated sequences and passing a bare number across that boundary was how weekly XP ended up crediting an arbitrary legacy viewer. The `runWeeklyLottery` resets are scoped by `channelId`, which they were not before |
+| 8 | **`channelId` on every payload** | open | in `packages/types`, and `forwardEventToBackend(channelId, event, data)` |
+| 9 | **Socket rooms** | open | handshake carries `auth.key`; unknown key rejected; valid key joins `channel:<id>`; internal events emit with `io.to(room)`. Delete the old `io.emit`. Add `GET /api/overlay/config?key=`. Test: channel B's overlay does not receive channel A's event |
+| 10 | **Overlay reads its key** | open | `?key=` from the OBS URL, passed as socket auth. Four lines — verify by hand in a browser |
+| 11 | **Per-channel token loading** | open | `TokenService` encrypts on write, decrypts on read; `TwitchAuthFactory.create(tokenService, channels)` registers the bot plus one user per channel, skipping and logging a channel whose token is missing instead of aborting startup. Delete the env-seeding path |
+| 12 | **Chat and commands per channel** | open | `ChatbotService` joins every `ACTIVE` channel and keeps a `login → ChannelContext` map; `CommandContext` gains `channelId` and `settings`; cooldown keys become `${channelId}:…`; the prefix comes from settings, not env. The cooldown-key half is already done — see step 6 |
+| 13 | **EventSub per channel** | open | `subscribeChannel(ctx)` per broadcaster, each subscription wrapped in try/catch so one channel missing a scope doesn't stop the rest. `bootstrap()` loops over `listActive()`. Add a `seed:channel` CLI script that inserts a channel + tokens and prints the OBS URL |
+| 14 | **Backfill and cutover** | **half done** | dump the database first. Run the backfill, verify viewer count and coin sums against the old tables, update the OBS URL with `?key=`, then delete `UserService` and drop the legacy tables in their own migration. **Done:** the dump is in the release checklist, the backfill ran on every deploy, the bot's only writer is now `ChannelUser`, the panel reads `ChannelUser`, and there is no sync between them — one channel, one balance. **Not done:** `?key=` on the OBS URL (needs step 10), and `User` / `UserLottery` are still in the schema and still frozen rather than dropped. Dropping them is a separate migration, and it must remove the `backfill:channels` step from `deploy.yml` in the same commit |
 
 **Verification before calling phase 1 done:**
 
-1. a chat message earns xp exactly as before
-2. `!t coins` and the leaderboard return the pre-cutover numbers
-3. a follow reaches the overlay
-4. a second channel, seeded by CLI, runs in parallel — and its events never appear on the first channel's overlay
+1. a chat message earns xp exactly as before — done, chat acceptance
+2. `!t coins` and the leaderboard return the pre-cutover numbers — done, chat acceptance
+3. a follow reaches the overlay — done
+4. a second channel, seeded by CLI, runs in parallel — and its events never appear on the first channel's overlay — **open.** It cannot be checked yet: there is no CLI seeder (step 13), no overlay key (step 10), and the bot still resolves exactly one channel (step 5). The isolation that *is* proven today is narrower and real: the database-level tests hold one viewer's two balances apart, and both `UserCache` and the command-cooldown map are keyed by channel. The socket layer is still one global `io.emit`
 
 ---
 
