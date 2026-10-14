@@ -7,6 +7,7 @@ import {
 } from "@fox-sphere/backend-shared";
 import { ROULETTE_SPIN_ANIMATION_MS, type RouletteSpinResultPayload } from "@fox-sphere/types";
 import { globalEventBus } from "../../shared/services";
+import { requireChannelUser } from "../channel";
 import { UserService } from "../user";
 import { ROULETTE_CONFIG } from "./roulette.constants";
 
@@ -41,18 +42,20 @@ export class RouletteService {
   }): Promise<RouletteSpinResultPayload> {
     const prize = resolveSpinPrize(secureRandomInt);
 
+    // Read before the transaction rather than inside it: the row this spins on is a
+    // `(channelId, viewerId)` pair, and an unknown Twitch id has to fail with a message naming
+    // both - which `requireChannelUser` does, and `findUniqueOrThrow` on a compound key would
+    // not. Nothing here is written before the lookup, so the row cannot go stale underneath it.
+    const channelUser = await requireChannelUser(input.twitchId);
+
     const { jackpotWon, jackpotTotalAfter, coinAmount } =
       await prisma.$transaction(async (tx) => {
-        const user = await tx.user.findUniqueOrThrow({
-          where: { twitchId: input.twitchId },
-        });
-
         // Атомарное списание с условием достаточности — страховка от гонки
         // между проверкой getUserCoins (кэш TTL 10с) и транзакцией. При count === 0
         // транзакция откатывается, ничего не меняя; сообщение юзеру шлёт команда до сервиса,
         // сюда это попадает только при реальной гонке и логируется реестром как ошибка.
-        const debited = await tx.user.updateMany({
-          where: { id: user.id, coins: { gte: ROULETTE_CONFIG.PRICE } },
+        const debited = await tx.channelUser.updateMany({
+          where: { id: channelUser.id, coins: { gte: ROULETTE_CONFIG.PRICE } },
           data: {
             coins: { decrement: ROULETTE_CONFIG.PRICE },
             spinsCount: { increment: 1 },
@@ -68,7 +71,8 @@ export class RouletteService {
 
         await tx.coinHistory.create({
           data: {
-            userId: user.id,
+            channelId: channelUser.channelId,
+            channelUserId: channelUser.id,
             amount: -ROULETTE_CONFIG.PRICE,
             reason: "SPIN",
           },
@@ -97,8 +101,8 @@ export class RouletteService {
 
         if (prize.prizeType === "coins") {
           coinAmount = prize.coinAmount;
-          await tx.user.update({
-            where: { id: user.id },
+          await tx.channelUser.update({
+            where: { id: channelUser.id },
             data: {
               coins: { increment: coinAmount },
               totalWin: { increment: coinAmount },
@@ -106,7 +110,8 @@ export class RouletteService {
           });
           await tx.coinHistory.create({
             data: {
-              userId: user.id,
+              channelId: channelUser.channelId,
+              channelUserId: channelUser.id,
               amount: coinAmount,
               reason: "SPIN_PRIZE",
               details: `Roulette prize: ${coinAmount} coins`,
@@ -115,8 +120,8 @@ export class RouletteService {
         } else if (prize.prizeType === "jackpot") {
           jackpotWon = true;
           coinAmount = bankAfterShare;
-          await tx.user.update({
-            where: { id: user.id },
+          await tx.channelUser.update({
+            where: { id: channelUser.id },
             data: {
               coins: { increment: coinAmount },
               totalWin: { increment: coinAmount },
@@ -124,7 +129,8 @@ export class RouletteService {
           });
           await tx.coinHistory.create({
             data: {
-              userId: user.id,
+              channelId: channelUser.channelId,
+              channelUserId: channelUser.id,
               amount: coinAmount,
               reason: "JACKPOT",
               details: `Jackpot: ${coinAmount} coins`,
@@ -140,7 +146,7 @@ export class RouletteService {
         return { jackpotWon, jackpotTotalAfter, coinAmount };
       });
 
-    this.userService.invalidateCoins(input.twitchId);
+    await this.userService.invalidateCoins(input.twitchId);
 
     let xpAmount = 0;
     if (prize.prizeType === "xp") {

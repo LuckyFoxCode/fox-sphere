@@ -1,8 +1,9 @@
-import { Logger, prisma } from "@fox-sphere/backend-shared";
+import { Logger } from "@fox-sphere/backend-shared";
 import { LotteryUserDto, TwitchAnnouncementColor } from "@fox-sphere/types";
 import type { ApiClient } from "@twurple/api";
 import { globalEventBus } from "../../../shared/services";
 import { delay } from "../../../shared/utils";
+import { findChannelUser } from "../../channel";
 import { LOTTERY_DELAYS, LOTTERY_MESSAGES } from "../../lottery";
 import type { TwitchConfig } from "../twitch.types";
 
@@ -153,11 +154,14 @@ export class LotteryVipRotation {
 
     for (const oldWinner of oldWinners) {
       try {
-        const currentDbUser = await prisma.user.findUnique({
-          where: { twitchId: oldWinner.twitchId },
-        });
+        // `isPermanentVip` is a `ChannelUser` column now. The `User` row this
+        // used to read went stale the moment `setPermanentVip` started writing `ChannelUser`
+        // and nothing wrote `User` at all - so a permanent VIP granted after the cutover read
+        // `false` there and had their VIP stripped by the rotation. A viewer with no `User`
+        // row at all failed the same way, by reading as "not a permanent VIP".
+        const currentChannelUser = await findChannelUser(oldWinner.twitchId);
 
-        if (currentDbUser?.isPermanentVip) {
+        if (currentChannelUser?.isPermanentVip) {
           Logger.debug(
             "ChatbotService",
             `Пропускаем снятие VIP с перманентного пользователя: ${oldWinner.username}`,

@@ -1,5 +1,6 @@
 import { config, Logger } from "@fox-sphere/backend-shared";
 import { pathToFileURL } from "url";
+import { resolveChannelContext } from "./modules/channel";
 import { HeroService } from "./modules/hero";
 import { LotteryService } from "./modules/lottery";
 import { StreamService } from "./modules/stream";
@@ -17,6 +18,15 @@ const lastFollowByUser = new Map<string, number>();
 
 export async function bootstrap() {
   Logger.info("Bootstrap", "Initializing Twitch worker application...⚙️");
+
+  // First thing after the banner, and before any Twitch session is opened: every balance
+  // the bot writes is scoped by this channel from the Release B cutover on, so a
+  // deployment whose `Channel` row is missing has nothing useful to do and has to say so
+  // here rather than from whichever query happens to run first. Throwing out of
+  // `bootstrap()` ends the process in both shapes - the dev worker through the catch at
+  // the bottom of this file, production through `prod.ts`, which lets the HTTP listener
+  // come up first and then awaits this same function.
+  await resolveChannelContext();
 
   const twitchConfig: TwitchConfig = config.twitch;
 

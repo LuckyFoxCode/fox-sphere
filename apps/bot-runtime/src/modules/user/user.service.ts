@@ -5,9 +5,16 @@ import {
   Logger,
   prisma,
 } from "@fox-sphere/backend-shared";
-import type { User } from "@fox-sphere/db";
+import type { ChannelUser } from "@fox-sphere/db";
 import { HeroRef } from "@fox-sphere/types";
 import { globalEventBus } from "../../shared/services";
+import {
+  ensureChannelUser,
+  ensureViewer,
+  findChannelUser,
+  requireChannelUser,
+  resolveChannelContext,
+} from "../channel";
 import { HeroService } from "../hero";
 import { LotteryService } from "../lottery";
 import { StreamService } from "../stream";
@@ -32,10 +39,10 @@ export class UserService {
   ) {}
 
   /**
-   * Makes sure a `User` row exists for this Twitch id, creating it if needed.
+   * Makes sure this channel has a `ChannelUser` row for this Twitch id, creating it if needed.
    *
-   * Returns nothing on purpose. The one thing this method has to guarantee is the
-   * side effect: a newly created user emits `user:created`, and `HeroService` hangs a hero
+   * Returns nothing on purpose. The one thing this method has to guarantee is the side effect:
+   * a newly created balance row emits `user:created`, and `HeroService` hangs a hero
    * assignment off that. Both callers ignored the return value, so an earlier version could
    * return one — and did return `undefined` for every viewer already in `verifiedUsers`, since
    * the whole body sat inside `if (!isVerified)`. Nothing caught it because a `find or create`
@@ -48,41 +55,29 @@ export class UserService {
     username: string,
   ): Promise<void> {
     try {
-      if (this.cache.isVerified(twitchId)) return;
+      const { channelId } = await resolveChannelContext();
 
-      let user = await prisma.user.findUnique({
-        where: { twitchId },
-      });
+      if (this.cache.isVerified(channelId, twitchId)) return;
 
-      if (!user) {
-        user = await prisma.user.create({
-          data: {
-            twitchId,
-            username,
-          },
-        });
+      const { channelUser, viewer, created } = await ensureChannelUser(
+        twitchId,
+        username,
+      );
 
+      if (created) {
         globalEventBus.emit("user:created", {
-          twitchId: user.twitchId,
-          username: user.username,
+          twitchId,
+          username: viewer.username,
         });
       } else {
-        if (user.username !== username) {
-          user = await prisma.user.update({
-            where: { twitchId },
-            data: {
-              username,
-            },
-          });
-        }
-
-        const lastXpTime = user.lastXpAt
-          ? new Date(user.lastXpAt).getTime()
-          : 0;
-        this.cache.setLastXpAt(user.twitchId, lastXpTime);
+        this.cache.setLastXpAt(
+          channelId,
+          twitchId,
+          new Date(channelUser.lastXpAt).getTime(),
+        );
       }
 
-      this.cache.markVerified(twitchId);
+      this.cache.markVerified(channelId, twitchId);
     } catch (error) {
       Logger.error(
         "UserService",
@@ -124,19 +119,15 @@ export class UserService {
     failureMessage: string,
   ): Promise<void> {
     try {
-      await prisma.user.upsert({
-        where: {
-          twitchId: twitchId,
-        },
-        update: {
-          isPermanentVip,
-          username,
-        },
-        create: {
-          isPermanentVip,
-          twitchId: twitchId,
-          username,
-        },
+      const { channelId } = await resolveChannelContext();
+      // The viewer row has to exist before the balance row that points at it, same as in
+      // `ensureChannelUser` - a mod can add VIP to somebody who has not typed yet.
+      const viewer = await ensureViewer(twitchId, username);
+
+      await prisma.channelUser.upsert({
+        where: { channelId_viewerId: { channelId, viewerId: viewer.id } },
+        update: { isPermanentVip },
+        create: { channelId, viewerId: viewer.id, isPermanentVip },
       });
       Logger.debug("UserService", successMessage);
     } catch (error) {
@@ -154,41 +145,38 @@ export class UserService {
     const now = Date.now();
 
     try {
-      const userWithLottery = await prisma.user.findUnique({
-        where: { twitchId },
-        select: {
-          id: true,
-          isPermanentVip: true,
-          lotteryContext: {
-            select: { isLuckyVip: true },
-          },
-        },
-      });
+      const { channelId } = await resolveChannelContext();
+      const channelUser = await findChannelUser(twitchId);
 
-      if (!userWithLottery) return;
+      if (!channelUser) return;
 
-      const lastLotteryTime = this.cache.getLastLotteryXpAt(twitchId);
+      const lastLotteryTime = this.cache.getLastLotteryXpAt(channelId, twitchId);
 
       if (now - lastLotteryTime >= COOLDOWNS.XP_LOTTERY_COOLDOWN) {
+        // The balance row, not its id. `processMessageXp` writes the lottery's three columns on
+        // whatever row it is handed, and handing it a number is how weekly XP became a no-op
+        // for most viewers: `User.id` and `ChannelUser.id` are unrelated autoincrement
+        // sequences, so the id resolved against no one - or against an unrelated legacy viewer
+        // who happened to hold that number.
         await this.lotteryService.processMessageXp(
-          userWithLottery.id,
+          channelUser,
           Number(XP_REWARDS.LOTTERY),
         );
-        this.cache.setLastLotteryXpAt(twitchId, now);
+        this.cache.setLastLotteryXpAt(channelId, twitchId, now);
       }
 
-      const lastXpTime = this.cache.getLastXpAt(twitchId);
+      const lastXpTime = this.cache.getLastXpAt(channelId, twitchId);
       if (now - lastXpTime < COOLDOWNS.XP_MESSAGE_COOLDOWN) return;
 
-      const isVip =
-        userWithLottery.lotteryContext?.isLuckyVip ||
-        userWithLottery.isPermanentVip;
+      // Both flags are columns on `ChannelUser` now. They used to be `User.isPermanentVip` and
+      // `UserLottery.isLuckyVip`, which is why this was a two-source read.
+      const isVip = channelUser.isLuckyVip || channelUser.isPermanentVip;
       const baseXp = isVip ? xpAmount + XP_REWARDS.VIP_BONUS : xpAmount;
       const activeBoost = await this.streamService.getActiveXpBoost();
       const finalXpAmount = baseXp * (activeBoost?.multiplier ?? 1);
 
-      const updatedUser = await prisma.user.update({
-        where: { twitchId },
+      const updatedUser = await prisma.channelUser.update({
+        where: { id: channelUser.id },
         data: {
           xp: {
             increment: finalXpAmount,
@@ -197,7 +185,7 @@ export class UserService {
         },
       });
 
-      this.cache.setLastXpAt(twitchId, now);
+      this.cache.setLastXpAt(channelId, twitchId, now);
       await this.checkAndUpgradeLevel(updatedUser);
       await this.streamService.updateStreamXp(finalXpAmount);
     } catch (error) {
@@ -213,27 +201,31 @@ export class UserService {
     return await this.lotteryService.runWeeklyLottery();
   }
 
-  private async checkAndUpgradeLevel(user: User): Promise<void> {
-    let currentLvl = user.lvl;
+  private async checkAndUpgradeLevel(channelUser: ChannelUser): Promise<void> {
+    let currentLvl = channelUser.lvl;
     let hasLeveledUp = false;
 
     let nextLevelThreshold = getXpThresholdForLevel(currentLvl, 100);
 
-    while (user.xp >= nextLevelThreshold) {
+    while (channelUser.xp >= nextLevelThreshold) {
       currentLvl++;
       nextLevelThreshold = getXpThresholdForLevel(currentLvl, 100);
       hasLeveledUp = true;
     }
 
     if (hasLeveledUp) {
-      const freshUserData = await prisma.user.update({
-        where: { twitchId: user.twitchId },
+      const freshChannelUser = await prisma.channelUser.update({
+        where: { id: channelUser.id },
         data: {
           lvl: currentLvl,
         },
         select: {
-          twitchId: true,
-          username: true,
+          viewer: {
+            select: {
+              twitchId: true,
+              username: true,
+            },
+          },
           hero: {
             select: {
               heroId: true,
@@ -242,34 +234,53 @@ export class UserService {
         },
       });
 
+      // The overlay keys a viewer's level-up by Twitch id, not by a database id, so the
+      // payload is unchanged - it just reaches `twitchId` through `Viewer` now.
       globalEventBus.emit("user:level-up", {
-        userId: freshUserData.twitchId,
-        username: freshUserData.username,
+        userId: freshChannelUser.viewer.twitchId,
+        username: freshChannelUser.viewer.username,
         newLevel: currentLvl,
-        hero: freshUserData.hero
-          ? { heroId: freshUserData.hero.heroId }
+        hero: freshChannelUser.hero
+          ? { heroId: freshChannelUser.hero.heroId }
           : undefined,
       });
     }
   }
 
   public async getUsersStats(twitchId: string) {
-    return prisma.user.findUnique({
-      where: { twitchId },
-    });
+    return await findChannelUser(twitchId);
   }
 
   public async getTopUsers() {
-    return prisma.user.findMany({
+    const { channelId } = await resolveChannelContext();
+
+    const rows = await prisma.channelUser.findMany({
+      where: { channelId },
       orderBy: {
         xp: "desc",
       },
+      select: {
+        lvl: true,
+        xp: true,
+        viewer: { select: { username: true } },
+      },
     });
+
+    // Flattened, because the caller's only need for a row beyond the balance is the name to
+    // print - and `username` is a `Viewer` column now, so leaving it nested would make every
+    // consumer reach through `viewer`.
+    return rows.map((row) => ({
+      username: row.viewer.username,
+      lvl: row.lvl,
+      xp: row.xp,
+    }));
   }
 
   public async addCoins(twitchId: string, amount: number): Promise<void> {
-    await prisma.user.update({
-      where: { twitchId },
+    const channelUser = await requireChannelUser(twitchId);
+
+    await prisma.channelUser.update({
+      where: { id: channelUser.id },
       data: {
         coins: {
           increment: amount,
@@ -277,7 +288,7 @@ export class UserService {
       },
     });
 
-    this.cache.invalidateCoins(twitchId);
+    await this.invalidateCoins(twitchId);
 
     Logger.debug(
       "UserService",
@@ -290,12 +301,9 @@ export class UserService {
     redemptionId: string,
     pkg: ExchangePackage,
   ): Promise<ExchangeChannelPointsResult> {
-    const user = await prisma.user.findUnique({
-      where: { twitchId },
-      select: { id: true },
-    });
+    const channelUser = await findChannelUser(twitchId);
 
-    if (!user) {
+    if (!channelUser) {
       Logger.warn(
         "UserService",
         `Coin exchange skipped — user not found: ${twitchId} (redemption ${redemptionId})`,
@@ -318,14 +326,18 @@ export class UserService {
 
     try {
       await prisma.$transaction(async (tx) => {
-        await tx.user.update({
-          where: { twitchId },
+        await tx.channelUser.update({
+          where: { id: channelUser.id },
           data: { coins: { increment: pkg.coinsAwarded } },
         });
 
         await tx.coinHistory.create({
           data: {
-            userId: user.id,
+            // `channelId` read off the balance row rather than off the context: the history
+            // row and the coins it explains must be filed under the same channel, and taking
+            // it from the row makes that impossible to get wrong.
+            channelId: channelUser.channelId,
+            channelUserId: channelUser.id,
             amount: pkg.coinsAwarded,
             reason: "CHANGE_POINTS",
             details: this.buildExchangeDetails(pkg),
@@ -344,7 +356,7 @@ export class UserService {
       throw error;
     }
 
-    this.cache.invalidateCoins(twitchId);
+    await this.invalidateCoins(twitchId);
 
     Logger.debug(
       "UserService",
@@ -362,8 +374,10 @@ export class UserService {
 
   public async addXp(twitchId: string, xpAmount: number): Promise<void> {
     try {
-      const updatedUser = await prisma.user.update({
-        where: { twitchId },
+      const channelUser = await requireChannelUser(twitchId);
+
+      const updatedUser = await prisma.channelUser.update({
+        where: { id: channelUser.id },
         data: {
           xp: {
             increment: xpAmount,
@@ -383,29 +397,31 @@ export class UserService {
   }
 
   public async getUserCoins(twitchId: string): Promise<number> {
+    const { channelId } = await resolveChannelContext();
     const now = Date.now();
-    const cachedCoins = this.cache.getCoins(twitchId, now);
+    const cachedCoins = this.cache.getCoins(channelId, twitchId, now);
 
     if (cachedCoins !== undefined) return cachedCoins;
 
-    const user = await prisma.user.findUnique({
-      where: { twitchId },
-      select: { coins: true },
-    });
+    const channelUser = await findChannelUser(twitchId);
 
-    const currentCoins = user ? user.coins : 0;
+    const currentCoins = channelUser ? channelUser.coins : 0;
 
-    this.cache.setCoins(twitchId, currentCoins, now);
+    this.cache.setCoins(channelId, twitchId, currentCoins, now);
 
     return currentCoins;
   }
 
-  public invalidateCoins(twitchId: string): void {
-    this.cache.invalidateCoins(twitchId);
+  // Async because the cache key carries the channel, and the channel is only known once
+  // `resolveChannelContext` has answered. Both call sites are already in async functions.
+  public async invalidateCoins(twitchId: string): Promise<void> {
+    const { channelId } = await resolveChannelContext();
+    this.cache.invalidateCoins(channelId, twitchId);
   }
 
-  public invalidateHero(twitchId: string): void {
-    this.cache.invalidateHero(twitchId);
+  public async invalidateHero(twitchId: string): Promise<void> {
+    const { channelId } = await resolveChannelContext();
+    this.cache.invalidateHero(channelId, twitchId);
   }
 
   public async getUserWithHero(
@@ -416,30 +432,27 @@ export class UserService {
     isFounder: boolean;
     hero: HeroRef;
   } | null> {
-    const user = await prisma.user.findUnique({
-      where: { twitchId },
-      select: {
-        id: true,
-        lvl: true,
-        isPermanentVip: true,
-        isFounder: true,
-      },
-    });
+    const { channelId } = await resolveChannelContext();
+    const channelUser = await findChannelUser(twitchId);
 
-    if (!user) return null;
+    if (!channelUser) return null;
 
     const now = Date.now();
-    const cached = this.cache.getHero(twitchId, now);
+    const cached = this.cache.getHero(channelId, twitchId, now);
 
     const heroId =
-      cached ?? (await this.heroService.ensureUserHasHero(user.id));
+      cached ??
+      (await this.heroService.ensureUserHasHero(
+        channelUser.id,
+        channelUser.channelId,
+      ));
 
-    this.cache.setHero(twitchId, heroId, now);
+    this.cache.setHero(channelId, twitchId, heroId, now);
 
     return {
-      lvl: user.lvl,
-      isPermanentVip: user.isPermanentVip,
-      isFounder: user.isFounder,
+      lvl: channelUser.lvl,
+      isPermanentVip: channelUser.isPermanentVip,
+      isFounder: channelUser.isFounder,
       hero: { heroId },
     };
   }
