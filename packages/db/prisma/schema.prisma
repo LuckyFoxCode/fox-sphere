@@ -7,39 +7,44 @@ datasource db {
   provider = "postgresql"
 }
 
+// Legacy, single-channel balance table. It stays in the schema - frozen, not dropped -
+// because dropping it is the last, separate step of phase 1 of
+// `apps/bot-runtime/docs/multi-tenant-architecture.md` ("drop the legacy tables in their
+// own migration"), and it is the only thing a rollback to the pre-Release-B bot would
+// still read. Release A copied its balances into `Viewer` / `ChannelUser`; Release B
+// moved the bot's writes onto `ChannelUser`, so from here on the bot never reads or
+// writes this table and the two drift apart by construction. `UserLottery` remains
+// related to it: it is read by nothing the bot touches until the same cutover drops it.
 model User {
-  id             Int           @id @default(autoincrement())
-  twitchId       String        @unique
+  id             Int          @id @default(autoincrement())
+  twitchId       String       @unique
   username       String
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  coins          Int           @default(0)
-  lvl            Int           @default(1)
-  xp             Int           @default(0)
-  lastXpAt       DateTime      @default(now())
-  isMod          Boolean       @default(false)
-  isFounder      Boolean       @default(false)
-  isSubscriber   Boolean       @default(false)
-  isPermanentVip Boolean       @default(false)
-  spinsCount     Int           @default(0)
-  totalWin       Int           @default(0)
-  totalLoss      Int           @default(0)
-  coinHistories  CoinHistory[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  coins          Int          @default(0)
+  lvl            Int          @default(1)
+  xp             Int          @default(0)
+  lastXpAt       DateTime     @default(now())
+  isMod          Boolean      @default(false)
+  isFounder      Boolean      @default(false)
+  isSubscriber   Boolean      @default(false)
+  isPermanentVip Boolean      @default(false)
+  spinsCount     Int          @default(0)
+  totalWin       Int          @default(0)
+  totalLoss      Int          @default(0)
   lotteryContext UserLottery?
-  hero           UserHero?
-  xpHistories    XpHistory[]
-  watchStreaks   WatchStreak[]
 }
 
 model UserHero {
-  id        Int      @id @default(autoincrement())
-  heroId    String
-  userId    Int      @unique
-  level     Int      @default(1)
-  xp        Int      @default(0)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            Int         @id @default(autoincrement())
+  heroId        String
+  channelId     String
+  channelUserId Int         @unique
+  level         Int         @default(1)
+  xp            Int         @default(0)
+  channelUser   ChannelUser @relation(fields: [channelUserId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model UserLottery {
@@ -65,39 +70,52 @@ enum HistoryReason {
   FISH
 }
 
+// The four history tables (`CoinHistory`, `XpHistory`, `WatchStreak`, `UserHero`) carry
+// `channelId` alongside `channelUserId` rather than a single foreign key. `channelUserId`
+// is the real relation and the cascade target; `channelId` is a plain column, not a second
+// foreign key, because it exists so that "this channel's history, newest first" is one
+// index seek (`@@index([channelId, channelUserId])`) and so a channel's history can be
+// read or deleted without joining `ChannelUser`. Two independent integer keys cannot
+// express that, and a `twitchId` lookup per history row would not.
 model CoinHistory {
-  id        Int           @id @default(autoincrement())
-  amount    Int
-  reason    HistoryReason
-  details   String?
-  redemptionId String?   @unique
-  createdAt DateTime      @default(now())
-  userId    Int
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            Int           @id @default(autoincrement())
+  amount        Int
+  reason        HistoryReason
+  details       String?
+  redemptionId  String?       @unique
+  createdAt     DateTime      @default(now())
+  channelId     String
+  channelUserId Int
+  channelUser   ChannelUser   @relation(fields: [channelUserId], references: [id], onDelete: Cascade)
 
-  @@index([userId, createdAt])
+  @@index([channelId, channelUserId])
+  @@index([channelId, createdAt])
 }
 
 model XpHistory {
-  id        Int           @id @default(autoincrement())
-  userId    Int
-  amount    Int
-  reason    HistoryReason
-  details   String?
-  createdAt DateTime      @default(now())
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            Int           @id @default(autoincrement())
+  channelId     String
+  channelUserId Int
+  amount        Int
+  reason        HistoryReason
+  details       String?
+  createdAt     DateTime      @default(now())
+  channelUser   ChannelUser   @relation(fields: [channelUserId], references: [id], onDelete: Cascade)
 
-  @@index([userId, createdAt])
+  @@index([channelId, channelUserId])
+  @@index([channelId, createdAt])
 }
 
 model WatchStreak {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  streakValue Int
-  createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            Int         @id @default(autoincrement())
+  channelId     String
+  channelUserId Int
+  streakValue   Int
+  createdAt     DateTime    @default(now())
+  channelUser   ChannelUser @relation(fields: [channelUserId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, streakValue])
+  @@unique([channelUserId, streakValue])
+  @@index([channelId, channelUserId])
 }
 
 model SystemState {
@@ -179,6 +197,13 @@ model ChannelUser {
 
   channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
   viewer  Viewer  @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+
+  // Moved here from `User` in the Release B schema migration: these are the back-relations
+  // the four history tables need now that they hang off `ChannelUser` instead of `User`.
+  coinHistories CoinHistory[]
+  xpHistories   XpHistory[]
+  watchStreaks  WatchStreak[]
+  hero          UserHero?
 
   @@unique([channelId, viewerId])
   @@index([channelId, xp])

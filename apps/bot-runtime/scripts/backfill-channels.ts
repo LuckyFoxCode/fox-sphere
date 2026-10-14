@@ -3,25 +3,48 @@
  * channel-scoped `Viewer` / `ChannelUser` pair.
  *
  * Additive by design — it reads `User` / `UserLottery` and writes only the new
- * tables, so the running bot (which still reads `User`) is untouched.
+ * tables.
  *
  *   pnpm --filter bot-runtime backfill:channels [login] [--sync]
  *
- * The default mode is insert-only: a `ChannelUser` row that already exists is
- * never written, so a frozen `User` cannot roll a live balance backwards. That
- * is why the script can stay in `deploy.yml` — after the Release B cutover
- * `User` stops being the source of truth, a deploy-time run finds every row
- * already present, inserts none of them and changes no balance. It is not a total
- * no-op, and deliberately so: `Viewer.username` is still refreshed from `User` on
- * every run, and a `Channel` is still created when none matches the login, because
- * a stale nickname is safer than a frozen one. Both go away with the legacy tables.
- * Where the balances are concerned the default mode is a structural no-op rather
- * than a decision: no update path to one is reachable from it.
+ * STATUS AS OF THE RELEASE B CUTOVER (v1.16.0): `User` and `UserLottery` are
+ * frozen and nothing in the bot reads or writes them any more. The bot's single
+ * writer is `ChannelUser`, the panel reads `ChannelUser`, and there is no sync
+ * between the two systems. Every statement below about "the running bot" having
+ * been on `User` describes the release that shipped before this one; read them
+ * as history, not as the current shape.
  *
- * `--sync` is the only converging mode, a human has to ask for it by name, and
- * it is a migration step rather than a deploy step — run it by hand, as late as
- * you like before the cutover, to pull drift back from `User`. After the
- * cutover it is the dangerous direction, not the safe one.
+ * The default mode is insert-only, and now that means insert-only everywhere: a
+ * `ChannelUser` row that already exists is never written, and an existing
+ * `Viewer` is never renamed. That is why the script can stay in `deploy.yml` —
+ * after the cutover a deploy-time run finds every row already present, inserts
+ * none of them, changes no balance and reverts no nickname. Where the balances
+ * are concerned the default mode is a structural no-op rather than a decision:
+ * no update path to one is reachable from it.
+ *
+ * The one write it can still make is a `Channel` row, when none matches the
+ * login, which keeps the login resolvable. That goes away with the legacy
+ * tables, which is to say with this script.
+ *
+ * ── `--sync` IS DESTRUCTIVE NOW. DO NOT RUN IT. ────────────────────────────────────
+ *
+ * There is exactly one safe moment left for it: immediately after the new bot
+ * container is up and before acceptance testing, as the manual run in the
+ * release checklist. Until then `User` still holds the last values the old bot
+ * wrote, so a single `--sync` reconciles the drift the old bot accumulated
+ * during the deploy window and leaves `ChannelUser` holding the live balances.
+ *
+ * Once that run has happened, or once the bot has been running long enough that
+ * chat has moved `ChannelUser` on, `User` is a stale snapshot of the past.
+ * `--sync` upserts all 14 copied fields over every row it builds, so it will
+ * overwrite the live balance with that snapshot — a week of earnings, reverted,
+ * silently. The `sum(coins)` check at the end of the branch reports a drop
+ * AFTER the rows are committed; it is a signal, never a guard, and a drop is
+ * exactly the shape of the damage. Treat it as one-way: the flag exists because
+ * the cutover needs one manual run, and nothing needs it twice.
+ *
+ * `--sync` is also the only path that still writes `Viewer.username`, and that
+ * is the other half of why it has to happen: see the `upsert` in `backfill()`.
  *
  * The count/sum report is the whole verification story, because there is no
  * other automated check on this script. Read it as `count(User)` and
@@ -35,13 +58,12 @@
  * cannot agree, and the gap grows with every chat message in between. Treat the two `after`
  * numbers as something to read, not something that proves anything.
  *
- * Do NOT compare the `after` report's own `User` side against `ChannelUser`:
- * that read is fresh and the live bot is still writing `User` throughout, so on
- * an active stream the two legitimately differ — every chat message moves `xp`,
- * a spin moves `coins`, a new chatter adds a row — and the difference is
- * indistinguishable from a mapping bug. Nothing is lost either way: the default
- * mode never reconciles the two afterwards, which is correct — they are two
- * tables with two writers and they are meant to drift until the bot moves.
+ * Do NOT compare the `after` report's own `User` side against `ChannelUser`.
+ * After the cutover `User` is frozen, so the two are expected to differ by
+ * everything the bot has done since — every chat message moves `xp`, a spin
+ * moves `coins`, a new chatter adds a row. The default mode never reconciles the
+ * two afterwards, which is correct: `ChannelUser` is the balance and `User` is
+ * a dead copy kept only until the legacy tables are dropped.
  */
 // Kept for the DATABASE_URL contract. Note this reads `process.cwd()/.env`, which
 // is `apps/bot-runtime` - no `.env` there. What actually loads the repo-root
@@ -127,10 +149,32 @@ const backfill = async (): Promise<void> => {
 
   const viewerIdByTwitchId = new Map<string, string>();
   for (const row of buildViewerRows(users)) {
+    // WHY THE DEFAULT PATH DOES NOT WRITE `username`.
+    //
+    // `row.username` comes out of `User`, which the Release B cutover froze. A frozen
+    // snapshot is now the older of two values: `ensureViewer`
+    // (`src/modules/channel/channel-user.ts`) writes `Viewer.username` on a changed
+    // login, so the live name the bot maintains itself is current, and nothing moves
+    // `User` forward any more. Refreshing from it here would therefore revert every
+    // renamed viewer's display name on every deploy, for the whole stream, until that
+    // viewer typed again — visible in the chat widgets, the leaderboard, the lottery
+    // participants list and the panel's viewer list, for ~94 viewers at a time. This is
+    // the same reason `ChannelUser` is insert-only: a stale row is not a catch-up.
+    //
+    // `--sync` is the exception and has to keep the refresh, because that is the one
+    // run that has not happened yet: `Viewer.username` has not been refreshed since the
+    // Release A backfill, so for those viewers the frozen snapshot is the only name
+    // there is, and it is correct as of the moment the old bot stopped writing `User`.
+    //
+    // An empty `update` is not a write that happens to be empty — Prisma emits no
+    // UPDATE at all for it, resolving the conflict with reads alone and handing back
+    // the existing row untouched. Measured against `foxsphere_test`: with `update: {}`
+    // a second upsert of the same `twitchId` issues three SELECTs and no INSERT or
+    // UPDATE, and returns the original `username`.
     const viewer = await prisma.viewer.upsert({
       where: { twitchId: row.twitchId },
-      update: { username: row.username },
       create: row,
+      update: args.sync ? { username: row.username } : {},
     });
 
     viewerIdByTwitchId.set(row.twitchId, viewer.id);
@@ -141,11 +185,11 @@ const backfill = async (): Promise<void> => {
   const channelUserRows = buildChannelUserRows(users, lotteries, channel.id, viewerIdByTwitchId);
 
   if (args.sync) {
-    // The only mode that converges, and the one that destroys data once the
-    // cutover has happened: from that commit on, `User` is frozen and no longer
-    // fed, every row built above already exists in `ChannelUser`, and the
-    // default path below inserts none of them and cannot touch a live balance.
-    // That is why this branch has to be asked for by name.
+    // DESTRUCTIVE FROM THE RELEASE B CUTOVER ON — see the header. The one safe moment left
+    // for this branch is the single manual run immediately after the new bot container comes
+    // up, before acceptance testing; after that `User` is a stale snapshot and this upserts
+    // all 14 copied fields over live balances. No bot code reads `User` any more, so nothing
+    // will move it forward again and nothing will notice the roll-back.
     for (const row of channelUserRows) {
       // `channelId` and `viewerId` are the lookup key, not carried balance data;
       // everything left over is one of the 14 fields the mapper produced.
@@ -164,8 +208,9 @@ const backfill = async (): Promise<void> => {
 
     // A signal after the write, not a guard against it: the rows above are
     // already committed, so a drop is reported, never prevented. The real
-    // protection is the default mode having no overwrite path at all; this only
-    // makes a manual `--sync` loud when `User` had already fallen behind.
+    // protection was always that the default mode has no overwrite path at
+    // all; this only makes a manual `--sync` loud when `User` had already fallen
+    // behind — which, after the cutover, it always has.
     if (after.channelUserCoins < before.channelUserCoins) {
       throw new Error(
         `sum(coins) ChannelUser dropped from ${before.channelUserCoins} to ${after.channelUserCoins} during --sync`,

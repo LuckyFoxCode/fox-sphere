@@ -1,5 +1,6 @@
 import { Logger, prisma } from "@fox-sphere/backend-shared";
 import { globalEventBus } from "../../../../shared/services";
+import { resolveChannelContext } from "../../../channel";
 import { LOTTERY_MESSAGES } from "../../../lottery";
 import { ChatbotService } from "../../chatbot.service";
 import { COOLDOWNS } from "../../twitch.constants";
@@ -22,9 +23,14 @@ export class TicketsCommand implements TwitchCommand {
 
   async execute(ctx: CommandContext): Promise<void> {
     try {
-      const participants = await prisma.userLottery.findMany({
-        where: { hasTicket: true },
-        include: { user: true },
+      const { channelId } = await resolveChannelContext();
+
+      // Scoped to this channel, which the `UserLottery` query was not: it answered with every
+      // ticket holder on the deployment. `Viewer` supplies the names, since `username` is no
+      // longer a `ChannelUser` column.
+      const participants = await prisma.channelUser.findMany({
+        where: { channelId, hasTicket: true },
+        select: { viewer: { select: { twitchId: true, username: true } } },
       });
 
       if (participants.length === 0) {
@@ -36,8 +42,8 @@ export class TicketsCommand implements TwitchCommand {
       }
 
       const participantsData = participants.map((p) => ({
-        twitchId: p.user.twitchId,
-        username: p.user.username,
+        twitchId: p.viewer.twitchId,
+        username: p.viewer.username,
       }));
 
       if (participants.length >= 10) {
@@ -51,7 +57,7 @@ export class TicketsCommand implements TwitchCommand {
       }
 
       const usernames = participants
-        .map((p, idx) => `🔹 ${idx + 1}. @${p.user.username}`)
+        .map((p, idx) => `🔹 ${idx + 1}. @${p.viewer.username}`)
         .join(", ");
       const message = LOTTERY_MESSAGES.ALL_PARTICIPANTS(
         usernames,

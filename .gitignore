@@ -18,6 +18,10 @@ data/
 .env.development
 .env.production
 
+# Тестовая среда для apps/bot-runtime: реквизиты локальной foxsphere_test.
+# Шаблон живёт в .env.test, который никто не коммитит.
+.env.test
+
 .DS_Store
 Thumbs.db
 

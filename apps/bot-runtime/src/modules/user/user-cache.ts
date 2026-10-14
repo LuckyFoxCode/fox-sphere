@@ -1,5 +1,16 @@
 import { COOLDOWNS } from "./user.constants";
 
+/**
+ * Every entry is keyed by the channel the viewer was seen in as well as by their Twitch id.
+ *
+ * `channelId` is a required parameter of every method and the key is built in one private
+ * place, so a caller cannot reach a map without passing a channel first. A bare `twitchId` key
+ * is the same defect the cutover exists to remove, one level down: the process happens to serve
+ * one channel, so it would read correctly until the second one arrives and then hand one
+ * stream another stream's coins. See `resolveChannelContext` for why the id is stable.
+ */
+const cacheKey = (channelId: string, twitchId: string): string => `${channelId}:${twitchId}`;
+
 export class UserCache {
   private verifiedUsers = new Set<string>();
   private xpCooldowns = new Map<string, number>();
@@ -7,32 +18,40 @@ export class UserCache {
   private coins = new Map<string, { coins: number; createdAt: number }>();
   private heroes = new Map<string, { heroId: string; createdAt: number }>();
 
-  public isVerified(twitchId: string): boolean {
-    return this.verifiedUsers.has(twitchId);
+  public isVerified(channelId: string, twitchId: string): boolean {
+    return this.verifiedUsers.has(cacheKey(channelId, twitchId));
   }
 
-  public markVerified(twitchId: string): void {
-    this.verifiedUsers.add(twitchId);
+  public markVerified(channelId: string, twitchId: string): void {
+    this.verifiedUsers.add(cacheKey(channelId, twitchId));
   }
 
-  public getLastXpAt(twitchId: string): number {
-    return this.xpCooldowns.get(twitchId) || 0;
+  public getLastXpAt(channelId: string, twitchId: string): number {
+    return this.xpCooldowns.get(cacheKey(channelId, twitchId)) || 0;
   }
 
-  public setLastXpAt(twitchId: string, lastXpAt: number): void {
-    this.xpCooldowns.set(twitchId, lastXpAt);
+  public setLastXpAt(channelId: string, twitchId: string, lastXpAt: number): void {
+    this.xpCooldowns.set(cacheKey(channelId, twitchId), lastXpAt);
   }
 
-  public getLastLotteryXpAt(twitchId: string): number {
-    return this.lotteryCooldowns.get(twitchId) || 0;
+  public getLastLotteryXpAt(channelId: string, twitchId: string): number {
+    return this.lotteryCooldowns.get(cacheKey(channelId, twitchId)) || 0;
   }
 
-  public setLastLotteryXpAt(twitchId: string, lastLotteryXpAt: number): void {
-    this.lotteryCooldowns.set(twitchId, lastLotteryXpAt);
+  public setLastLotteryXpAt(
+    channelId: string,
+    twitchId: string,
+    lastLotteryXpAt: number,
+  ): void {
+    this.lotteryCooldowns.set(cacheKey(channelId, twitchId), lastLotteryXpAt);
   }
 
-  public getCoins(twitchId: string, now: number): number | undefined {
-    const cached = this.coins.get(twitchId);
+  public getCoins(
+    channelId: string,
+    twitchId: string,
+    now: number,
+  ): number | undefined {
+    const cached = this.coins.get(cacheKey(channelId, twitchId));
 
     if (cached && now - cached.createdAt < COOLDOWNS.COINS_CACHE_TTL) {
       return cached.coins;
@@ -41,16 +60,25 @@ export class UserCache {
     return undefined;
   }
 
-  public setCoins(twitchId: string, coins: number, now: number): void {
-    this.coins.set(twitchId, { coins, createdAt: now });
+  public setCoins(
+    channelId: string,
+    twitchId: string,
+    coins: number,
+    now: number,
+  ): void {
+    this.coins.set(cacheKey(channelId, twitchId), { coins, createdAt: now });
   }
 
-  public invalidateCoins(twitchId: string): void {
-    this.coins.delete(twitchId);
+  public invalidateCoins(channelId: string, twitchId: string): void {
+    this.coins.delete(cacheKey(channelId, twitchId));
   }
 
-  public getHero(twitchId: string, now: number): string | undefined {
-    const cached = this.heroes.get(twitchId);
+  public getHero(
+    channelId: string,
+    twitchId: string,
+    now: number,
+  ): string | undefined {
+    const cached = this.heroes.get(cacheKey(channelId, twitchId));
 
     if (cached && now - cached.createdAt < COOLDOWNS.HERO_CACHE_TTL) {
       return cached.heroId;
@@ -59,8 +87,13 @@ export class UserCache {
     return undefined;
   }
 
-  public setHero(twitchId: string, heroId: string, now: number): void {
-    this.heroes.set(twitchId, { heroId, createdAt: now });
+  public setHero(
+    channelId: string,
+    twitchId: string,
+    heroId: string,
+    now: number,
+  ): void {
+    this.heroes.set(cacheKey(channelId, twitchId), { heroId, createdAt: now });
   }
 
   /**
@@ -69,8 +102,8 @@ export class UserCache {
    * The TTL alone is not enough once a hero can be bought: a purchase has to be visible on
    * the next message, not 30 seconds later.
    */
-  public invalidateHero(twitchId: string): void {
-    this.heroes.delete(twitchId);
+  public invalidateHero(channelId: string, twitchId: string): void {
+    this.heroes.delete(cacheKey(channelId, twitchId));
   }
 
   /**

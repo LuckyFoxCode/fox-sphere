@@ -6,6 +6,13 @@ import type {
 } from "@fox-sphere/shared-schemas";
 
 /**
+ * Briefly read `User` instead, on branch `feat/release-b-channel-user-cutover`:
+ * the bot still wrote there, so this was the only table holding live balances.
+ * That branch moves the bot onto `ChannelUser`, and with the bot and the panel
+ * on one table this filter by `channelId` is the only correct read again.
+ */
+
+/**
  * `twitchId` and `username` live on `Viewer`, not on `ChannelUser`, so the two
  * identity columns come in through the relation and every balance column is
  * selected on the row itself. The same holds for the tiebreaker in `orderBy`

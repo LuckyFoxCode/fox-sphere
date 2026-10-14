@@ -10,6 +10,7 @@
     "dev": "tsx watch src/worker.ts",
     "dev:server": "tsx watch src/server.ts",
     "backfill:channels": "tsx scripts/backfill-channels.ts",
+    "test": "vitest run",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "worker:twitch": "tsx watch src/worker.ts"
@@ -51,6 +52,7 @@
     "eslint": "^10.4.0",
     "tsdown": "^0.22.1",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.59.3"
+    "typescript-eslint": "^8.59.3",
+    "vitest": "^4.1.10"
   }
 }
