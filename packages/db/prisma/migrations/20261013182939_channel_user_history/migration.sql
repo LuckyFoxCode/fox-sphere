@@ -50,9 +50,13 @@
   their foreign keys are gone - and those paths sit inside `prisma.$transaction`, so a spin, a
   watch-streak award or a channel-point redemption rolls back whole and no coins move; the
   failures reach the log and not the stream. Chat XP still accrues into `User` throughout,
-  because `addXpForMessage` writes no history row. The one path that is not transactional is
-  `FishingService.grantCatch`, which credits the coins and the `CoinHistory` row in two
-  separate awaits, so a catch landing in those seconds is paid with no ledger row behind it.
+  because `addXpForMessage` writes no history row. Three writes out here are also outside
+  a transaction, and only the first two can pay a viewer with no ledger row behind it:
+  `FishingService.grantCatch` credits the reward and files its history row in two
+  separate awaits - `addCoins` then `CoinHistory`, `addXp` then `XpHistory` - so a catch
+  landing in those seconds is paid with no ledger row. `HeroService.ensureUserHasHero`
+  inserts on its own, but nothing is credited with it, so a failure there costs the hero
+  assignment and nothing else.
   The window is exactly the `backfill:channels` step between lines 106 and 119: cut over
   outside a live stream.
 
@@ -76,11 +80,21 @@
   eleven fields from `User` (`coins`, `lvl`, `xp`, `lastXpAt`, `isMod`, `isFounder`,
   `isSubscriber`, `isPermanentVip`, `spinsCount`, `totalWin`, `totalLoss`) and three from
   `UserLottery` (`xpThisWeek`, `hasTicket`, `isLuckyVip`), the last three defaulting to
-  `NO_LOTTERY` when there is no lottery row. The two writes keep that script's modes as
-  well: `Viewer` is upserted on `twitchId` (create, or refresh `username`), and
-  `ChannelUser` is insert-only on `(channelId, viewerId)` - never updated. Updating an
-  existing one would roll a live balance backwards out of a `User` the old bot is still
-  writing, which is the one thing `selectMissingRows` exists to prevent.
+  `NO_LOTTERY` when there is no lottery row. `ChannelUser` keeps that script's
+  insert-only mode: it is inserted on `(channelId, viewerId)` and never updated.
+  Updating an existing one would roll a live balance backwards out of a `User` the old
+  bot is still writing, which is the one thing `selectMissingRows` exists to prevent.
+
+  `Viewer` deliberately does NOT keep it - the INSERT below says why, and it is the one
+  place this file and `backfill:channels` disagree. The script's deploy-time default
+  stopped refreshing `username` in the same commit that froze `User`, because
+  `ensureViewer` had already become the writer of the live name and refreshing from
+  `User` reverted every renamed viewer on every deploy; `--sync` is the only script mode
+  that still refreshes. This migration matches `--sync`, not the default, and is right
+  to: it runs at `deploy.yml` line 106 with the old container still writing `User`, so
+  at that moment `User` holds the newer name and cannot be behind. Parity with the
+  script is not the goal - copying the older name is the bug, and the fix for that was
+  to stop copying it out of a frozen table, not to freeze the other one.
 
   Scope is the `User`s that actually have rows in the four history tables. A `User` with no
   history needs no `ChannelUser`, and `backfill:channels` creates one for it on its next run.
@@ -182,8 +196,18 @@ ALTER TABLE "UserHero" ADD COLUMN "channelId" TEXT,
 ADD COLUMN "channelUserId" INTEGER;
 
 -- CreateMissingTargets
--- `Viewer` upsert by `twitchId`, as `backfill:channels` does: create when absent, refresh
--- `username` when present, because a stale nickname is safer than a frozen one.
+-- `Viewer` upsert by `twitchId`: create when absent, refresh `username` when present,
+-- because a stale nickname is safer than a frozen one.
+--
+-- The refresh is the one deliberate disagreement with `backfill:channels`, whose default
+-- mode - the one `deploy.yml` runs on every deploy - no longer refreshes `username` at
+-- all; only its `--sync` does. That default stopped because `User` froze at the Release
+-- B cutover while `ensureViewer` kept writing the live name, so refreshing from `User`
+-- reverted every renamed viewer on every deploy until they typed again. The refresh is
+-- still correct HERE, and only here: this statement runs at `deploy.yml` line 106 with
+-- the old container still writing `User`, so `User` is the newer of the two names at
+-- this moment. Do not align this with the script - what made the default unsafe was
+-- copying the older name, and at this point in the deploy `User` is not that one.
 --
 -- `id` is derived from `twitchId` rather than left to a random generator because `Viewer.id`
 -- has no database default - Prisma's `cuid()` is client-side - so this INSERT has to supply
