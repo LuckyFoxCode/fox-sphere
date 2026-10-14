@@ -22,9 +22,14 @@
   the failure by hand, and re-running then fails on indexes that already exist.
 
   With the explicit transaction a failure rolls the whole thing back and the database
-  matches the pre-migration schema again. It does not save the operator the
-  `prisma migrate resolve --rolled-back` that Prisma demands after ANY failed migration -
-  it saves them from having to repair the schema before that re-run can succeed.
+  matches the pre-migration schema again - up to COMMIT, which is the point. It does not
+  save the operator the `prisma migrate resolve --rolled-back` that Prisma demands after ANY
+  failed migration - it saves them from having to repair the schema before that re-run can
+  succeed. The crash between COMMIT and Prisma writing its journal is the other case, and it
+  takes the opposite remedy: the DDL is applied while `_prisma_migrations` holds a row with
+  `finished_at` NULL, so `prisma migrate resolve --applied 20261013182939_channel_user_history`
+  is correct and the `--rolled-back` named in the preflight message is not - re-running the
+  file by hand then fails on indexes that already exist.
 
   Atomicity is also what makes the deploy safe, and here the lock is what supplies it.
   `deploy.yml` runs `migrate:deploy` while the OLD bot container is still serving chat, and
@@ -38,6 +43,18 @@
     - So there is no instant at which the old bot can write a row the backfill misses, and
       no instant at which it can read a half-moved table. Without the transaction, a lock
       released statement by statement is not a cutover at all.
+
+  That is where the data risk ends and the deploy window begins. From COMMIT until
+  `deploy.yml` replaces the container at line 119, the old bot's every write to
+  `CoinHistory`, `XpHistory`, `WatchStreak` or `UserHero` fails - the `userId` columns and
+  their foreign keys are gone - and those paths sit inside `prisma.$transaction`, so a spin, a
+  watch-streak award or a channel-point redemption rolls back whole and no coins move; the
+  failures reach the log and not the stream. Chat XP still accrues into `User` throughout,
+  because `addXpForMessage` writes no history row. The one path that is not transactional is
+  `FishingService.grantCatch`, which credits the coins and the `CoinHistory` row in two
+  separate awaits, so a catch landing in those seconds is paid with no ledger row behind it.
+  The window is exactly the `backfill:channels` step between lines 106 and 119: cut over
+  outside a live stream.
 
   WHY THIS MIGRATION CREATES THE MISSING `Viewer` / `ChannelUser` ROWS
 
@@ -247,7 +264,12 @@ ON CONFLICT ("channelId", "viewerId") DO NOTHING;
 -- Backfill
 -- Through `twitchId`, never through the ids: `User.id` and `ChannelUser.id` are two
 -- unrelated integer sequences, so no amount of arithmetic relates them. `twitchId` is
--- the only key both tables share, and it is UNIQUE on both, so the join is 1:1.
+-- the only key both tables share, and it is UNIQUE on both, so `User` to `Viewer` is 1:1.
+-- The join this statement actually walks is not: `ChannelUser` is keyed `(channelId,
+-- viewerId)`, so a viewer holding a balance in two channels offers `UPDATE ... FROM` two
+-- candidate rows for one history row, and Postgres takes one of them without complaining.
+-- Unreachable with the single channel this release runs; wrong as a stated invariant,
+-- because it is the one table this release is about.
 UPDATE "CoinHistory" h SET "channelId" = c."id", "channelUserId" = cu."id" FROM "ChannelUser" cu JOIN "Viewer" v ON v."id" = cu."viewerId" JOIN "Channel" c ON c."id" = cu."channelId" JOIN "User" u ON u."twitchId" = v."twitchId" WHERE h."userId" = u."id";
 UPDATE "XpHistory" h SET "channelId" = c."id", "channelUserId" = cu."id" FROM "ChannelUser" cu JOIN "Viewer" v ON v."id" = cu."viewerId" JOIN "Channel" c ON c."id" = cu."channelId" JOIN "User" u ON u."twitchId" = v."twitchId" WHERE h."userId" = u."id";
 UPDATE "WatchStreak" h SET "channelId" = c."id", "channelUserId" = cu."id" FROM "ChannelUser" cu JOIN "Viewer" v ON v."id" = cu."viewerId" JOIN "Channel" c ON c."id" = cu."channelId" JOIN "User" u ON u."twitchId" = v."twitchId" WHERE h."userId" = u."id";

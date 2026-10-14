@@ -14,16 +14,17 @@
  * been on `User` describes the release that shipped before this one; read them
  * as history, not as the current shape.
  *
- * The default mode is insert-only: a `ChannelUser` row that already exists is
- * never written. That is why the script can stay in `deploy.yml` — after the
- * cutover a deploy-time run finds every row already present, inserts none of
- * them and changes no balance. It is not a total no-op, and deliberately so:
- * `Viewer.username` is still refreshed from the frozen `User` on every run, and
- * a `Channel` is still created when none matches the login. The first is a
- * nickname going stale, the second keeps the login resolvable — both go away
- * with the legacy tables. Where the balances are concerned the default mode is
- * a structural no-op rather than a decision: no update path to one is reachable
- * from it.
+ * The default mode is insert-only, and now that means insert-only everywhere: a
+ * `ChannelUser` row that already exists is never written, and an existing
+ * `Viewer` is never renamed. That is why the script can stay in `deploy.yml` —
+ * after the cutover a deploy-time run finds every row already present, inserts
+ * none of them, changes no balance and reverts no nickname. Where the balances
+ * are concerned the default mode is a structural no-op rather than a decision:
+ * no update path to one is reachable from it.
+ *
+ * The one write it can still make is a `Channel` row, when none matches the
+ * login, which keeps the login resolvable. That goes away with the legacy
+ * tables, which is to say with this script.
  *
  * ── `--sync` IS DESTRUCTIVE NOW. DO NOT RUN IT. ────────────────────────────────────
  *
@@ -41,6 +42,9 @@
  * AFTER the rows are committed; it is a signal, never a guard, and a drop is
  * exactly the shape of the damage. Treat it as one-way: the flag exists because
  * the cutover needs one manual run, and nothing needs it twice.
+ *
+ * `--sync` is also the only path that still writes `Viewer.username`, and that
+ * is the other half of why it has to happen: see the `upsert` in `backfill()`.
  *
  * The count/sum report is the whole verification story, because there is no
  * other automated check on this script. Read it as `count(User)` and
@@ -145,10 +149,32 @@ const backfill = async (): Promise<void> => {
 
   const viewerIdByTwitchId = new Map<string, string>();
   for (const row of buildViewerRows(users)) {
+    // WHY THE DEFAULT PATH DOES NOT WRITE `username`.
+    //
+    // `row.username` comes out of `User`, which the Release B cutover froze. A frozen
+    // snapshot is now the older of two values: `ensureViewer`
+    // (`src/modules/channel/channel-user.ts`) writes `Viewer.username` on a changed
+    // login, so the live name the bot maintains itself is current, and nothing moves
+    // `User` forward any more. Refreshing from it here would therefore revert every
+    // renamed viewer's display name on every deploy, for the whole stream, until that
+    // viewer typed again — visible in the chat widgets, the leaderboard, the lottery
+    // participants list and the panel's viewer list, for ~94 viewers at a time. This is
+    // the same reason `ChannelUser` is insert-only: a stale row is not a catch-up.
+    //
+    // `--sync` is the exception and has to keep the refresh, because that is the one
+    // run that has not happened yet: `Viewer.username` has not been refreshed since the
+    // Release A backfill, so for those viewers the frozen snapshot is the only name
+    // there is, and it is correct as of the moment the old bot stopped writing `User`.
+    //
+    // An empty `update` is not a write that happens to be empty — Prisma emits no
+    // UPDATE at all for it, resolving the conflict with reads alone and handing back
+    // the existing row untouched. Measured against `foxsphere_test`: with `update: {}`
+    // a second upsert of the same `twitchId` issues three SELECTs and no INSERT or
+    // UPDATE, and returns the original `username`.
     const viewer = await prisma.viewer.upsert({
       where: { twitchId: row.twitchId },
-      update: { username: row.username },
       create: row,
+      update: args.sync ? { username: row.username } : {},
     });
 
     viewerIdByTwitchId.set(row.twitchId, viewer.id);
