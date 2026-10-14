@@ -87,6 +87,34 @@ try {
 `packages/backend-shared/src/errors.ts`. The error middleware turns them into
 responses; nothing deeper in the stack should be choosing a status code.
 
+## The bot's `channelId` comes from `resolveChannelContext()`, never from a second lookup
+
+`apps/bot-runtime/src/modules/channel/channel-context.ts` resolves the `Channel` row that
+`TWITCH_CHANNEL_NAME` names with a single `findUnique`, caches `{ channelId, login }` in the
+module, and `bootstrap()` awaits it before any Twitch session is opened. Take `channelId`
+from there:
+
+```ts
+import { resolveChannelContext } from "../../channel";
+
+const { channelId } = await resolveChannelContext();
+```
+
+Three things follow, and they are the reason it is one function rather than an inline query
+at each of the call sites:
+
+- **Nothing invalidates the cache.** A `Channel` row edited mid-process is not seen until the
+  next restart. That is deliberate - the row is configuration and there is one channel - so
+  code that needs a fresher answer has to restart, not re-query.
+- **A missing row throws, it does not return `null`.** `bootstrap()` calls the resolver as its
+  first step precisely so a deployment with no `Channel` row fails there, with a message naming
+  `TWITCH_CHANNEL_NAME` and the script that creates the row, instead of from whichever query
+  happens to run first.
+- **Cache keys are `channelId`-scoped, not `twitchId`-scoped.** A key of `${channelId}:${twitchId}`
+  is correct whether or not there is one channel, and a bare `twitchId` key is correct only
+  while `TWITCH_CHANNEL_NAME` is the single source of truth - which is exactly the assumption
+  phase 1 step 6 removes. Write the scoped key now.
+
 ## Traps in the current schema
 
 - **`TwitchToken.obtainmentTimestamp` is `BigInt`.** `JSON.stringify` throws on a BigInt, so a raw `TwitchToken` cannot go through `res.json()` or `io.emit()`. Convert with `Number()` or `.toString()` at the boundary.

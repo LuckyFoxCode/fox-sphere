@@ -20,6 +20,7 @@ Vitest, in four members only:
 | `packages/backend-shared` | `src/__tests__/channel-backfill.spec.ts` | the pure `User` -> `Viewer` / `ChannelUser` row mapper - every copied balance and flag field, the three lottery fields, the no-lottery default, and the missing-viewer throw; plus `channelUserKey`, `selectMissingRows` (insert-only selection, including that one channel's existing rows never suppress another's), and `parseBackfillArgs` |
 | `apps/bot-runtime` | `src/__tests__/helpers/test-db.spec.ts` | `assertTestDatabase` in both directions - no database needed |
 | `apps/bot-runtime` | `src/__tests__/helpers/reset-db.spec.ts` | `resetDb` against the live `foxsphere_test` |
+| `apps/bot-runtime` | `src/modules/channel/__tests__/channel-context.spec.ts` | `resolveChannelContext` against the live `foxsphere_test` - resolves the row `TWITCH_CHANNEL_NAME` names, does not query again once resolved, does not cache a failed lookup, throws a message naming the variable and the script, and still reports the resolved channel under `NODE_ENV=production` |
 | `apps/overlay` | `src/utils/twitch/__tests__/parseTwitchEmotes.test.ts` | emote positions (code points, not UTF-16), urls, malformed emote maps |
 | `apps/overlay` | `src/constants/__tests__/rouletteSegments.test.ts` | segment catalog, rarity tiers, and tape strip constants |
 | `apps/overlay` | `src/utils/roulette/__tests__/tapeFill.test.ts` | tape strip fill algorithm - center winner, no adjacent duplicates, weights match backend |

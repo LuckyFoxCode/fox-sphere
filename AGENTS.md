@@ -193,6 +193,16 @@ Two consequences for code written today:
 - **Frontend** - Prettier with single quotes, semicolons, `printWidth` 100, `trailingComma: "all"`, `singleAttributePerLine: true`, and `prettier-plugin-tailwindcss` ordering class lists. Alias `@/*` maps to `./src/*`; always use it.
 - `const` arrow functions, not `function` declarations. Never `any`.
 - Every module folder carries a barrel `index.ts`. Import from the barrel, not a deep path.
+- **The bot holds exactly one channel in memory, for the life of the process.**
+  `resolveChannelContext()` in `apps/bot-runtime/src/modules/channel/channel-context.ts` is the
+  only place the `Channel` row named by `TWITCH_CHANNEL_NAME` is looked up: one `findUnique`,
+  the `{ channelId, login }` cached at module scope, and `bootstrap()` awaits it before any
+  Twitch session opens - so a deployment with no `Channel` row dies there, naming the variable
+  and the script that creates it, instead of from whichever query runs first. Nothing
+  invalidates the cache; a changed row needs a restart. Take `channelId` from there rather than
+  querying again, and scope any new cache key by it. It logs through `Logger.warn`, not
+  `Logger.info`, because `info` is silenced under `NODE_ENV=production` and the cutover's
+  acceptance check is read off production logs - do not "tidy" it back.
 - Vue SFCs are `<script setup lang="ts">` first, then `<template>`.
 
 ## Gotchas

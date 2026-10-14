@@ -22,6 +22,12 @@ async function main() {
   });
 
   // 2) Then boot the Twitch worker (chatbot + EventSub).
+  // The order above is the only difference from dev, and it is deliberate: the worker's
+  // events POST to this listener, so it has to exist first. Everything that must fail
+  // before the bot does anything lives inside `bootstrap()`, which resolves the `Channel`
+  // row as its first step - so a missing row reaches `main().catch` below and exits the
+  // process non-zero with the reason in the log, rather than leaving a half-booted worker
+  // connected to chat with nowhere to write a balance.
   await bootstrap();
 }
 
