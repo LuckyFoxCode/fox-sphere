@@ -1,4 +1,6 @@
 import { Logger, prisma } from "@fox-sphere/backend-shared";
+import type { ChannelUser } from "@fox-sphere/db";
+import { findChannelUser } from "../channel";
 import { isWatchStreakRewardLevel } from "./user.constants";
 
 type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
@@ -17,12 +19,15 @@ export class WatchStreakService {
     if (!isWatchStreakRewardLevel(streakValue)) return null;
 
     try {
-      const user = await prisma.user.findUnique({ where: { twitchId } });
-      if (!user) return null;
+      const channelUser = await findChannelUser(twitchId);
+      if (!channelUser) return null;
 
       const existing = await prisma.watchStreak.findUnique({
         where: {
-          userId_streakValue: { userId: user.id, streakValue },
+          channelUserId_streakValue: {
+            channelUserId: channelUser.id,
+            streakValue,
+          },
         },
       });
 
@@ -30,13 +35,7 @@ export class WatchStreakService {
         const halfXp = Math.floor((streakValue * 7) / 2);
         const halfCoins = Math.floor((streakValue * 100) / 2);
 
-        await this.awardRewards(
-          twitchId,
-          user.id,
-          halfXp,
-          halfCoins,
-          streakValue,
-        );
+        await this.awardRewards(channelUser, halfXp, halfCoins, streakValue);
 
         Logger.debug(
           "UserService",
@@ -51,12 +50,15 @@ export class WatchStreakService {
 
       await prisma.$transaction(async (tx) => {
         await tx.watchStreak.create({
-          data: { userId: user.id, streakValue },
+          data: {
+            channelId: channelUser.channelId,
+            channelUserId: channelUser.id,
+            streakValue,
+          },
         });
 
         await this.awardRewards(
-          twitchId,
-          user.id,
+          channelUser,
           xpAwarded,
           coinsAwarded,
           streakValue,
@@ -84,17 +86,22 @@ export class WatchStreakService {
     }
   }
 
+  /**
+   * Takes the balance row rather than a Twitch id, because every write below has to name the
+   * same `channelId` and `channelUserId` pair - and taking both off one row is what makes that
+   * impossible to get wrong. Passing `twitchId` separately is what this used to do, and it is
+   * how the history rows ended up keyed by a different identity than the coins they explain.
+   */
   private async awardRewards(
-    twitchId: string,
-    userId: number,
+    channelUser: ChannelUser,
     xpAwarded: number,
     coinsAwarded: number,
     streakValue: number,
     tx?: TransactionClient,
   ): Promise<void> {
     const run = async (t: TransactionClient) => {
-      await t.user.update({
-        where: { twitchId },
+      await t.channelUser.update({
+        where: { id: channelUser.id },
         data: {
           xp: { increment: xpAwarded },
           coins: { increment: coinsAwarded },
@@ -103,7 +110,8 @@ export class WatchStreakService {
 
       await t.xpHistory.create({
         data: {
-          userId,
+          channelId: channelUser.channelId,
+          channelUserId: channelUser.id,
           amount: xpAwarded,
           reason: "WATCH_STREAK",
           details: `Watch streak: ${streakValue} streams`,
@@ -112,7 +120,8 @@ export class WatchStreakService {
 
       await t.coinHistory.create({
         data: {
-          userId,
+          channelId: channelUser.channelId,
+          channelUserId: channelUser.id,
           amount: coinsAwarded,
           reason: "WATCH_STREAK",
           details: `Watch streak: ${streakValue} streams`,

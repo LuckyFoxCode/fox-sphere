@@ -6,38 +6,19 @@ import type {
 } from "@fox-sphere/shared-schemas";
 
 /**
- * WHY THIS READS `User` AND NOT `ChannelUser` — and why that is temporary.
- *
- * The channel-scoped tables exist (Release A) and this module originally read
- * `ChannelUser`, which is the direction multi-tenancy wants. But nothing in
- * apps/bot-runtime writes there yet: the bot writes `User`, and the only writer
- * of `ChannelUser` is the backfill script in insert-only mode, which never
- * touches an existing row. So reading `ChannelUser` here showed a snapshot that
- * stopped moving the moment it was taken — the panel's coins drifted further from
- * live chat by the minute, and the only fix was a manual `backfill:channels
- * --sync`, which is a converging write against production balances.
- *
- * `User` is the source of truth until Release B moves the bot, so this reads
- * `User`: the panel then shows what the bot wrote seconds ago, and no sync is
- * needed at any point. The response DTO is unchanged — `ChannelUser` inlined the
- * three lottery fields that live in `UserLottery` here, and the identity columns
- * come off `User` directly instead of through `viewer` — so the committed
- * OpenAPI document and the generated admin client are byte-identical either way.
- *
- * RELEASE B SWAPS THIS FILE BACK, not the DTO. When the bot moves to
- * `ChannelUser`, this `select` becomes the `ChannelUser` one and every filter
- * below regains its `channelId`. The panel needs no change at that point, and
- * until then this is not a mistake to be tidied up - it is the correct table for
- * this deployment.
- *
- * One consequence worth stating: with a single channel there is nothing to scope
- * by, so the queries below carry no channel filter at all. That is correct while
- * the deployment has one channel and would be wrong the moment it has two -
- * which is exactly why the swap above is scoped to Release B and not optional.
+ * Briefly read `User` instead, on branch `feat/release-b-channel-user-cutover`:
+ * the bot still wrote there, so this was the only table holding live balances.
+ * That branch moves the bot onto `ChannelUser`, and with the bot and the panel
+ * on one table this filter by `channelId` is the only correct read again.
  */
-const userSelect = {
-  twitchId: true,
-  username: true,
+
+/**
+ * `twitchId` and `username` live on `Viewer`, not on `ChannelUser`, so the two
+ * identity columns come in through the relation and every balance column is
+ * selected on the row itself. The same holds for the tiebreaker in `orderBy`
+ * below: `twitchId` is a `Viewer` column, so it sorts as `viewer.twitchId`.
+ */
+const channelUserSelect = {
   coins: true,
   lvl: true,
   xp: true,
@@ -49,26 +30,21 @@ const userSelect = {
   spinsCount: true,
   totalWin: true,
   totalLoss: true,
-  // The three lottery fields are the only ones `User` does not carry inline;
-  // `ChannelUser` has them as columns, `User` keeps them in a 1:1 table.
-  lotteryContext: { select: { xpThisWeek: true, hasTicket: true, isLuckyVip: true } },
+  xpThisWeek: true,
+  hasTicket: true,
+  isLuckyVip: true,
+  viewer: { select: { twitchId: true, username: true } },
 } as const;
 
 // A selected row, before flattening. Derived from the response type so that
-// adding a field to the response makes this file fail to compile until the
+// adding a field to `ChannelUser` makes this file fail to compile until the
 // `select` and the mapper below carry it too.
 type ChannelUserRow = Omit<
   ChannelUserResponse,
-  "twitchId" | "username" | "lastXpAt" | "xpThisWeek" | "hasTicket" | "isLuckyVip"
+  "twitchId" | "username" | "lastXpAt"
 > & {
-  twitchId: string;
-  username: string;
   lastXpAt: Date;
-  // Null for a viewer who never touched the lottery: `UserLottery` is an
-  // optional 1:1 relation, so the row simply does not exist yet. `ChannelUser`
-  // carries these three as columns with non-null defaults, which is what the
-  // mapper below falls back to.
-  lotteryContext: { xpThisWeek: number; hasTicket: boolean; isLuckyVip: boolean } | null;
+  viewer: { twitchId: string; username: string };
 };
 
 /**
@@ -77,8 +53,8 @@ type ChannelUserRow = Omit<
  * declares — the row never reaches `res.json` in its Prisma shape.
  */
 const toChannelUserResponse = (row: ChannelUserRow): ChannelUserResponse => ({
-  twitchId: row.twitchId,
-  username: row.username,
+  twitchId: row.viewer.twitchId,
+  username: row.viewer.username,
   coins: row.coins,
   lvl: row.lvl,
   xp: row.xp,
@@ -90,13 +66,9 @@ const toChannelUserResponse = (row: ChannelUserRow): ChannelUserResponse => ({
   spinsCount: row.spinsCount,
   totalWin: row.totalWin,
   totalLoss: row.totalLoss,
-  // The `??` defaults are the column defaults `ChannelUser` would have applied:
-  // xpThisWeek 0, hasTicket false, isLuckyVip false. Without them a viewer with
-  // no lottery row would serialise nulls into a response schema that says number
-  // and boolean, and the admin would render "null" in a balance column.
-  xpThisWeek: row.lotteryContext?.xpThisWeek ?? 0,
-  hasTicket: row.lotteryContext?.hasTicket ?? false,
-  isLuckyVip: row.lotteryContext?.isLuckyVip ?? false,
+  xpThisWeek: row.xpThisWeek,
+  hasTicket: row.hasTicket,
+  isLuckyVip: row.isLuckyVip,
 });
 
 const requireChannelByLogin = async (login: string) => {
@@ -116,18 +88,17 @@ export const listChannelUsers = async (
   page: number,
   perPage: number,
 ): Promise<PaginatedChannelUsers> => {
-  // Resolves the login and 404s an unknown channel, exactly as before - but the
-  // row set is no longer scoped by it. See the note on `userSelect`: with one
-  // channel there is nothing to scope by, and the bot writes `User` regardless.
-  await requireChannelByLogin(login);
+  const channel = await requireChannelByLogin(login);
+  const where = { channelId: channel.id };
 
   const [total, rows] = await prisma.$transaction([
-    prisma.user.count(),
-    prisma.user.findMany({
-      select: userSelect,
+    prisma.channelUser.count({ where }),
+    prisma.channelUser.findMany({
+      where,
+      select: channelUserSelect,
       // `twitchId` breaks ties so pagination is stable; without it a viewer
       // straddling a page boundary can appear on both pages or on neither.
-      orderBy: [{ xp: "desc" }, { twitchId: "asc" }],
+      orderBy: [{ xp: "desc" }, { viewer: { twitchId: "asc" } }],
       skip: (page - 1) * perPage,
       take: perPage,
     }),
@@ -145,17 +116,20 @@ export const getChannelLeaderboard = async (
   login: string,
   limit: number,
 ): Promise<ChannelLeaderboard> => {
-  await requireChannelByLogin(login);
+  const channel = await requireChannelByLogin(login);
+  const where = { channelId: channel.id };
 
   const [topCoins, topXp] = await prisma.$transaction([
-    prisma.user.findMany({
-      select: userSelect,
-      orderBy: [{ coins: "desc" }, { twitchId: "asc" }],
+    prisma.channelUser.findMany({
+      where,
+      select: channelUserSelect,
+      orderBy: [{ coins: "desc" }, { viewer: { twitchId: "asc" } }],
       take: limit,
     }),
-    prisma.user.findMany({
-      select: userSelect,
-      orderBy: [{ xp: "desc" }, { twitchId: "asc" }],
+    prisma.channelUser.findMany({
+      where,
+      select: channelUserSelect,
+      orderBy: [{ xp: "desc" }, { viewer: { twitchId: "asc" } }],
       take: limit,
     }),
   ]);
@@ -170,13 +144,11 @@ export const getChannelUser = async (
   login: string,
   twitchId: string,
 ): Promise<ChannelUserResponse> => {
-  await requireChannelByLogin(login);
+  const channel = await requireChannelByLogin(login);
 
-  // `twitchId` is `@unique` on `User`, so this is a findUnique rather than the
-  // findFirst the `ChannelUser` version needed behind its `viewer` filter.
-  const row = await prisma.user.findUnique({
-    where: { twitchId },
-    select: userSelect,
+  const row = await prisma.channelUser.findFirst({
+    where: { channelId: channel.id, viewer: { twitchId } },
+    select: channelUserSelect,
   });
 
   if (!row) throw new NotFoundError("Channel user not found");
