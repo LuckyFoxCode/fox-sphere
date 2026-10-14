@@ -30,11 +30,14 @@ Vitest, in four members only:
 | `apps/admin` | `src/views/__tests__/ChannelUsersView.test.ts` | viewers screen - list, leaderboard and viewer detail, with the route login and page state resolved before the hook call |
 
 `pnpm test` runs all of it (`pnpm -r test`); CI runs it in the gate. All of it is a pure
-function, a mounted component with the generated client stubbed, or - in exactly one file -
-a real connection to a throwaway Postgres. So:
+function, a mounted component with the generated client stubbed, or - in two files - a real
+connection to a throwaway Postgres. So:
 
 - "Tests pass" means those units and nothing else. Never let it stand for the bot working,
-  and never let the one database spec stand for "the bot writes what it should".
+  and never let a database spec stand for "the bot writes what it should". The two are not
+  the same kind of claim: `reset-db.spec.ts` covers the harness, and
+  `channel-context.spec.ts` covers the resolver - real bot code, but one function that reads
+  one row, with no Twitch and no chat behind it. Neither drives a feature.
 - The gate is still build + lint + type-check + these tests, in that order.
 - Do not add a test file to a member that has no `test` script - bring the wiring with it,
   or the file rots unrun. That is what happened to the `create-vue` scaffold test this
@@ -122,7 +125,7 @@ makes the deliberate override above possible.
 
 On CI there is no `.env.test` and no `.env`: the `gate` job's `env:` block supplies every
 key directly, and it is a **Postgres service plus a `prisma migrate deploy` step**, not a
-local file, that the one database-backed spec depends on. Its `DATABASE_URL` has to name
+local file, that the database-backed specs depend on. Its `DATABASE_URL` has to name
 `foxsphere_test` like any other - a `ci`-named database fails the guard, not the test.
 
 ### Four traps worth knowing
