@@ -160,9 +160,9 @@ is already on the row. Two lookups for one write is two chances to disagree.
 - **`User` and `UserLottery` are frozen.** No bot code reads or writes them after that same
   migration, so a `ChannelUser` balance and a `User` balance legitimately differ, and `User`
   is the wrong one. Do not "fix" a divergence by writing `User`, and do not add columns to
-  `User` — both are dropped in their own migration at the end of phase 1. The only code that
-  still reads them is `scripts/backfill-channels.ts` (insert-only on every deploy, destructive
-  behind `--sync`) and the migration that drops them.
+`User` — both are dropped in their own migration at the end of phase 1. The only code that
+still reads them is `scripts/backfill-channels.ts` (insert-only on every deploy, destructive
+behind `--sync`) and the future migration that drops them.
 
 ## `User` and `UserLottery` are frozen — and no bot code touches them
 

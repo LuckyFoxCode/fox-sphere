@@ -27,8 +27,8 @@ export class TicketCommand implements TwitchCommand {
       // Three columns on this channel's balance row, where they used to be a `UserLottery`
       // join reached through `User`. Read-only and `null`-tolerant on purpose: a viewer who has
       // not earned XP yet has no progress to report, and `?ticket` should say so rather than
-      // fail. `ensureUserExists` has already run for this message, so `null` means a viewer the
-      // backfill never copied.
+      // fail. `ensureUserExists` runs on this message before the command, so `null` means that
+      // call threw - not that the viewer has a zero balance.
       const channelUser = await findChannelUser(twitchId);
 
       const xp = channelUser?.xpThisWeek ?? 0;

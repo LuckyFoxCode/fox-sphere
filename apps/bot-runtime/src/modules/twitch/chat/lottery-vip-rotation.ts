@@ -154,9 +154,11 @@ export class LotteryVipRotation {
 
     for (const oldWinner of oldWinners) {
       try {
-        // `isPermanentVip` is a `ChannelUser` column now; the `User` row this used to read is
-        // frozen and absent for anyone the backfill never copied, which would have read as
-        // "not a permanent VIP" and stripped a real one.
+        // `isPermanentVip` is a `ChannelUser` column now. The `User` row this
+        // used to read went stale the moment `setPermanentVip` started writing `ChannelUser`
+        // and nothing wrote `User` at all - so a permanent VIP granted after the cutover read
+        // `false` there and had their VIP stripped by the rotation. A viewer with no `User`
+        // row at all failed the same way, by reading as "not a permanent VIP".
         const currentChannelUser = await findChannelUser(oldWinner.twitchId);
 
         if (currentChannelUser?.isPermanentVip) {
