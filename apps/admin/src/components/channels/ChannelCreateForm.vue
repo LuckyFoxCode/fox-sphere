@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useCreateChannel, type createChannelResponse } from '@/api/generated/channels/channels';
 import { ChannelStatus, type CreateChannel } from '@/api/generated/schemas';
+import { CircleAlert } from '@lucide/vue';
 import { useForm } from '@tanstack/vue-form';
 import { ref } from 'vue';
 import { Button } from '../ui/button';
@@ -165,12 +166,17 @@ const extractMessage = (response: createChannelResponse): string => {
         >{{ isPending ? 'Adding...' : 'Add channel' }}</Button
       >
 
-      <p
+      <!-- Stays inline rather than becoming a toast: the reader's eyes are already on the form,
+           and a toast leaves the screen before a server message can be copied. role="alert" so a
+           screen reader announces it as soon as it appears. -->
+      <div
         v-if="serverError"
-        class="text-destructive text-sm"
+        role="alert"
+        class="border-destructive/50 bg-destructive/10 text-destructive flex items-start gap-2 rounded-md border px-3 py-2 text-sm"
       >
-        {{ serverError }}
-      </p>
+        <CircleAlert class="mt-0.5 size-4 shrink-0" />
+        <span>{{ serverError }}</span>
+      </div>
     </form>
   </div>
 </template>
