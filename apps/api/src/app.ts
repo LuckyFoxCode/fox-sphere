@@ -10,6 +10,7 @@ import {
   buildAuthorizeUrl,
   createStateValue,
   exchangeCodeForToken,
+  fetchDisplayName,
   sessionCookieOptions,
   signSessionCookie,
   stateCookieOptions,
@@ -110,9 +111,13 @@ app.get("/api/auth/twitch/callback", async (req, res) => {
     return;
   }
 
+  // After the allowlist, not before: it is one extra request, and an account that is not an admin
+  // has no business costing the panel a call to Helix. Null falls back to the login in the cookie.
+  const displayName = await fetchDisplayName(identity.userId);
+
   res.cookie(
     SESSION_COOKIE,
-    signSessionCookie(identity.userId, identity.login, identity.displayName),
+    signSessionCookie(identity.userId, identity.login, displayName ?? identity.login),
     sessionCookieOptions(),
   );
   res.redirect("/");
