@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { useDeleteChannel, useGetChannelById } from '@/api/generated/channels/channels';
 import { ChannelEditForm, statusVariant } from '@/components/channels';
+import { ChannelLeaderboards } from '@/components/channel-users';
 import { ConfirmDialog } from '@/components/dialogs/confirm-dialog';
 import { AsyncState } from '@/components/status';
 import { Badge } from '@/components/ui/badge';
+import { Breadcrumbs } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/composables/useToast';
 import { computed, ref } from 'vue';
@@ -57,12 +59,12 @@ const handleDelete = async () => {
 
 <template>
   <div class="flex flex-col gap-y-6">
-    <RouterLink
-      to="/channels"
-      class="text-muted-foreground hover:text-foreground text-sm"
-    >
-      ← Back to channels
-    </RouterLink>
+    <Breadcrumbs
+      :items="[
+        { label: 'Channels', to: '/channels' },
+        { label: channel?.login ?? channelLogin },
+      ]"
+    />
 
     <AsyncState
       :is-pending="isPending"
@@ -139,6 +141,10 @@ const handleDelete = async () => {
           {{ isEditing ? 'Cancel' : 'Edit channel' }}
         </Button>
       </div>
+
+      <!-- The channel's overview: who leads it. The full table is one click away, and a viewer
+           name in either list opens that viewer's own page. -->
+      <ChannelLeaderboards :login="channelLogin" />
     </template>
   </div>
 </template>

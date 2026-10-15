@@ -13,6 +13,14 @@ const query = vi.hoisted(() => ({
   refetch: vi.fn<() => void>(),
 }));
 
+// useToast calls vue-sonner's toast.success; asserting on this mock proves the
+// message reached the toast without depending on its format.
+const toastSuccess = vi.hoisted(() => vi.fn<(message: string) => void>());
+
+vi.mock('vue-sonner', () => ({
+  toast: { error: vi.fn<(message: string) => void>(), success: toastSuccess },
+}));
+
 vi.mock('@/api/generated/channels/channels', async () => {
   const { ref } = await import('vue');
 
@@ -51,6 +59,7 @@ beforeEach(() => {
   query.isPending = false;
   query.isError = false;
   query.refetch.mockClear();
+  toastSuccess.mockClear();
 });
 
 describe('ChannelsView', () => {
@@ -98,13 +107,70 @@ describe('ChannelsView', () => {
     expect(mountView().text()).toContain('Request failed (HTTP 502)');
   });
 
+  it('keeps the create form closed until the button is pressed', () => {
+    query.data = { status: 200, data: [channel] };
+
+    const wrapper = mountView();
+
+    expect(wrapper.findComponent(ChannelCreateForm).exists()).toBe(false);
+    expect(wrapper.text()).toContain('Add channel');
+    expect(wrapper.text()).not.toContain('Cancel');
+  });
+
+  // One rule rather than one rule plus an exception: an empty list does not open the form.
+  it('keeps the form closed on an empty list as well', () => {
+    query.data = { status: 200, data: [] };
+
+    expect(mountView().findComponent(ChannelCreateForm).exists()).toBe(false);
+  });
+
+  it('reveals the form on click and turns the button into a cancel', async () => {
+    query.data = { status: 200, data: [channel] };
+
+    const wrapper = mountView();
+    await wrapper.find('button[aria-controls="channel-create-form"]').trigger('click');
+
+    expect(wrapper.findComponent(ChannelCreateForm).exists()).toBe(true);
+    expect(wrapper.text()).toContain('Cancel');
+  });
+
+  it('closes the form again when the toggle is pressed twice', async () => {
+    query.data = { status: 200, data: [channel] };
+
+    const wrapper = mountView();
+    const toggle = wrapper.find('button[aria-controls="channel-create-form"]');
+
+    await toggle.trigger('click');
+    await toggle.trigger('click');
+
+    expect(wrapper.findComponent(ChannelCreateForm).exists()).toBe(false);
+  });
+
   it('refetches the list when the form reports a created channel', async () => {
     query.data = { status: 200, data: [channel] };
 
     const wrapper = mountView();
+    await wrapper.find('button[aria-controls="channel-create-form"]').trigger('click');
+
     const onCreated = wrapper.findComponent(ChannelCreateForm).props('onCreated');
     onCreated?.();
 
     expect(query.refetch).toHaveBeenCalledTimes(1);
+  });
+
+  // Without the toast the form just vanishes and the new channel sorts to the end of the list,
+  // so a successful create would be indistinguishable from a click that did nothing.
+  it('announces the new channel and closes the form once it is created', async () => {
+    query.data = { status: 200, data: [channel] };
+
+    const wrapper = mountView();
+    await wrapper.find('button[aria-controls="channel-create-form"]').trigger('click');
+
+    wrapper.findComponent(ChannelCreateForm).props('onCreated')?.();
+    // The ref flips synchronously; the v-if is re-evaluated on the next tick.
+    await wrapper.vm.$nextTick();
+
+    expect(toastSuccess).toHaveBeenCalledWith('Channel added');
+    expect(wrapper.findComponent(ChannelCreateForm).exists()).toBe(false);
   });
 });

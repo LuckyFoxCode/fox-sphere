@@ -18,10 +18,15 @@
           "login": {
             "type": "string",
             "example": "luckyfoxcode"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "LuckyFoxCode"
           }
         },
         "required": [
-          "login"
+          "login",
+          "displayName"
         ]
       },
       "ErrorResponse": {

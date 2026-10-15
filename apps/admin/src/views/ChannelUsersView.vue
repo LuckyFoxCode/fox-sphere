@@ -1,12 +1,8 @@
 <script setup lang="ts">
-import {
-  useGetChannelLeaderboard,
-  useGetChannelUser,
-  useListChannelUsers,
-} from '@/api/generated/channel-users/channel-users';
-import type { ChannelUser } from '@/api/generated/schemas';
-import { AsyncState } from '@/components/status';
-import { Badge } from '@/components/ui/badge';
+import { useListChannelUsers } from '@/api/generated/channel-users/channel-users';
+import { ChannelUserFlags } from '@/components/channel-users';
+import { AsyncState, failureFrom, notFoundFrom } from '@/components/status';
+import { Breadcrumbs } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -20,7 +16,7 @@ import { RouterLink, useRoute } from 'vue-router';
 
 const route = useRoute();
 
-const login = computed(() => String(route.params.login));
+const login = computed(() => String(route.params.login ?? ''));
 
 const perPageOptions = [10, 25, 50, 100];
 
@@ -31,53 +27,9 @@ const params = computed(() => ({ page: page.value, perPage: perPage.value }));
 
 const { data, isPending, isError } = useListChannelUsers(login, params);
 
-const {
-  data: leaderboard,
-  isPending: leaderboardPending,
-  isError: leaderboardError,
-} = useGetChannelLeaderboard(login, { limit: 10 });
-
-const selectedTwitchId = ref<string | null>(null);
-
-// The generated hook enables on any non-null twitchId, so the empty string would
-// fetch `/viewers/` for a viewer that was never picked. `enabled` is spread last
-// in the generated options object, which is what makes this override stick.
-const {
-  data: detail,
-  isPending: detailPending,
-  isError: detailError,
-} = useGetChannelUser(
-  login,
-  computed(() => selectedTwitchId.value ?? ''),
-  { query: { enabled: computed(() => selectedTwitchId.value !== null) } },
-);
-
-type StatusResponse = { status: number; data?: unknown };
-
-// One builder for all three queries: 200 renders, a 404 is its own branch, and
-// any status the spec never documented has to surface rather than render as empty.
-const failureFrom = (response: StatusResponse | undefined): string | null => {
-  if (!response || response.status === 200 || response.status === 404) return null;
-
-  const body = response.data as { message?: string } | undefined;
-
-  return `Request failed (HTTP ${response.status})${body?.message ? `: ${body.message}` : ''}`;
-};
-
-const notFoundFrom = (response: StatusResponse | undefined, message: string): string | undefined =>
-  response?.status === 404 ? message : undefined;
-
 const list = computed(() => (data.value?.status === 200 ? data.value.data : null));
 const failure = computed(() => failureFrom(data.value));
 const notFound = computed(() => notFoundFrom(data.value, 'Channel not found'));
-
-const boards = computed(() => (leaderboard.value?.status === 200 ? leaderboard.value.data : null));
-const leaderboardFailure = computed(() => failureFrom(leaderboard.value));
-const leaderboardNotFound = computed(() => notFoundFrom(leaderboard.value, 'Channel not found'));
-
-const detailViewer = computed(() => (detail.value?.status === 200 ? detail.value.data : null));
-const detailFailure = computed(() => failureFrom(detail.value));
-const detailNotFound = computed(() => notFoundFrom(detail.value, 'Channel user not found'));
 
 const total = computed(() => list.value?.total ?? 0);
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / perPage.value)));
@@ -97,74 +49,22 @@ const setPerPage = (value: unknown) => {
   page.value = 1;
 };
 
-const selectViewer = (viewer: ChannelUser) => {
-  selectedTwitchId.value = viewer.twitchId;
-};
-const clearSelection = () => {
-  selectedTwitchId.value = null;
-};
-
-const yesNo = (flag: boolean) => (flag ? 'yes' : 'no');
-
-type Flag = readonly [label: string, isSet: boolean];
-
-// Badges for what is set only, so a row reads as a list of exceptions.
-const flagsOf = (viewer: ChannelUser): string[] => {
-  const flags: readonly Flag[] = [
-    ['mod', viewer.isMod],
-    ['founder', viewer.isFounder],
-    ['sub', viewer.isSubscriber],
-    ['vip', viewer.isPermanentVip],
-    ['ticket', viewer.hasTicket],
-    ['lucky vip', viewer.isLuckyVip],
-  ];
-
-  return flags.filter(([, isSet]) => isSet).map(([label]) => label);
-};
-
 const formatDate = (iso: string): string => {
   const parsed = new Date(iso);
 
   return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleDateString();
 };
-
-const fieldsOf = (viewer: ChannelUser) => [
-  { label: 'Username', value: viewer.username },
-  { label: 'Twitch id', value: viewer.twitchId },
-  { label: 'Coins', value: viewer.coins },
-  { label: 'Level', value: viewer.lvl },
-  { label: 'XP', value: viewer.xp },
-  { label: 'XP this week', value: viewer.xpThisWeek },
-  { label: 'Spins', value: viewer.spinsCount },
-  { label: 'Wins', value: viewer.totalWin },
-  { label: 'Losses', value: viewer.totalLoss },
-  { label: 'Last xp', value: formatDate(viewer.lastXpAt) },
-  { label: 'Mod', value: yesNo(viewer.isMod) },
-  { label: 'Founder', value: yesNo(viewer.isFounder) },
-  { label: 'Subscriber', value: yesNo(viewer.isSubscriber) },
-  { label: 'Permanent vip', value: yesNo(viewer.isPermanentVip) },
-  { label: 'Ticket', value: yesNo(viewer.hasTicket) },
-  { label: 'Lucky vip', value: yesNo(viewer.isLuckyVip) },
-];
-
-const leaderboards = computed(() => {
-  if (!boards.value) return [];
-
-  return [
-    { title: 'Top coins', metric: 'coins', entries: boards.value.topCoins },
-    { title: 'Top xp', metric: 'xp', entries: boards.value.topXp },
-  ] as const;
-});
 </script>
 
 <template>
   <div class="flex flex-col gap-y-6">
-    <RouterLink
-      to="/channels"
-      class="text-muted-foreground hover:text-foreground text-sm"
-    >
-      ← Back to channels
-    </RouterLink>
+    <Breadcrumbs
+      :items="[
+        { label: 'Channels', to: '/channels' },
+        { label: login, to: `/channels/${login}` },
+        { label: 'Viewers' },
+      ]"
+    />
 
     <div>
       <h1 class="text-xl font-semibold">Viewers of {{ login }}</h1>
@@ -173,44 +73,6 @@ const leaderboards = computed(() => {
         snapshot — chat still moves the legacy balances until the bot reads these tables itself.
       </p>
     </div>
-
-    <section class="flex flex-col gap-y-3">
-      <AsyncState
-        :is-pending="leaderboardPending"
-        :is-error="leaderboardError"
-        :failure="leaderboardFailure"
-        :not-found="leaderboardNotFound"
-      />
-
-      <div class="grid gap-4 sm:grid-cols-2">
-        <div
-          v-for="board in leaderboards"
-          :key="board.title"
-          class="bg-card rounded-xl border p-4"
-        >
-          <h2 class="mb-3 font-medium">{{ board.title }}</h2>
-          <p
-            v-if="board.entries.length === 0"
-            class="text-muted-foreground text-sm"
-          >
-            No viewers yet
-          </p>
-          <ol
-            v-else
-            class="flex flex-col gap-y-1 text-sm"
-          >
-            <li
-              v-for="(entry, index) in board.entries"
-              :key="entry.twitchId"
-              class="flex justify-between gap-4"
-            >
-              <span class="text-muted-foreground">{{ index + 1 }}. {{ entry.username }}</span>
-              <span>{{ entry[board.metric] }}</span>
-            </li>
-          </ol>
-        </div>
-      </div>
-    </section>
 
     <section class="flex flex-col gap-y-3">
       <AsyncState
@@ -251,13 +113,15 @@ const leaderboards = computed(() => {
                   class="border-border hover:bg-accent/50 border-b transition-colors"
                 >
                   <td class="px-3 py-2">
-                    <button
-                      type="button"
+                    <!-- A real link, not a click handler. This used to set a local ref and
+                         render a panel further down the page, which changed neither the address
+                         nor the history, so it read as a click that did nothing. -->
+                    <RouterLink
+                      :to="`/channels/${login}/viewers/${viewer.twitchId}`"
                       class="hover:underline"
-                      @click="() => selectViewer(viewer)"
                     >
                       {{ viewer.username }}
-                    </button>
+                    </RouterLink>
                     <div class="text-muted-foreground text-xs">{{ viewer.twitchId }}</div>
                   </td>
                   <td class="px-3 py-2">{{ viewer.coins }}</td>
@@ -267,13 +131,7 @@ const leaderboards = computed(() => {
                   <td class="px-3 py-2">{{ viewer.spinsCount }}</td>
                   <td class="px-3 py-2">{{ viewer.totalWin }} / {{ viewer.totalLoss }}</td>
                   <td class="px-3 py-2">
-                    <Badge
-                      v-for="flag in flagsOf(viewer)"
-                      :key="flag"
-                      variant="secondary"
-                    >
-                      {{ flag }}
-                    </Badge>
+                    <ChannelUserFlags :viewer="viewer" />
                   </td>
                   <td class="px-3 py-2">{{ formatDate(viewer.lastXpAt) }}</td>
                 </tr>
@@ -328,44 +186,6 @@ const leaderboards = computed(() => {
           </div>
         </template>
       </template>
-    </section>
-
-    <section
-      v-if="selectedTwitchId"
-      class="bg-card rounded-xl border p-4"
-    >
-      <div class="mb-3 flex items-center justify-between gap-x-4">
-        <h2 class="font-medium">Viewer detail</h2>
-        <Button
-          variant="ghost"
-          size="sm"
-          class="cursor-pointer"
-          @click="clearSelection"
-        >
-          Close
-        </Button>
-      </div>
-
-      <AsyncState
-        :is-pending="detailPending"
-        :is-error="detailError"
-        :failure="detailFailure"
-        :not-found="detailNotFound"
-      />
-
-      <dl
-        v-if="detailViewer"
-        class="grid gap-x-8 gap-y-2 sm:grid-cols-2"
-      >
-        <div
-          v-for="field in fieldsOf(detailViewer)"
-          :key="field.label"
-          class="flex justify-between gap-4"
-        >
-          <dt class="text-muted-foreground">{{ field.label }}</dt>
-          <dd>{{ field.value }}</dd>
-        </div>
-      </dl>
     </section>
   </div>
 </template>

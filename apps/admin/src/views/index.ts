@@ -1,4 +1,5 @@
 export { default as ChannelsView } from './ChannelsView.vue';
 export { default as ChannelView } from './ChannelView.vue';
+export { default as ChannelUserDetailView } from './ChannelUserDetailView.vue';
 export { default as ChannelUsersView } from './ChannelUsersView.vue';
 export { default as HomeView } from './HomeView.vue';

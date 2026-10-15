@@ -2,7 +2,7 @@ import { AppError, config, UnauthorizedError } from "@fox-sphere/backend-shared"
 import type { NextFunction, Request, Response } from "express";
 import { SESSION_COOKIE, verifySessionCookie } from "../auth";
 
-export type SessionUser = { id: string; login: string };
+export type SessionUser = { id: string; login: string; displayName?: string };
 
 /**
  * Rejects any request without a valid admin session cookie.
@@ -31,7 +31,11 @@ export const requireSession = (
     throw new UnauthorizedError("No valid admin session");
   }
 
-  res.locals.sessionUser = { id: payload.sub, login: payload.login } satisfies SessionUser;
+  res.locals.sessionUser = {
+    id: payload.sub,
+    login: payload.login,
+    displayName: payload.displayName,
+  } satisfies SessionUser;
   next();
 };
 

@@ -27,9 +27,18 @@ export const useSessionQuery = () => {
     ...query,
     // No fallback to a hardcoded name: a header that says "LuckyFoxCode" while a different
     // account is signed in is a lie, and an empty header is merely unhelpful.
+    //
+    // The Twitch display name rather than the login: the login is the handle Twitch assigns
+    // ("luckyfoxcode"), while the display name is what the person calls themselves
+    // ("LuckyFoxCode"). The API already falls back to the login when there is no display name,
+    // so this reads one field instead of deciding between two here.
     login: computed(() => {
       const response = query.data.value;
       return response?.status === 200 ? response.data.login : '';
+    }),
+    displayName: computed(() => {
+      const response = query.data.value;
+      return response?.status === 200 ? response.data.displayName : '';
     }),
     sessionState: computed<SessionState>(() => {
       // A 5xx arrives as an ordinary tagged response, while an unreachable `apps/api` rejects

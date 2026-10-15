@@ -2,6 +2,7 @@
 import { LogIn, LogOut } from '@lucide/vue';
 import { useMutation, useQueryClient } from '@tanstack/vue-query';
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { getGetSessionMeQueryKey } from '@/api/generated/auth/auth';
 import type { SessionState } from '@/composables/useSession';
 import { SidebarMenuButton } from '@/components/ui/sidebar';
@@ -10,13 +11,22 @@ import { login, logout } from '@/lib/session';
 const { state } = defineProps<{ state: SessionState }>();
 
 const queryClient = useQueryClient();
+const router = useRouter();
 
 const { mutate, isPending } = useMutation({
   mutationFn: () => logout(),
   // The session query decided which of the two buttons to render, and it was answered while
   // the cookie still existed. Without this refetch the panel keeps claiming a session the
   // server has already thrown away, and the button stays "Logout" forever.
-  onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetSessionMeQueryKey() }),
+  //
+  // The redirect is what makes signing out feel like signing out. Refetching alone only swaps
+  // the footer button and the header name to Guest - you stay exactly where you were, on a
+  // page whose every query now answers 401, which reads as a broken panel rather than a
+  // signed-out one. Home is where nothing depends on a session.
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: getGetSessionMeQueryKey() });
+    void router.push('/');
+  },
 });
 
 // Only the two states we can act on get a control. While the answer is unknown - still in
