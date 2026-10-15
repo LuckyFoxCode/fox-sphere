@@ -1,6 +1,7 @@
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query';
 import { flushPromises, mount, type GlobalMountOptions } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createMemoryHistory, createRouter } from 'vue-router';
 import { getGetSessionMeQueryKey } from '@/api/generated/auth/auth';
 
 vi.mock('@/lib/session', () => ({
@@ -19,13 +20,22 @@ const { login } = await import('@/lib/session');
 const mountWith = (state: 'loading' | 'admin' | 'guest' | 'error') => {
   const queryClient = new QueryClient();
   const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
+  // Started on a different route so a redirect home is observable rather than a no-op.
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/', component: { template: '<div>home</div>' } },
+      { path: '/channels', component: { template: '<div>channels</div>' } },
+    ],
+  });
+  void router.push('/channels');
 
   const global: GlobalMountOptions = {
     stubs: { SidebarMenuButton: { template: '<button><slot /></button>' } },
-    plugins: [[VueQueryPlugin, { queryClient }]],
+    plugins: [[VueQueryPlugin, { queryClient }], router],
   };
 
-  return { wrapper: mount(LogoutButton, { props: { state }, global }), invalidate };
+  return { wrapper: mount(LogoutButton, { props: { state }, global }), invalidate, router };
 };
 
 beforeEach(() => {
@@ -51,6 +61,29 @@ describe('LogoutButton', () => {
     await flushPromises();
 
     expect(invalidate).toHaveBeenCalledWith({ queryKey: getGetSessionMeQueryKey() });
+  });
+
+  // Refetching alone left you where you were, on a page whose every query now answers 401 -
+  // which reads as a broken panel rather than a signed-out one.
+  it('leaves the page you were on, so signing out feels like signing out', async () => {
+    const { wrapper, router } = mountWith('admin');
+
+    await wrapper.find('button').trigger('click');
+    await flushPromises();
+
+    expect(router.currentRoute.value.path).toBe('/');
+  });
+
+  // The redirect is not a substitute for the refetch: the header reads the session query, and
+  // without invalidation the name would stay whoever you were.
+  it('both redirects and refetches, rather than trading one for the other', async () => {
+    const { wrapper, invalidate, router } = mountWith('admin');
+
+    await wrapper.find('button').trigger('click');
+    await flushPromises();
+
+    expect(invalidate).toHaveBeenCalledTimes(1);
+    expect(router.currentRoute.value.path).toBe('/');
   });
 
   it('offers Login and starts the OAuth flow when nobody is signed in', async () => {
