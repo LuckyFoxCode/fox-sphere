@@ -3,7 +3,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/custom-ui/theme-toggle';
 import { useSessionQuery } from '@/composables/useSession';
 
-const { login, sessionState } = useSessionQuery();
+const { displayName, sessionState } = useSessionQuery();
 </script>
 
 <template>
@@ -11,10 +11,10 @@ const { login, sessionState } = useSessionQuery();
     <SidebarTrigger class="-ml-1" />
     <div class="flex-1" />
     <ThemeToggle />
-    <!-- `sessionState` rather than `login || 'Guest'`: while the answer is unknown the login is
-         an empty string, and `||` would flash "Guest" before swapping to the real name. -->
+    <!-- `sessionState` rather than `displayName || 'Guest'`: while the answer is unknown the name
+         is an empty string, and `||` would flash "Guest" before swapping to the real one. -->
     <span class="text-muted-foreground text-sm">{{
-      sessionState === 'guest' ? 'Guest' : login
+      sessionState === 'guest' ? 'Guest' : displayName
     }}</span>
   </header>
 </template>

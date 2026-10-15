@@ -110,7 +110,11 @@ app.get("/api/auth/twitch/callback", async (req, res) => {
     return;
   }
 
-  res.cookie(SESSION_COOKIE, signSessionCookie(identity.userId, identity.login), sessionCookieOptions());
+  res.cookie(
+    SESSION_COOKIE,
+    signSessionCookie(identity.userId, identity.login, identity.displayName),
+    sessionCookieOptions(),
+  );
   res.redirect("/");
 });
 

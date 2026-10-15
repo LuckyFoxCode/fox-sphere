@@ -68,8 +68,15 @@ export const exchangeCodeForToken = async (code: string): Promise<string> => {
  *
  * The alternative - handing the Twitch token to the browser and validating on every call - puts a
  * live credential in localStorage and makes the panel fail whenever Twitch is slow.
+ *
+ * `display_name` comes free from this same response: Twitch returns it beside `user_id` and
+ * `login`, so showing the person's chosen name in the panel costs no extra request and no second
+ * identity source. It is not part of the completeness check below, because Twitch defaults it to
+ * the login when the user never set one - a missing display name is not a broken identity.
  */
-export const validateToken = async (accessToken: string): Promise<{ userId: string; login: string }> => {
+export const validateToken = async (
+  accessToken: string,
+): Promise<{ userId: string; login: string; displayName: string }> => {
   const response = await fetch(VALIDATE_URL, {
     headers: { Authorization: `OAuth ${accessToken}` },
   });
@@ -78,10 +85,18 @@ export const validateToken = async (accessToken: string): Promise<{ userId: stri
     throw new AppError("Twitch could not validate the access token", 502);
   }
 
-  const body = (await response.json()) as { user_id?: string; login?: string };
+  const body = (await response.json()) as {
+    user_id?: string;
+    login?: string;
+    display_name?: string;
+  };
   if (!body.user_id || !body.login) {
     throw new AppError("Twitch returned an incomplete token identity", 502);
   }
 
-  return { userId: body.user_id, login: body.login };
+  return {
+    userId: body.user_id,
+    login: body.login,
+    displayName: body.display_name || body.login,
+  };
 };

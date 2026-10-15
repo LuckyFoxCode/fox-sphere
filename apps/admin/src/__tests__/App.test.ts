@@ -46,7 +46,13 @@ vi.mock('@/api/generated/auth/auth', async () => {
   return {
     getGetSessionMeQueryKey: () => ['api', 'auth', 'me'] as const,
     useGetSessionMe: () => ({
-      data: ref({ status: 200, data: { login: 'luckyfoxcode' } }),
+      data: ref({
+        status: 200,
+        // Both fields are real and different: `login` is the handle Twitch assigns,
+        // `displayName` is what the person chose. A test that set them equal would pass with
+        // the header reading either one.
+        data: { login: 'luckyfoxcode', displayName: 'LuckyFoxCode' },
+      }),
       isPending: ref(false),
       isError: ref(false),
       refetch: vi.fn<() => void>(),
@@ -112,5 +118,15 @@ describe('App', () => {
     await flushPromises();
 
     expect(wrapper.text()).toContain('Add channel');
+  });
+
+  // "luckyfoxcode" is the handle Twitch assigns; nobody calls themselves that. The header has to
+  // read the other field, and this only fails if it kept reading `login` - the two are different
+  // strings in the mock for exactly that reason.
+  it('shows the Twitch display name in the header, not the login', async () => {
+    const wrapper = await mountApp('/');
+
+    expect(wrapper.text()).toContain('LuckyFoxCode');
+    expect(wrapper.text()).not.toContain('luckyfoxcode');
   });
 });

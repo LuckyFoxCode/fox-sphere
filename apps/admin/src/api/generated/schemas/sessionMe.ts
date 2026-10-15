@@ -8,4 +8,5 @@
 
 export interface SessionMe {
   login: string;
+  displayName: string;
 }

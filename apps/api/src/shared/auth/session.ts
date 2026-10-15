@@ -6,7 +6,16 @@ export const STATE_COOKIE = "fx_oauth_state";
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const STATE_TTL_MS = 5 * 60 * 1000;
 
-export type SessionPayload = { sub: string; login: string; exp: number };
+// `displayName` is what the person calls themselves on Twitch ("LuckyFoxCode"), where `login` is
+// the handle Twitch assigns ("luckyfoxcode"). Optional because a session signed before this field
+// existed still verifies - the HMAC covers the payload, not the shape of it - and there is nothing
+// to migrate: the cookie is reissued on the next login.
+export type SessionPayload = {
+  sub: string;
+  login: string;
+  displayName?: string;
+  exp: number;
+};
 
 const encode = (value: string): string => Buffer.from(value, "utf8").toString("base64url");
 
@@ -40,12 +49,16 @@ export const createStateValue = (): string => randomBytes(32).toString("base64ur
 const sign = (payload: string, secret: string): string =>
   createHmac("sha256", secret).update(payload).digest("base64url");
 
-export const signSessionCookie = (userId: string, login: string): string => {
+export const signSessionCookie = (
+  userId: string,
+  login: string,
+  displayName?: string,
+): string => {
   const secret = config.adminSessionSecret;
   if (!secret) throw new Error("ADMIN_SESSION_SECRET is not set");
 
   const payload = encode(
-    JSON.stringify({ sub: userId, login, exp: Date.now() + SESSION_TTL_MS }),
+    JSON.stringify({ sub: userId, login, displayName, exp: Date.now() + SESSION_TTL_MS }),
   );
   return `${payload}.${sign(payload, secret)}`;
 };
