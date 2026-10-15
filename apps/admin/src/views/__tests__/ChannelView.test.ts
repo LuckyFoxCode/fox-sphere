@@ -49,6 +49,35 @@ vi.mock('vue-sonner', () => ({
   toast: { error: toastError, success: toastSuccess },
 }));
 
+// ChannelView now renders the leaderboards, so the hook it uses needs a mock. The router pulls in
+// the viewer views too, and an import of a name this factory does not provide throws at load.
+const leaderboard = vi.hoisted(() => ({
+  data: undefined as { status: number; data?: unknown } | undefined,
+  isPending: false,
+  isError: false,
+  logins: [] as unknown[],
+}));
+
+vi.mock('@/api/generated/channel-users/channel-users', async () => {
+  const { ref, toValue } = await import('vue');
+
+  const state = (source: { data: unknown; isPending: boolean; isError: boolean }) => ({
+    data: ref(source.data),
+    isPending: ref(source.isPending),
+    isError: ref(source.isError),
+  });
+
+  return {
+    useGetChannelLeaderboard: (login: unknown) => {
+      leaderboard.logins.push(toValue(login));
+
+      return state(leaderboard);
+    },
+    useListChannelUsers: () => state({ data: undefined, isPending: false, isError: false }),
+    useGetChannelUser: () => state({ data: undefined, isPending: false, isError: false }),
+  };
+});
+
 const ChannelView = (await import('../ChannelView.vue')).default;
 
 const channel = {
@@ -89,6 +118,10 @@ beforeEach(() => {
   query.deleteMutateAsync.mockClear();
   toastError.mockClear();
   toastSuccess.mockClear();
+  leaderboard.data = undefined;
+  leaderboard.isPending = false;
+  leaderboard.isError = false;
+  leaderboard.logins = [];
 });
 
 afterEach(() => {
@@ -169,6 +202,65 @@ describe('ChannelsView', () => {
     expect(text).toContain('LuckyFoxCode');
     expect(text).toContain('191983746');
     expect(text).not.toContain('Channel not found');
+  });
+
+  // The top lists moved here from the viewer table: this screen answers "how is this channel
+  // doing", that one answers "who is in it".
+  it('renders both leaderboards for this channel', async () => {
+    query.data = { status: 200, data: channel };
+    leaderboard.data = {
+      status: 200,
+      data: {
+        topCoins: [{ twitchId: '1', username: 'rich', coins: 900 }],
+        topXp: [{ twitchId: '2', username: 'levelled', xp: 800 }],
+      },
+    };
+
+    const text = (await mountView()).text();
+
+    expect(leaderboard.logins[0]).toBe('luckyfoxcode');
+    expect(text).toContain('Top coins');
+    expect(text).toContain('Top xp');
+    expect(text).toContain('rich');
+    expect(text).toContain('levelled');
+  });
+
+  // A name in a top list has to be a way in, not a dead end - this is the panel's only route to a
+  // viewer who is not on the first page of the table.
+  it('links a leaderboard entry to that viewer', async () => {
+    query.data = { status: 200, data: channel };
+    leaderboard.data = {
+      status: 200,
+      data: {
+        topCoins: [{ twitchId: '991', username: 'rich', coins: 900 }],
+        topXp: [{ twitchId: '992', username: 'levelled', xp: 800 }],
+      },
+    };
+
+    const wrapper = await mountView();
+    const hrefs = wrapper.findAll('ol a').map((link) => link.attributes('href'));
+
+    expect(hrefs).toContain('/channels/luckyfoxcode/viewers/991');
+    expect(hrefs).toContain('/channels/luckyfoxcode/viewers/992');
+  });
+
+  it('says so when the channel has no viewers to rank', async () => {
+    query.data = { status: 200, data: channel };
+    leaderboard.data = { status: 200, data: { topCoins: [], topXp: [] } };
+
+    expect((await mountView()).text()).toContain('No viewers yet');
+  });
+
+  it('shows the trail back to the channel list', async () => {
+    query.data = { status: 200, data: channel };
+
+    const wrapper = await mountView();
+    const link = wrapper.find('nav[aria-label="Breadcrumb"] a');
+
+    expect(link.attributes('href')).toBe('/channels');
+    // The channel you are on is not a link - it is where you already are.
+    expect(wrapper.find('nav[aria-label="Breadcrumb"] a[href="/channels/luckyfoxcode"]').exists())
+      .toBe(false);
   });
 
   // The viewers screen is the only path into the channel-scoped balances, so the
