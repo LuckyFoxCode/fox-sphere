@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { useListChannelUsers } from '@/api/generated/channel-users/channel-users';
-import type { ChannelUser } from '@/api/generated/schemas';
+import { ChannelUserFlags } from '@/components/channel-users';
 import { AsyncState, failureFrom, notFoundFrom } from '@/components/status';
-import { Badge } from '@/components/ui/badge';
 import { Breadcrumbs } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import {
@@ -48,22 +47,6 @@ const goNext = () => {
 const setPerPage = (value: unknown) => {
   perPage.value = Number(value);
   page.value = 1;
-};
-
-type Flag = readonly [label: string, isSet: boolean];
-
-// Badges for what is set only, so a row reads as a list of exceptions.
-const flagsOf = (viewer: ChannelUser): string[] => {
-  const flags: readonly Flag[] = [
-    ['mod', viewer.isMod],
-    ['founder', viewer.isFounder],
-    ['sub', viewer.isSubscriber],
-    ['vip', viewer.isPermanentVip],
-    ['ticket', viewer.hasTicket],
-    ['lucky vip', viewer.isLuckyVip],
-  ];
-
-  return flags.filter(([, isSet]) => isSet).map(([label]) => label);
 };
 
 const formatDate = (iso: string): string => {
@@ -148,13 +131,7 @@ const formatDate = (iso: string): string => {
                   <td class="px-3 py-2">{{ viewer.spinsCount }}</td>
                   <td class="px-3 py-2">{{ viewer.totalWin }} / {{ viewer.totalLoss }}</td>
                   <td class="px-3 py-2">
-                    <Badge
-                      v-for="flag in flagsOf(viewer)"
-                      :key="flag"
-                      variant="secondary"
-                    >
-                      {{ flag }}
-                    </Badge>
+                    <ChannelUserFlags :viewer="viewer" />
                   </td>
                   <td class="px-3 py-2">{{ formatDate(viewer.lastXpAt) }}</td>
                 </tr>

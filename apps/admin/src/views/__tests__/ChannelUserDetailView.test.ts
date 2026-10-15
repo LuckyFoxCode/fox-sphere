@@ -138,11 +138,53 @@ describe('ChannelUserDetailView', () => {
     const text = (await mountView()).text();
 
     expect(text).toContain('luckyfoxcode');
-    expect(text).toContain('4200');
+    // Grouped, so four digits read as a quantity at a glance rather than a column of digits.
+    expect(text).toContain('4,200');
     expect(text).toContain('910');
-    expect(text).toContain('XP this week');
-    expect(text).toContain('Wins');
-    expect(text).toContain('Losses');
+    expect(text).toContain('Progress');
+    expect(text).toContain('Economy');
+    expect(text).toContain('Status');
+  });
+
+  it('shows the win rate as a share of the spins played', async () => {
+    query.detail.data = { status: 200, data: viewer({ totalWin: 300, totalLoss: 100 }) };
+
+    expect((await mountView()).text()).toContain('75%');
+  });
+
+  // A viewer who has never spun has no rate at all, and "NaN%" would read as a bug.
+  it('leaves the win rate blank when nothing has been played', async () => {
+    query.detail.data = { status: 200, data: viewer({ totalWin: 0, totalLoss: 0 }) };
+
+    const text = (await mountView()).text();
+
+    expect(text).toContain('Win rate');
+    expect(text).not.toContain('NaN');
+  });
+
+  // The whole reason the six yes/no rows are gone: a viewer with a permanent VIP and one with
+  // nothing produced the same six "no" strings before.
+  it('shows only the flags that are set, and no yes/no rows', async () => {
+    query.detail.data = {
+      status: 200,
+      data: viewer({
+        isPermanentVip: true,
+        hasTicket: true,
+        isMod: false,
+        isFounder: false,
+        isSubscriber: false,
+        isLuckyVip: false,
+      }),
+    };
+
+    const text = (await mountView()).text();
+
+    expect(text).toContain('vip');
+    expect(text).toContain('ticket');
+    expect(text).not.toContain('mod');
+    expect(text).not.toContain('founder');
+    expect(text).not.toContain('lucky vip');
+    expect(text).not.toContain('Subscriber');
   });
 
   // The name replaces the id in the heading and the crumb once it is known, so the page says who
