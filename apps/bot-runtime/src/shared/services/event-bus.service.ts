@@ -25,12 +25,15 @@ import {
   UserCreatePayload,
   UserLevelUpPayload,
 } from "@fox-sphere/types";
+import type { FishCatch } from "@fox-sphere/backend-shared";
 import EventEmitter from "events";
 
 export interface AppEvents {
   "chat:message": TwitchChatMessagePayload;
-  "fish:bite": { channel: string; username: string };
-  "fish:expired": { channel: string; username: string };
+  // Исход несёт сама поклёвка: команды `!тянуть` больше нет, и `catch` — единственное, что
+  // слушатель может превратить в строку чата. `empty` означает «сорвалась», а не «зритель
+  // не успел»: окно ответа удалено вместе с командой.
+  "fish:bite": { channel: string; username: string; catch: FishCatch };
   "hero:assigned": HeroAssignedPayload;
   "lottery:started": LotteryStartedPayload;
   "lottery:participants": LotteryParticipantsPayload;

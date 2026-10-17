@@ -16,21 +16,12 @@ interface FishPendingState {
   twitchId: string;
   username: string;
   channel: string;
-  bitten: boolean;
-  expired: boolean;
   timers: NodeJS.Timeout[];
 }
 
-export type FishingPullResult =
-  | { type: "caught"; catch: FishCatch }
-  | { type: "waiting" }
-  | { type: "expired" }
-  | { type: "no-cast" };
-
 export class FishingService {
-  // Pending-состояние в памяти: twitchId -> активная/истёкшая попытка. Рестарт
-  // бота теряет незавершённые рыбалки — осознанно (спека: состояние дешёвое, TTL
-  // короткий, срыв после рестарта безвреден). В БД не выносим.
+  // Pending-состояние в памяти: twitchId -> открытый заброс. Рестарт бота теряет незавершённые
+  // рыбалки — осознанно (спека: состояние дешёвое, TTL короткий). В БД не выносим.
   private pending = new Map<string, FishPendingState>();
 
   constructor(private userService: UserService) {}
@@ -41,7 +32,7 @@ export class FishingService {
     channel: string;
   }): "accepted" | "already" {
     const existing = this.pending.get(input.twitchId);
-    if (existing && !existing.expired) {
+    if (existing) {
       return "already";
     }
 
@@ -51,8 +42,6 @@ export class FishingService {
       twitchId: input.twitchId,
       username: input.username,
       channel: input.channel,
-      bitten: false,
-      expired: false,
       timers: [],
     };
     this.pending.set(input.twitchId, state);
@@ -67,7 +56,11 @@ export class FishingService {
 
     state.timers.push(
       setTimeout(() => {
-        this.onBite(state);
+        // Никто не ждёт этот промис: поклёвка приходит по таймеру, а не из команды. Ошибку
+        // выплаты логируем здесь, иначе она ушла бы в unhandledRejection.
+        this.onBite(state).catch((error: unknown) => {
+          Logger.error("FishingService", `Catch failed for @${state.username}`, error);
+        });
       }, biteDelayMs).unref(),
     );
 
@@ -79,60 +72,28 @@ export class FishingService {
     return "accepted";
   }
 
-  public async pull(twitchId: string): Promise<FishingPullResult> {
-    const state = this.pending.get(twitchId);
-    if (!state) return { type: "no-cast" };
-    if (state.expired) return { type: "expired" };
-    if (!state.bitten) return { type: "waiting" };
-
-    this.clearPending(twitchId);
+  // Поклёвка сама решает исход. Раньше бот ждал `!тянуть` и 60с окна ответа, и рыба срывалась,
+  // если зритель отвлёкся: улов терялся вместе с минутным кулдауном, и «ничего не вышло» было
+  // двумя разными причинами — пустым уловом и собственным промахом. Теперь промахнуться нельзя,
+  // и единственный источник «ничего» — это сам улов, который объявляется как «сорвалась».
+  private async onBite(state: FishPendingState): Promise<void> {
+    // Гард от устаревшего таймера: cast мог перезаписать запись или clearPending
+    // уже снять её — тогда старая попытка не должна ничего эмитить.
+    const current = this.pending.get(state.twitchId);
+    if (current !== state) return;
 
     const caught = resolveCatch();
     if (caught.catchType !== "empty") {
-      await this.grantCatch(twitchId, caught);
+      await this.grantCatch(state.twitchId, caught);
     }
 
-    return { type: "caught", catch: caught };
-  }
+    this.clearPending(state.twitchId);
 
-  private onBite(state: FishPendingState): void {
-    // Гард от устаревшего таймера: cast мог перезаписать запись или clearPending
-    // уже снять её — тогда старая попытка не должна эмитить поклёвку.
-    const current = this.pending.get(state.twitchId);
-    if (current !== state || state.bitten) return;
-
-    state.bitten = true;
-    state.timers.push(
-      setTimeout(() => {
-        this.onExpiry(state);
-      }, FISHING_CONFIG.RESPONSE_WINDOW_MS).unref(),
-    );
-
-    Logger.info(
-      "FishingService",
-      `Bite for @${state.username} — waiting for pull`,
-    );
+    Logger.info("FishingService", `Bite resolved for @${state.username} — ${caught.catchType}`);
     globalEventBus.emit("fish:bite", {
       channel: state.channel,
       username: state.username,
-    });
-  }
-
-  private onExpiry(state: FishPendingState): void {
-    const current = this.pending.get(state.twitchId);
-    if (current !== state || state.expired) return;
-
-    state.expired = true;
-    state.timers.push(
-      setTimeout(() => {
-        this.clearPending(state.twitchId);
-      }, FISHING_CONFIG.EXPIRED_RECALL_MS).unref(),
-    );
-
-    Logger.info("FishingService", `Catch expired for @${state.username}`);
-    globalEventBus.emit("fish:expired", {
-      channel: state.channel,
-      username: state.username,
+      catch: caught,
     });
   }
 

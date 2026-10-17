@@ -40,16 +40,27 @@ const formatDate = (iso: string): string => {
   return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleDateString();
 };
 
-// Wins as a share of spins, which is the one number here that answers "is this viewer winning".
-// A viewer who has never spun has no rate, and "NaN%" would say less than a dash.
-const winRate = computed(() => {
+// The stake one spin costs, mirroring ROULETTE_CONFIG.PRICE on the bot. It is written out rather
+// than imported because `admin` is the one workspace member with no `@fox-sphere/*` dependency, on
+// purpose: `backend-shared` reaches Prisma and must not end up in a browser bundle. The bot has
+// never changed this number, and a change to it would also invalidate every row spun before it.
+const ROULETTE_PRICE = 100;
+
+// Change in balance from the roulette: wagered minus won. This is the one number here that tells
+// two viewers apart — "Win rate" was totalWin / (totalWin + totalLoss) while totalLoss was wager
+// volume, so the fraction collapsed to RTP / (1 + RTP) and read the same for everyone.
+//
+// Wagered is `spinsCount × PRICE`, not `totalLoss`: the bot increments spinsCount in the same
+// transaction that decrements the balance by the price, so the two are the same quantity. Going
+// through totalLoss instead would be wrong in both directions — it overstates the loss of a row
+// spun since the loss became honest (max(0, price - prize) credits no win against a spin), and it
+// only reads correctly for a legacy row, whose totalLoss still is the wager volume.
+const net = computed(() => {
   const found = viewer.value;
 
-  if (!found) return null;
+  if (!found || found.spinsCount === 0) return null;
 
-  const played = found.totalWin + found.totalLoss;
-
-  return played === 0 ? null : `${Math.round((found.totalWin / played) * 100)}%`;
+  return formatNumber(found.totalWin - found.spinsCount * ROULETTE_PRICE);
 });
 
 type Field = readonly [label: string, value: string | number];
@@ -74,7 +85,7 @@ const economyFields = computed<Field[]>(() => {
         ['Coins', formatNumber(found.coins)],
         ['Spins', formatNumber(found.spinsCount)],
         ['Wins / losses', `${formatNumber(found.totalWin)} / ${formatNumber(found.totalLoss)}`],
-        ['Win rate', winRate.value ?? '—'],
+        ['Net', net.value ?? '—'],
       ]
     : [];
 });
