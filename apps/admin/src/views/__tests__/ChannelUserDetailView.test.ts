@@ -146,20 +146,60 @@ describe('ChannelUserDetailView', () => {
     expect(text).toContain('Status');
   });
 
-  it('shows the win rate as a share of the spins played', async () => {
-    query.detail.data = { status: 200, data: viewer({ totalWin: 300, totalLoss: 100 }) };
+  // The value is read off the row that owns the label, not off the whole page: `coins` renders
+  // "4,200" on the same screen, so a bare `toContain('200')` would pass on the wrong row.
+  const fieldValue = (wrapper: Awaited<ReturnType<typeof mountView>>, label: string) => {
+    const term = wrapper.findAll('dt').find((cell) => cell.text().trim() === label);
 
-    expect((await mountView()).text()).toContain('75%');
+    return term?.element.nextElementSibling?.textContent?.trim() ?? null;
+  };
+
+  // Win rate was totalWin / (totalWin + totalLoss) while totalLoss was wager volume, so the
+  // fraction collapsed to RTP / (1 + RTP) — the same constant for everyone who had ever spun.
+  // Net is wagered minus won, because that is the balance delta and it is what differs per viewer.
+  //
+  // The numbers are the real ones from the complaint that started this: 55 spins, 3 930 won,
+  // 5 500 recorded as loss. 55 × 100 = 5 500 wagered, so the net is exactly −1 570 — and it is
+  // read that way for a legacy row, whose totalLoss is still wager volume, as well as for a new
+  // one. Deriving it from `totalWin - totalLoss` would report −1 570 for that row by accident and
+  // a positive number for every row spun after the fix, which is the direction that lies.
+  it('shows the net of wins against the amount wagered', async () => {
+    query.detail.data = {
+      status: 200,
+      data: viewer({ spinsCount: 55, totalWin: 3_930, totalLoss: 5_500 }),
+    };
+
+    const wrapper = await mountView();
+    const text = wrapper.text();
+
+    expect(text).not.toContain('Win rate');
+    expect(fieldValue(wrapper, 'Net')).toBe('-1,570');
   });
 
-  // A viewer who has never spun has no rate at all, and "NaN%" would read as a bug.
-  it('leaves the win rate blank when nothing has been played', async () => {
-    query.detail.data = { status: 200, data: viewer({ totalWin: 0, totalLoss: 0 }) };
+  // A viewer who has never spun has no net at all, and "NaN" would read as a bug.
+  it('leaves the net blank when nothing has been played', async () => {
+    query.detail.data = {
+      status: 200,
+      data: viewer({ spinsCount: 0, totalWin: 0, totalLoss: 0 }),
+    };
 
-    const text = (await mountView()).text();
+    const wrapper = await mountView();
+    const text = wrapper.text();
 
-    expect(text).toContain('Win rate');
+    expect(text).toContain('Net');
+    expect(fieldValue(wrapper, 'Net')).toBe('—');
     expect(text).not.toContain('NaN');
+  });
+
+  // totalLoss no longer decides this number, so a row where it disagrees with the wagered amount
+  // must still read as the balance does. 20 spins wager 2 000 and won 1 000, so the viewer is down.
+  it('does not let the loss column decide the net', async () => {
+    query.detail.data = {
+      status: 200,
+      data: viewer({ spinsCount: 20, totalWin: 1_000, totalLoss: 0 }),
+    };
+
+    expect(fieldValue(await mountView(), 'Net')).toBe('-1,000');
   });
 
   // The whole reason the six yes/no rows are gone: a viewer with a permanent VIP and one with

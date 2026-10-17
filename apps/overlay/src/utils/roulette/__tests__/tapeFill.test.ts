@@ -5,16 +5,19 @@ import { buildTapeStrip } from '../tapeFill';
 
 const WINNER_IDS: readonly RouletteSegmentId[] = [
   'empty',
-  'coins30',
   'coins60',
+  'coins75',
   'coins100',
   'coins250',
+  'coins500',
+  'coins1000',
   'xp35',
+  'xp100',
   'jackpot',
 ];
 
 // Детерминированный LCG в [0,1). Постоянный random (например 0.5) всегда даёт
-// один и тот же id (0.5 попадает в кумулятивный диапазон coins30), из-за чего
+// один и тот же id (0.5 попадает в кумулятивный диапазон coins100), из-за чего
 // rejection sampling в drawSegment не может выйти из запрета и зависает. LCG
 // сохраняет детерминизм, но позволяет броскам меняться.
 const seededUniform = (seed: number): (() => number) => {
@@ -53,7 +56,7 @@ describe('buildTapeStrip', () => {
     const counts: Record<string, number> = {};
 
     for (let i = 0; i < 100_000; i++) {
-      const strip = buildTapeStrip('coins30');
+      const strip = buildTapeStrip('coins100');
       const first = strip[0]?.id;
       const firstRight = strip[11]?.id;
       if (first !== undefined) counts[first] = (counts[first] ?? 0) + 1;

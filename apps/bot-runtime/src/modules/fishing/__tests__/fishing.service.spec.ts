@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { config, JACKPOT_SEED, prisma } from "@fox-sphere/backend-shared";
+import { config, JACKPOT_SEED, Logger, prisma } from "@fox-sphere/backend-shared";
 import type { FishCatch } from "@fox-sphere/backend-shared";
+import { globalEventBus } from "../../../shared/services";
 import { resetDb } from "../../../__tests__/helpers/test-db";
 import { seedTestChannel, TEST_CHANNEL_ID } from "../../../__tests__/helpers/seed";
 import { HeroService } from "../../hero";
@@ -53,13 +54,45 @@ const seedViewer = async () => {
   });
 };
 
-/** Casts, waits out the bite delay, and pulls. The delay is random, so the wait is its maximum. */
+/**
+ * `vi.useFakeTimers()` replaces the global `setTimeout`, but a reference captured before it was
+ * installed still schedules on the real clock. That is the only way to let the bite callback's
+ * promise chain finish: it awaits Prisma round-trips, and `advanceTimersByTimeAsync` returns as
+ * soon as the timer callback is entered, not when its awaits resolve.
+ */
+const realSetTimeout = globalThis.setTimeout;
+
+/** Waits until `done` holds, giving the real clock at most ~200ms to get there. */
+const settle = async (done: () => boolean): Promise<void> => {
+  for (let i = 0; i < 200 && !done(); i += 1) {
+    await new Promise((resolve) => realSetTimeout(resolve, 1));
+  }
+};
+
+/**
+ * Casts and waits out the bite delay. The delay is random, so the wait is its maximum.
+ *
+ * There is no pull step: the bot resolves the catch itself when the bite lands, so advancing past
+ * the bite is the whole round. The result is read off the event the chat listener consumes rather
+ * than off a return value, which is the interface that actually exists now.
+ */
 const fishOnce = async (service: FishingService) => {
-  expect(
-    service.cast({ twitchId: TWITCH_ID, username: USERNAME, channel: "luckyfoxcode" }),
-  ).toBe("accepted");
-  await vi.advanceTimersByTimeAsync(FISHING_CONFIG.BITE_DELAY_MAX_MS);
-  return await service.pull(TWITCH_ID);
+  const seen: FishCatch[] = [];
+  const onBite = (data: { catch: FishCatch }) => seen.push(data.catch);
+  globalEventBus.on("fish:bite", onBite);
+
+  try {
+    expect(
+      service.cast({ twitchId: TWITCH_ID, username: USERNAME, channel: "luckyfoxcode" }),
+    ).toBe("accepted");
+    await vi.advanceTimersByTimeAsync(FISHING_CONFIG.BITE_DELAY_MAX_MS);
+    await settle(() => seen.length > 0);
+  } finally {
+    globalEventBus.off("fish:bite", onBite);
+  }
+
+  expect(seen).toHaveLength(1);
+  return seen[0] as FishCatch;
 };
 
 describe("FishingService grants on ChannelUser", () => {
@@ -77,6 +110,7 @@ describe("FishingService grants on ChannelUser", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   // The regression this release had to fix: `grantCatch` gated the whole reward on a `User` row
@@ -86,9 +120,8 @@ describe("FishingService grants on ChannelUser", () => {
     const channelUser = await seedViewer();
     expect(await prisma.user.count()).toBe(0);
 
-    const result = await fishOnce(makeService());
+    await fishOnce(makeService());
 
-    expect(result).toMatchObject({ type: "caught" });
     expect((await prisma.channelUser.findUniqueOrThrow({ where: { id: channelUser.id } })).coins).toBe(25);
 
     const history = await prisma.coinHistory.findMany();
@@ -106,7 +139,7 @@ describe("FishingService grants on ChannelUser", () => {
     catchState.current = {
       catchType: "xp",
       coinAmount: 0,
-      xpAmount: 35,
+      xpAmount: 20,
       bankAmount: 0,
     };
 
@@ -114,14 +147,38 @@ describe("FishingService grants on ChannelUser", () => {
 
     expect(
       (await prisma.channelUser.findUniqueOrThrow({ where: { id: channelUser.id } })).xp,
-    ).toBe(35);
+    ).toBe(20);
 
     const history = await prisma.xpHistory.findMany();
     expect(history).toHaveLength(1);
     expect(history[0]?.channelId).toBe(TEST_CHANNEL_ID);
     expect(history[0]?.channelUserId).toBe(channelUser.id);
-    expect(history[0]?.amount).toBe(35);
+    expect(history[0]?.amount).toBe(20);
     expect(await prisma.user.count()).toBe(0);
+  });
+
+  // The whole reason the pull step is gone. The catch resolves itself at the bite, so there is no
+  // window in which a viewer who looked away loses the round - and a dud is announced as one
+  // rather than leaving the balance untouched in silence.
+  it("announces a dud on the bite and writes nothing", async () => {
+    const channelUser = await seedViewer();
+    catchState.current = {
+      catchType: "empty",
+      coinAmount: 0,
+      xpAmount: 0,
+      bankAmount: 0,
+    };
+
+    const caught = await fishOnce(makeService());
+
+    expect(caught.catchType).toBe("empty");
+    const updated = await prisma.channelUser.findUniqueOrThrow({
+      where: { id: channelUser.id },
+    });
+    expect(updated.coins).toBe(0);
+    expect(updated.xp).toBe(0);
+    expect(await prisma.coinHistory.count()).toBe(0);
+    expect(await prisma.xpHistory.count()).toBe(0);
   });
 
   // The bank catch writes nobody's ledger - it feeds the shared jackpot - so it must not need
@@ -147,16 +204,24 @@ describe("FishingService grants on ChannelUser", () => {
   });
 
   // The other half of the fix. The old guard returned with nothing logged, so a viewer the bot
-  // did not know lost the catch in silence; a thrown error names the viewer and the channel.
+  // did not know lost the catch in silence; a named error is what keeps it from being silent.
+  //
+  // It cannot be a throw any more: the reward is granted from a timer callback that nobody awaits,
+  // so an unhandled rejection is the only thing a rejection would produce. The bite handler
+  // catches and logs it instead, which is where the viewer and the channel have to be named.
   it("names the viewer it cannot pay instead of dropping the reward in silence", async () => {
+    const errorSpy = vi.spyOn(Logger, "error").mockImplementation(() => {});
     const service = makeService();
     service.cast({ twitchId: "twitch_ghost", username: "ghost", channel: "luckyfoxcode" });
+
     await vi.advanceTimersByTimeAsync(FISHING_CONFIG.BITE_DELAY_MAX_MS);
+    await settle(() => errorSpy.mock.calls.length > 0);
 
-    const error = await service.pull("twitch_ghost").catch((thrown: unknown) => thrown);
-
-    expect(error).toBeInstanceOf(Error);
-    expect((error as Error).message).toContain("twitch_ghost");
-    expect((error as Error).message).toContain(TEST_CHANNEL_ID);
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    const [, message, error] = errorSpy.mock.calls[0] ?? [];
+    expect(message).toContain("ghost");
+    expect(String(error)).toContain("twitch_ghost");
+    expect(String(error)).toContain(TEST_CHANNEL_ID);
+    expect(await prisma.coinHistory.count()).toBe(0);
   });
 });

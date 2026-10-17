@@ -3,6 +3,10 @@ import { pickWeighted } from "../random";
 import { FISH_CATCH_WEIGHTS, resolveCatch } from "../fishing";
 
 describe("resolveCatch", () => {
+  // Обе границы каждого диапазона: `pickWeighted` возвращает первое значение, у которого
+  // накопительная сумма превысила бросок, поэтому сдвиг любого веса на единицу меняет пару
+  // соседних ассертов. Сумма весов = 1000, диапазоны: empty 0..219, coins25 220..519,
+  // coins70 520..619, coins100 620..627, xp20 628..877, xp40 878..974, bank200 975..999.
   it("maps exact boundaries of each weight", () => {
     const rng = (value: number) => () => value;
 
@@ -12,73 +16,73 @@ describe("resolveCatch", () => {
       xpAmount: 0,
       bankAmount: 0,
     });
-    expect(resolveCatch(rng(449))).toEqual({
+    expect(resolveCatch(rng(219))).toEqual({
       catchType: "empty",
       coinAmount: 0,
       xpAmount: 0,
       bankAmount: 0,
     });
-    expect(resolveCatch(rng(450))).toEqual({
+    expect(resolveCatch(rng(220))).toEqual({
       catchType: "coins",
-      coinAmount: 8,
+      coinAmount: 25,
       xpAmount: 0,
       bankAmount: 0,
     });
-    expect(resolveCatch(rng(749))).toEqual({
+    expect(resolveCatch(rng(519))).toEqual({
       catchType: "coins",
-      coinAmount: 8,
+      coinAmount: 25,
       xpAmount: 0,
       bankAmount: 0,
     });
-    expect(resolveCatch(rng(750))).toEqual({
+    expect(resolveCatch(rng(520))).toEqual({
       catchType: "coins",
-      coinAmount: 20,
+      coinAmount: 70,
       xpAmount: 0,
       bankAmount: 0,
     });
-    expect(resolveCatch(rng(869))).toEqual({
+    expect(resolveCatch(rng(619))).toEqual({
       catchType: "coins",
-      coinAmount: 20,
+      coinAmount: 70,
       xpAmount: 0,
       bankAmount: 0,
     });
-    expect(resolveCatch(rng(870))).toEqual({
-      catchType: "xp",
-      coinAmount: 0,
-      xpAmount: 10,
-      bankAmount: 0,
-    });
-    expect(resolveCatch(rng(929))).toEqual({
-      catchType: "xp",
-      coinAmount: 0,
-      xpAmount: 10,
-      bankAmount: 0,
-    });
-    expect(resolveCatch(rng(930))).toEqual({
+    expect(resolveCatch(rng(620))).toEqual({
       catchType: "coins",
       coinAmount: 100,
       xpAmount: 0,
       bankAmount: 0,
     });
-    expect(resolveCatch(rng(959))).toEqual({
+    expect(resolveCatch(rng(627))).toEqual({
       catchType: "coins",
       coinAmount: 100,
       xpAmount: 0,
       bankAmount: 0,
     });
-    expect(resolveCatch(rng(960))).toEqual({
+    expect(resolveCatch(rng(628))).toEqual({
       catchType: "xp",
       coinAmount: 0,
-      xpAmount: 35,
+      xpAmount: 20,
       bankAmount: 0,
     });
-    expect(resolveCatch(rng(979))).toEqual({
+    expect(resolveCatch(rng(877))).toEqual({
       catchType: "xp",
       coinAmount: 0,
-      xpAmount: 35,
+      xpAmount: 20,
       bankAmount: 0,
     });
-    expect(resolveCatch(rng(980))).toEqual({
+    expect(resolveCatch(rng(878))).toEqual({
+      catchType: "xp",
+      coinAmount: 0,
+      xpAmount: 40,
+      bankAmount: 0,
+    });
+    expect(resolveCatch(rng(974))).toEqual({
+      catchType: "xp",
+      coinAmount: 0,
+      xpAmount: 40,
+      bankAmount: 0,
+    });
+    expect(resolveCatch(rng(975))).toEqual({
       catchType: "bank",
       coinAmount: 0,
       xpAmount: 0,
@@ -90,6 +94,14 @@ describe("resolveCatch", () => {
       xpAmount: 0,
       bankAmount: 200,
     });
+  });
+
+  // Сумма обязана быть ровно 1000: `pickWeighted` бросает кубик в [0, total) и делит на сумму,
+  // поэтому 1001 превратила бы последний сегмент в недостижимый, а 999 сдвинула бы границы.
+  it("sums the weights to 1000", () => {
+    const total = Object.values(FISH_CATCH_WEIGHTS).reduce((sum, w) => sum + w, 0);
+
+    expect(total).toBe(1000);
   });
 });
 
@@ -112,14 +124,16 @@ describe("resolveCatch distribution", () => {
       counts[category] = (counts[category] ?? 0) + 1;
     }
 
+    // Редкие исходы проверяются с той же допуском ±0.5 п.п., что и частые: на 100k бросков
+    // 0.8% — это 800 попаданий, а полуотклонение в 500 заведомо не достигается.
     const declaredChances = {
-      empty: 45,
-      coins8: 30,
-      coins20: 12,
-      xp10: 6,
-      coins100: 3,
-      xp35: 2,
-      bank200: 2,
+      empty: 22,
+      coins25: 30,
+      coins70: 10,
+      coins100: 0.8,
+      xp20: 25,
+      xp40: 9.7,
+      bank200: 2.5,
     };
 
     for (const [category, chance] of Object.entries(declaredChances)) {

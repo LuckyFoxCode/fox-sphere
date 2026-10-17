@@ -13,53 +13,83 @@ describe("resolveSpinPrize", () => {
     });
     expect(resolveSpinPrize(rng(220))).toEqual({
       prizeType: "coins",
-      coinAmount: 30,
+      coinAmount: 60,
       xpAmount: 0,
     });
-    expect(resolveSpinPrize(rng(519))).toEqual({
-      prizeType: "coins",
-      coinAmount: 30,
-      xpAmount: 0,
-    });
-    expect(resolveSpinPrize(rng(520))).toEqual({
+    expect(resolveSpinPrize(rng(369))).toEqual({
       prizeType: "coins",
       coinAmount: 60,
       xpAmount: 0,
     });
-    expect(resolveSpinPrize(rng(719))).toEqual({
+    expect(resolveSpinPrize(rng(370))).toEqual({
       prizeType: "coins",
-      coinAmount: 60,
+      coinAmount: 75,
       xpAmount: 0,
     });
-    expect(resolveSpinPrize(rng(720))).toEqual({
+    expect(resolveSpinPrize(rng(429))).toEqual({
+      prizeType: "coins",
+      coinAmount: 75,
+      xpAmount: 0,
+    });
+    expect(resolveSpinPrize(rng(430))).toEqual({
       prizeType: "coins",
       coinAmount: 100,
       xpAmount: 0,
     });
-    expect(resolveSpinPrize(rng(849))).toEqual({
+    expect(resolveSpinPrize(rng(784))).toEqual({
       prizeType: "coins",
       coinAmount: 100,
       xpAmount: 0,
     });
-    expect(resolveSpinPrize(rng(850))).toEqual({
+    expect(resolveSpinPrize(rng(785))).toEqual({
       prizeType: "coins",
       coinAmount: 250,
       xpAmount: 0,
     });
-    expect(resolveSpinPrize(rng(939))).toEqual({
+    expect(resolveSpinPrize(rng(864))).toEqual({
       prizeType: "coins",
       coinAmount: 250,
       xpAmount: 0,
     });
-    expect(resolveSpinPrize(rng(940))).toEqual({
+    expect(resolveSpinPrize(rng(865))).toEqual({
+      prizeType: "coins",
+      coinAmount: 500,
+      xpAmount: 0,
+    });
+    expect(resolveSpinPrize(rng(884))).toEqual({
+      prizeType: "coins",
+      coinAmount: 500,
+      xpAmount: 0,
+    });
+    expect(resolveSpinPrize(rng(885))).toEqual({
+      prizeType: "coins",
+      coinAmount: 1000,
+      xpAmount: 0,
+    });
+    expect(resolveSpinPrize(rng(889))).toEqual({
+      prizeType: "coins",
+      coinAmount: 1000,
+      xpAmount: 0,
+    });
+    expect(resolveSpinPrize(rng(890))).toEqual({
       prizeType: "xp",
       coinAmount: 0,
       xpAmount: 35,
+    });
+    expect(resolveSpinPrize(rng(964))).toEqual({
+      prizeType: "xp",
+      coinAmount: 0,
+      xpAmount: 35,
+    });
+    expect(resolveSpinPrize(rng(965))).toEqual({
+      prizeType: "xp",
+      coinAmount: 0,
+      xpAmount: 100,
     });
     expect(resolveSpinPrize(rng(998))).toEqual({
       prizeType: "xp",
       coinAmount: 0,
-      xpAmount: 35,
+      xpAmount: 100,
     });
     expect(resolveSpinPrize(rng(999))).toEqual({
       prizeType: "jackpot",
@@ -90,11 +120,14 @@ describe("resolveSpinPrize distribution", () => {
 
     const declaredChances = {
       empty: 22,
-      coins30: 30,
-      coins60: 20,
-      coins100: 13,
-      coins250: 9,
-      xp35: 5.9,
+      coins60: 15,
+      coins75: 6,
+      coins100: 35.5,
+      coins250: 8,
+      coins500: 2,
+      coins1000: 0.5,
+      xp35: 7.5,
+      xp100: 3.4,
       jackpot: 0.1,
     };
 

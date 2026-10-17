@@ -1,6 +1,6 @@
 import type { RouletteSegmentId } from './rouletteSegments';
 
-export type RouletteRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+export type RouletteRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic';
 
 export interface RarityStyle {
   /** Основной цвет тира — рамка карточки, акцент при выигрыше. */
@@ -11,15 +11,22 @@ export interface RarityStyle {
   readonly glowSize: number;
 }
 
-// 5 тиров CS:GO-стиля: цвет карточки теперь от редкости, а не от сегмента.
+// Тир кодирует ЦЕННОСТЬ ПРИЗА, а не вероятность выпадения. На колесе рулетки цвет отвечает на
+// вопрос «хорошо ли я выиграл»; вероятностное кодирование сделало бы всю ленту серо-голубой.
+// Поэтому `coins100` помечен `rare`, хотя это самый частый исход (35.5%) — так задумано.
+// XP-тир всегда на ступень ниже монетного: «получил XP вместо монет» читается как «получил
+// что-то чуть хуже», а не как случайная другая награда.
 export const SEGMENT_RARITY: Record<RouletteSegmentId, RouletteRarity> = {
   empty: 'common',
-  coins30: 'common',
   coins60: 'uncommon',
+  coins75: 'uncommon',
   xp35: 'uncommon',
   coins100: 'rare',
+  xp100: 'rare',
   coins250: 'epic',
-  jackpot: 'legendary',
+  coins500: 'legendary',
+  coins1000: 'mythic',
+  jackpot: 'mythic',
 };
 
 export const RARITY_STYLES: Record<RouletteRarity, RarityStyle> = {
@@ -47,5 +54,10 @@ export const RARITY_STYLES: Record<RouletteRarity, RarityStyle> = {
     color: 'var(--color-event-amber)',
     glow: 'color-mix(in oklab, var(--color-event-amber) 60%, transparent)',
     glowSize: 26,
+  },
+  mythic: {
+    color: 'var(--color-event-rose)',
+    glow: 'color-mix(in oklab, var(--color-event-rose) 60%, transparent)',
+    glowSize: 30,
   },
 };

@@ -11,7 +11,6 @@ import { CommandError, TwitchCommand } from "../commands/command.interface";
 import {
   CoinsCommand,
   FishingCastCommand,
-  FishingPullCommand,
   SpinCommand,
   SpinStatsCommand,
 } from "../commands/economy";
@@ -72,7 +71,6 @@ export class CommandRegistry {
       new SpinCommand(this.chatbotService, this.userService, this.rouletteService),
       new SpinStatsCommand(this.chatbotService, this.userService),
       new FishingCastCommand(this.chatbotService, this.fishingService),
-      new FishingPullCommand(this.chatbotService, this.fishingService),
       new GitHubCommand(this.chatbotService),
       new HelpCommand(this.chatbotService),
       new LotteryCommand(this.userService),
