@@ -17,7 +17,7 @@ export const FISH_CATCH_WEIGHTS = {
   coins70: 100,
   coins100: 8,
   xp20: 250,
-  xp60: 97,
+  xp40: 97,
   bank200: 25,
 } as const;
 
@@ -27,7 +27,7 @@ const FISH_CATCH_MAP = {
   coins70: { catchType: "coins", coinAmount: 70, xpAmount: 0, bankAmount: 0 },
   coins100: { catchType: "coins", coinAmount: 100, xpAmount: 0, bankAmount: 0 },
   xp20: { catchType: "xp", coinAmount: 0, xpAmount: 20, bankAmount: 0 },
-  xp60: { catchType: "xp", coinAmount: 0, xpAmount: 60, bankAmount: 0 },
+  xp40: { catchType: "xp", coinAmount: 0, xpAmount: 40, bankAmount: 0 },
   bank200: { catchType: "bank", coinAmount: 0, xpAmount: 0, bankAmount: 200 },
 } as const satisfies Record<keyof typeof FISH_CATCH_WEIGHTS, FishCatch>;
 

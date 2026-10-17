@@ -6,7 +6,7 @@ describe("resolveCatch", () => {
   // Обе границы каждого диапазона: `pickWeighted` возвращает первое значение, у которого
   // накопительная сумма превысила бросок, поэтому сдвиг любого веса на единицу меняет пару
   // соседних ассертов. Сумма весов = 1000, диапазоны: empty 0..219, coins25 220..519,
-  // coins70 520..619, coins100 620..627, xp20 628..877, xp60 878..974, bank200 975..999.
+  // coins70 520..619, coins100 620..627, xp20 628..877, xp40 878..974, bank200 975..999.
   it("maps exact boundaries of each weight", () => {
     const rng = (value: number) => () => value;
 
@@ -73,13 +73,13 @@ describe("resolveCatch", () => {
     expect(resolveCatch(rng(878))).toEqual({
       catchType: "xp",
       coinAmount: 0,
-      xpAmount: 60,
+      xpAmount: 40,
       bankAmount: 0,
     });
     expect(resolveCatch(rng(974))).toEqual({
       catchType: "xp",
       coinAmount: 0,
-      xpAmount: 60,
+      xpAmount: 40,
       bankAmount: 0,
     });
     expect(resolveCatch(rng(975))).toEqual({
@@ -132,7 +132,7 @@ describe("resolveCatch distribution", () => {
       coins70: 10,
       coins100: 0.8,
       xp20: 25,
-      xp60: 9.7,
+      xp40: 9.7,
       bank200: 2.5,
     };
 
