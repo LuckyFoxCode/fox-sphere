@@ -2,36 +2,57 @@ export const FISHING_CONFIG = {
   CAST_COOLDOWN_MS: 60_000,
   BITE_DELAY_MIN_MS: 10_000,
   BITE_DELAY_MAX_MS: 30_000,
-  RESPONSE_WINDOW_MS: 60_000,
-  EXPIRED_RECALL_MS: 30_000,
-  PULL_COOLDOWN_MS: 5_000,
 };
 
+const pickVariant = <T>(variants: readonly T[], index: number): T =>
+  variants[index % variants.length] as T;
+
 export const FISHING_MESSAGES = {
-  CAST_ACCEPTED: (username: string) => `🎣 @${username} забросил удочку…`,
+  CAST_ACCEPTED: (username: string) => `@${username} забросил удочку…`,
   ALREADY_FISHING: (username: string) => `@${username}, ты уже рыбачишь`,
-  BITE: (username: string) => `@${username}, клюёт! Пиши !тянуть 🎣`,
-  PULL_EARLY: (username: string) => `@${username}, пока тихо — жди поклёвку`,
-  PULL_NO_CAST: (username: string) =>
-    `@${username}, сначала закинь удочку — !рыбалка`,
-  PULL_TOO_LATE: (username: string) => `@${username}, поздно — сорвалась`,
-  EXPIRED: (username: string) => `@${username}, не успел — рыба сорвалась…`,
-  CATCH_XP: (username: string, xp: number) =>
-    `⚡ @${username} выловил — +${xp} XP`,
-  CATCH_BANK: (username: string, bank: number) =>
-    `🎣 @${username} вытянул сундук — +${bank} в банк!`,
   CAST_COOLDOWN: (username: string, remainingSeconds: number) =>
     `⏳ @${username}, удочка не готова — через ${remainingSeconds}s`,
-  PULL_COOLDOWN: (username: string, remainingSeconds: number) =>
-    `⏳ @${username}, удочка сушится — ещё ${remainingSeconds}s`,
-  EMPTY_VARIANTS: [
-    (username: string) => `@${username} вытянул пустую банку…`,
-    (username: string) => `@${username} поймал старый ботинок…`,
-    (username: string) => `@${username} вытащил пучок водорослей…`,
+  // Сорвалась — это отдельный исход с собственной выплатой (пустой крючок), а не «рыба ушла»:
+  // зритель ничего не сделал неправильно, и текст не должен читаться как его промах.
+  BITE_DUD: [
+    (username: string) => `🎣 @${username} — клюёт, и тут сорвалась с крючка!`,
+    (username: string) => `🎣 @${username} — ключит было, но рыба ушла с крючка…`,
+    (username: string) => `🎣 @${username} — дёрнуло, леска порвалась, улов ушёл`,
   ],
-  COINS_VARIANTS: [
-    (username: string, coins: number) => `@${username} выловил — +${coins} монет`,
-    (username: string, coins: number) => `@${username} натягал рыбы — +${coins} монет`,
-    (username: string, coins: number) => `@${username} распутал сеть — +${coins} монет`,
+  BITE_COINS: [
+    (username: string, coins: number) => `🎣 @${username} — ключёт и вылавливает! +${coins} монет`,
+    (username: string, coins: number) => `🎣 @${username} — вытащил рыбу на +${coins} монет!`,
+    (username: string, coins: number) => `🎣 @${username} — на крючке рыба, +${coins} монет 🎉`,
   ],
+  BITE_XP: (username: string, xp: number) => `⚡ @${username} — клюёт! Выловил +${xp} XP`,
+  // Сундук не платит игроку ничего: 200 монет уходят в общий джекпот. Старая формулировка
+  // «+{bank} в банк» читалась как личная выплата — большое число на экране и ноль в кошельке,
+  // ровно то расхождение, которое чинится в остальных сообщениях.
+  BITE_BANK: (username: string, bank: number) =>
+    `🎣 @${username} — ключёт! Вытащил сундук: ${bank} монет ушли в джекпот`,
 } as const;
+
+/**
+ * Собирает строку улова по разновидности текста. Живёт здесь, а не в команде `!тянуть`,
+ * потому что команды больше нет: результат печатает подписчик `fish:bite`, и логика фразы
+ * должна быть рядом с остальными текстами, а не внутри удалённого обработчика.
+ */
+export const fishingCatchMessage = (
+  caught: { catchType: string; coinAmount: number; xpAmount: number; bankAmount: number },
+  username: string,
+  variantIndex: number,
+): string => {
+  switch (caught.catchType) {
+    case "coins":
+      return pickVariant(FISHING_MESSAGES.BITE_COINS, variantIndex)(
+        username,
+        caught.coinAmount,
+      );
+    case "xp":
+      return FISHING_MESSAGES.BITE_XP(username, caught.xpAmount);
+    case "bank":
+      return FISHING_MESSAGES.BITE_BANK(username, caught.bankAmount);
+    default:
+      return pickVariant(FISHING_MESSAGES.BITE_DUD, variantIndex)(username);
+  }
+};

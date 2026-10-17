@@ -1,9 +1,9 @@
-import { config, Logger } from "@fox-sphere/backend-shared";
+import { config, Logger, secureRandomInt } from "@fox-sphere/backend-shared";
 import { TwitchAnnouncementColor } from "@fox-sphere/types";
 import type { ApiClient } from "@twurple/api";
 import { globalEventBus } from "../../../shared/services";
 import { withLogging } from "../../../shared/utils";
-import { FISHING_MESSAGES } from "../../fishing";
+import { fishingCatchMessage } from "../../fishing";
 import { LOTTERY_MESSAGES } from "../../lottery";
 import type { RewardHandler } from "../handlers";
 import { BOT_MESSAGES } from "../twitch.constants";
@@ -55,20 +55,11 @@ export const registerChatEventListeners = (
   globalEventBus.on("fish:bite", async (data) => {
     await withLogging(
       LOG_CONTEXT,
-      `Failed to send fishing bite for ${data.username}`,
+      `Failed to send fishing result for ${data.username}`,
       async () => {
-        const message = FISHING_MESSAGES.BITE(data.username);
-        await deps.sendMessage(data.channel, message);
-      },
-    );
-  });
-
-  globalEventBus.on("fish:expired", async (data) => {
-    await withLogging(
-      LOG_CONTEXT,
-      `Failed to send fishing expiry for ${data.username}`,
-      async () => {
-        const message = FISHING_MESSAGES.EXPIRED(data.username);
+        // Вариант выбирается один раз на улов, а не внутри каждой ветки: иначе «сорвалась» и
+        // «выловил» могли бы попасть в разные фразы при одном и том же броске RNG.
+        const message = fishingCatchMessage(data.catch, data.username, secureRandomInt(3));
         await deps.sendMessage(data.channel, message);
       },
     );
