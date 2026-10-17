@@ -50,6 +50,16 @@ export class RouletteService {
 
     const { jackpotWon, jackpotTotalAfter, coinAmount } =
       await prisma.$transaction(async (tx) => {
+        // Проигрыш, а не оборот ставок: за спин всегда списывается PRICE, но в минус уходит только
+        // разница между ставкой и призом. Спин с призом >= PRICE даёт 0, а не отрицательное число.
+        // Джекпот — отдельный случай: prize.coinAmount у него 0, а выплата — весь банк, который
+        // никогда не меньше JACKPOT_SEED (1000) > PRICE. Считать проигрыш от нуля значило бы
+        // записать 100 монет потерь на спине, который выплатил больше тысячи.
+        const prizeLoss =
+          prize.prizeType === "jackpot"
+            ? 0
+            : Math.max(0, ROULETTE_CONFIG.PRICE - prize.coinAmount);
+
         // Атомарное списание с условием достаточности — страховка от гонки
         // между проверкой getUserCoins (кэш TTL 10с) и транзакцией. При count === 0
         // транзакция откатывается, ничего не меняя; сообщение юзеру шлёт команда до сервиса,
@@ -59,7 +69,7 @@ export class RouletteService {
           data: {
             coins: { decrement: ROULETTE_CONFIG.PRICE },
             spinsCount: { increment: 1 },
-            totalLoss: { increment: ROULETTE_CONFIG.PRICE },
+            totalLoss: { increment: prizeLoss },
           },
         });
 
