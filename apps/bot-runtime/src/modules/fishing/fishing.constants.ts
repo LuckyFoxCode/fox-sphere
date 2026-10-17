@@ -16,11 +16,11 @@ export const FISHING_MESSAGES = {
   // зритель ничего не сделал неправильно, и текст не должен читаться как его промах.
   BITE_DUD: [
     (username: string) => `🎣 @${username} — клюёт, и тут сорвалась с крючка!`,
-    (username: string) => `🎣 @${username} — ключит было, но рыба ушла с крючка…`,
+    (username: string) => `🎣 @${username} — клюёт было, да на крючке оказалось пусто…`,
     (username: string) => `🎣 @${username} — дёрнуло, леска порвалась, улов ушёл`,
   ],
   BITE_COINS: [
-    (username: string, coins: number) => `🎣 @${username} — ключёт и вылавливает! +${coins} монет`,
+    (username: string, coins: number) => `🎣 @${username} — клюёт и вылавливает! +${coins} монет`,
     (username: string, coins: number) => `🎣 @${username} — вытащил рыбу на +${coins} монет!`,
     (username: string, coins: number) => `🎣 @${username} — на крючке рыба, +${coins} монет 🎉`,
   ],
@@ -29,7 +29,7 @@ export const FISHING_MESSAGES = {
   // «+{bank} в банк» читалась как личная выплата — большое число на экране и ноль в кошельке,
   // ровно то расхождение, которое чинится в остальных сообщениях.
   BITE_BANK: (username: string, bank: number) =>
-    `🎣 @${username} — ключёт! Вытащил сундук: ${bank} монет ушли в джекпот`,
+    `🎣 @${username} — клюёт! Вытащил сундук: ${bank} монет ушли в джекпот`,
 } as const;
 
 /**
