@@ -167,6 +167,8 @@ A shadcn-derived component vocabulary — Button, Input, Select, Checkbox, Field
 
 ### Badge
 - **Style:** Pill/rounded tag, neutral fill with muted text; used for channel or status labels. Present but understated.
+- **Channel status** uses the four base variants as rank: `ACTIVE` solid graphite, `PENDING` secondary, `PAUSED` outline, `REVOKED` destructive red.
+- **Viewer flags** (`ChannelUserFlags`) are the one tinted badge family: one shared recipe - `bg-<hue>-500/10`, `border-<hue>-500/40`, `text-<hue>-700`, each with a `dark:` pair - and the hue is Twitch vocabulary (emerald mod, violet founder, sky sub, pink VIP, amber ticket, lime lucky VIP). These are low-chroma state tints, not a second brand palette: red stays reserved for destructive, and lime is spent here only because `lucky vip` is the one flag the brand accent earns.
 
 ## Do's and Don'ts
 

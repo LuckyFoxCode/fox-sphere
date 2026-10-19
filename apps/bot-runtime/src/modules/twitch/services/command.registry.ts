@@ -31,7 +31,9 @@ import {
   TicketsCommand,
 } from "../commands/lottery";
 import {
+  AddFounderCommand,
   AddVipCommand,
+  RemoveFounderCommand,
   RemoveVipCommand,
   TimerCommand,
   TimerStopCommand,
@@ -88,6 +90,16 @@ export class CommandRegistry {
       new XpBoostCommand(this.chatbotService, this.streamService),
       new AddVipCommand(this.chatbotService, this.userService, this.apiClient),
       new RemoveVipCommand(
+        this.chatbotService,
+        this.userService,
+        this.apiClient,
+      ),
+      new AddFounderCommand(
+        this.chatbotService,
+        this.userService,
+        this.apiClient,
+      ),
+      new RemoveFounderCommand(
         this.chatbotService,
         this.userService,
         this.apiClient,

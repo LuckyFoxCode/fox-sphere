@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AppError, config, prisma } from "@fox-sphere/backend-shared";
 import { resetDb } from "../../../__tests__/helpers/test-db";
 import {
@@ -262,5 +262,155 @@ describe("UserService on ChannelUser", () => {
     // has nothing to pass on.
     expect(await prisma.user.count()).toBe(0);
     expect(await prisma.userLottery.count()).toBe(0);
+  });
+});
+
+describe("UserService chat role sync", () => {
+  beforeEach(async () => {
+    await resetDb();
+    await seedTestChannel();
+  });
+
+  it("mirrors the message's mod and subscriber tags onto the balance row", async () => {
+    const service = makeUserService();
+    await service.ensureUserExists(TWITCH_ID, USERNAME);
+
+    await service.syncChatRoles(TWITCH_ID, { isMod: true, isSubscriber: true });
+
+    const channelUser = await prisma.channelUser.findFirstOrThrow();
+    expect(channelUser.isMod).toBe(true);
+    expect(channelUser.isSubscriber).toBe(true);
+  });
+
+  // 1-1 with the tags: a demoted mod or an unsubscribed viewer is unflagged by their very
+  // next message. The alternative - a flag that only ever flips to true - is what makes the
+  // column drift away from Twitch and quietly outlive the role it claims to describe.
+  it("resets both flags when the next message carries neither", async () => {
+    const service = makeUserService();
+    await service.ensureUserExists(TWITCH_ID, USERNAME);
+
+    await service.syncChatRoles(TWITCH_ID, { isMod: true, isSubscriber: true });
+    await service.syncChatRoles(TWITCH_ID, { isMod: false, isSubscriber: false });
+
+    const channelUser = await prisma.channelUser.findFirstOrThrow();
+    expect(channelUser.isMod).toBe(false);
+    expect(channelUser.isSubscriber).toBe(false);
+  });
+
+  // `isFounder` and `isPermanentVip` belong to the manual commands alone. A sync that swept
+  // every boolean on the row would hand a chat message the power to revoke both.
+  it("leaves isFounder and isPermanentVip to the manual commands alone", async () => {
+    const service = makeUserService();
+    await service.ensureUserExists(TWITCH_ID, USERNAME);
+    await service.setFounder(TWITCH_ID, USERNAME, true);
+    await service.addVipToDb(TWITCH_ID, USERNAME);
+
+    await service.syncChatRoles(TWITCH_ID, {
+      isMod: true,
+      isSubscriber: false,
+    });
+
+    const channelUser = await prisma.channelUser.findFirstOrThrow();
+    expect(channelUser.isFounder).toBe(true);
+    expect(channelUser.isPermanentVip).toBe(true);
+    expect(channelUser.isMod).toBe(true);
+    expect(channelUser.isSubscriber).toBe(false);
+  });
+
+  // Every message carries the tags, so an unconditional write would put an UPDATE behind
+  // each one. The sync has to be a no-op - no `update` call at all - while the row already
+  // agrees with the message.
+  it("writes nothing when the row already agrees with the message", async () => {
+    const service = makeUserService();
+    await service.ensureUserExists(TWITCH_ID, USERNAME);
+    await service.syncChatRoles(TWITCH_ID, { isMod: true, isSubscriber: true });
+
+    const updateSpy = vi.spyOn(prisma.channelUser, "update");
+    await service.syncChatRoles(TWITCH_ID, { isMod: true, isSubscriber: true });
+
+    expect(updateSpy).not.toHaveBeenCalled();
+    updateSpy.mockRestore();
+  });
+
+  it("does not touch a row that does not exist yet", async () => {
+    const service = makeUserService();
+    await service.syncChatRoles(TWITCH_ID, { isMod: true, isSubscriber: true });
+
+    expect(await prisma.channelUser.count()).toBe(0);
+  });
+});
+
+describe("UserService founder flag", () => {
+  beforeEach(async () => {
+    await resetDb();
+    await seedTestChannel();
+  });
+
+  it("sets isFounder on the balance row", async () => {
+    const service = makeUserService();
+    await service.ensureUserExists(TWITCH_ID, USERNAME);
+
+    await service.setFounder(TWITCH_ID, USERNAME, true);
+
+    expect((await prisma.channelUser.findFirstOrThrow()).isFounder).toBe(true);
+  });
+
+  it("clears isFounder again for a mistaken grant", async () => {
+    const service = makeUserService();
+    await service.ensureUserExists(TWITCH_ID, USERNAME);
+    await service.setFounder(TWITCH_ID, USERNAME, true);
+
+    await service.setFounder(TWITCH_ID, USERNAME, false);
+
+    expect((await prisma.channelUser.findFirstOrThrow()).isFounder).toBe(false);
+  });
+
+  it("creates the row for a viewer who has never typed, as the VIP command does", async () => {
+    await makeUserService().setFounder(TWITCH_ID, USERNAME, true);
+
+    const channelUser = await prisma.channelUser.findFirstOrThrow();
+    expect(channelUser.isFounder).toBe(true);
+    expect(channelUser.channelId).toBe(TEST_CHANNEL_ID);
+    expect(await prisma.viewer.count()).toBe(1);
+  });
+});
+
+describe("UserService founder XP bonus", () => {
+  beforeEach(async () => {
+    await resetDb();
+    await seedTestChannel();
+  });
+
+  it("pays the message XP a founder bonus on top of the base reward", async () => {
+    const service = makeUserService();
+    await service.ensureUserExists(TWITCH_ID, USERNAME);
+    await service.setFounder(TWITCH_ID, USERNAME, true);
+
+    await service.addXpForMessage(TWITCH_ID, 3);
+
+    expect((await prisma.channelUser.findFirstOrThrow()).xp).toBe(4);
+  });
+
+  // The permanent VIP bonus already existed; a founder who is also a VIP is the rarest
+  // viewer on the channel, and the two are meant to add up rather than one replace the
+  // other - a subscriber's message is then 3 + 1 + 1 = 5.
+  it("stacks the founder bonus with the permanent VIP bonus", async () => {
+    const service = makeUserService();
+    await service.ensureUserExists(TWITCH_ID, USERNAME);
+    await service.setFounder(TWITCH_ID, USERNAME, true);
+    await service.addVipToDb(TWITCH_ID, USERNAME);
+
+    await service.addXpForMessage(TWITCH_ID, 3);
+
+    expect((await prisma.channelUser.findFirstOrThrow()).xp).toBe(5);
+  });
+
+  it("leaves a viewer who is neither founder nor VIP on the base reward", async () => {
+    const service = makeUserService();
+    await service.ensureUserExists(TWITCH_ID, USERNAME);
+
+    await service.addXpForMessage(TWITCH_ID, 3);
+
+    expect((await prisma.channelUser.findFirstOrThrow()).xp).toBe(3);
   });
 });

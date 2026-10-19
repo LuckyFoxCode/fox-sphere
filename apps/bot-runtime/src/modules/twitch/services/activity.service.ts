@@ -22,6 +22,15 @@ export class TwitchActivityService {
     try {
       await this.userService.ensureUserExists(twitchId, username);
 
+      // After `ensureUserExists`, never inside it: that method returns early for a viewer
+      // already in its `verifiedUsers` cache, and a sync living there would freeze on the
+      // first message each viewer sends. Best-effort inside `syncChatRoles` itself, so a
+      // failed flag write can never cost this message its XP.
+      await this.userService.syncChatRoles(twitchId, {
+        isMod: msg.userInfo.isMod,
+        isSubscriber: msg.userInfo.isSubscriber,
+      });
+
       if (!this.followersCache.has(twitchId)) {
         try {
           const followCheck = await this.apiClient.asUser(
