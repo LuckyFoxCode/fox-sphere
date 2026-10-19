@@ -122,6 +122,18 @@ export const BOT_MESSAGES = {
       `@${username}, please specify a username: !removevip <username>`,
     REMOVE_VIP_NOTFOUND: (username: string) =>
       `User @${username} not found on Twitch.`,
+    ADD_FOUNDER: (moderator: string, username: string) =>
+      `🌟 FOUNDER STATUS GRANTED! 🌟 @${moderator} has made @${username} a founder of the Sphere! Welcome to the inner circle! 💫`,
+    ADD_FOUNDER_WARNING: (username: string) =>
+      `@${username}, please specify a username: !addfounder <username>`,
+    ADD_FOUNDER_NOTFOUND: (username: string) =>
+      `User @${username} not found on Twitch.`,
+    REMOVE_FOUNDER: (moderator: string, username: string) =>
+      `🌙 Founder status removed: @${moderator} has updated @${username}'s status.`,
+    REMOVE_FOUNDER_WARNING: (username: string) =>
+      `@${username}, please specify a username: !removefounder <username>`,
+    REMOVE_FOUNDER_NOTFOUND: (username: string) =>
+      `User @${username} not found on Twitch.`,
     TIMER_SUCCESS: (username: string, time: number, title: string) =>
       `@${username}, timer "${title || "Timer"}" started for ${time} minutes! ⏳`,
     TIMER_WARNING: (username: string) =>

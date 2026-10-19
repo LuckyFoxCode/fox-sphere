@@ -135,6 +135,77 @@ export class UserService {
     }
   }
 
+  /**
+   * Writes the founder flag - the one status Twitch has no concept of, so a chat command is
+   * its only writer, in both directions. Unlike `setPermanentVip` an error here is not
+   * swallowed: the command that calls it owns its catch, and a grant that silently failed
+   * while the bot answered "done" in chat is the worse outcome.
+   *
+   * The `ensureViewer` + upsert shape is still the VIP one, deliberately: a founder may well
+   * be granted before they have ever typed, and a balance row that does not exist yet is
+   * created with the flag rather than rejected by the foreign key.
+   */
+  public async setFounder(
+    twitchId: string,
+    username: string,
+    isFounder: boolean,
+  ): Promise<void> {
+    const { channelId } = await resolveChannelContext();
+    const viewer = await ensureViewer(twitchId, username);
+
+    await prisma.channelUser.upsert({
+      where: { channelId_viewerId: { channelId, viewerId: viewer.id } },
+      update: { isFounder },
+      create: { channelId, viewerId: viewer.id, isFounder },
+    });
+    Logger.debug(
+      "UserService",
+      `${isFounder ? "Granted" : "Revoked"} founder for ${username} (${twitchId})`,
+    );
+  }
+
+  /**
+   * Mirrors the mod and subscriber tags of the message being processed onto this channel's
+   * balance row - both ways, so a lost role is unflagged by the viewer's next message and the
+   * column never outlives the role it describes.
+   *
+   * Deliberately not folded into `ensureUserExists`: that method returns early for every
+   * viewer already in the `verifiedUsers` cache, so a sync living inside it would freeze on
+   * the first message each viewer ever sends. It is also the only writer that must not touch
+   * `isFounder` / `isPermanentVip` - those belong to the manual commands alone.
+   *
+   * Best-effort on purpose: a failure is logged and swallowed, because it runs between
+   * `ensureUserExists` and the XP award on the message path, and a dropped XP award would be
+   * a much worse price for a stale role flag. The `update` is issued only when the row
+   * actually disagrees with the tags, so an unchanged message writes nothing at all.
+   */
+  public async syncChatRoles(
+    twitchId: string,
+    roles: { isMod: boolean; isSubscriber: boolean },
+  ): Promise<void> {
+    try {
+      const channelUser = await findChannelUser(twitchId);
+      if (!channelUser) return;
+
+      const changed: { isMod?: boolean; isSubscriber?: boolean } = {};
+      if (channelUser.isMod !== roles.isMod) changed.isMod = roles.isMod;
+      if (channelUser.isSubscriber !== roles.isSubscriber)
+        changed.isSubscriber = roles.isSubscriber;
+      if (Object.keys(changed).length === 0) return;
+
+      await prisma.channelUser.update({
+        where: { id: channelUser.id },
+        data: changed,
+      });
+    } catch (error) {
+      Logger.error(
+        "UserService",
+        `Failed to sync chat roles for ${twitchId}`,
+        error,
+      );
+    }
+  }
+
   public async addXpForMessage(
     twitchId: string,
     xpAmount: number,
