@@ -242,7 +242,11 @@ export class UserService {
       // Both flags are columns on `ChannelUser` now. They used to be `User.isPermanentVip` and
       // `UserLottery.isLuckyVip`, which is why this was a two-source read.
       const isVip = channelUser.isLuckyVip || channelUser.isPermanentVip;
-      const baseXp = isVip ? xpAmount + XP_REWARDS.VIP_BONUS : xpAmount;
+      // Two independent bonuses, added rather than chosen: a founder needs no VIP to get
+      // theirs, and a founder who is also a VIP gets both.
+      const vipBonus = isVip ? XP_REWARDS.VIP_BONUS : 0;
+      const founderBonus = channelUser.isFounder ? XP_REWARDS.FOUNDER_BONUS : 0;
+      const baseXp = xpAmount + vipBonus + founderBonus;
       const activeBoost = await this.streamService.getActiveXpBoost();
       const finalXpAmount = baseXp * (activeBoost?.multiplier ?? 1);
 

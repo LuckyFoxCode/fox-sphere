@@ -374,3 +374,43 @@ describe("UserService founder flag", () => {
     expect(await prisma.viewer.count()).toBe(1);
   });
 });
+
+describe("UserService founder XP bonus", () => {
+  beforeEach(async () => {
+    await resetDb();
+    await seedTestChannel();
+  });
+
+  it("pays the message XP a founder bonus on top of the base reward", async () => {
+    const service = makeUserService();
+    await service.ensureUserExists(TWITCH_ID, USERNAME);
+    await service.setFounder(TWITCH_ID, USERNAME, true);
+
+    await service.addXpForMessage(TWITCH_ID, 3);
+
+    expect((await prisma.channelUser.findFirstOrThrow()).xp).toBe(4);
+  });
+
+  // The permanent VIP bonus already existed; a founder who is also a VIP is the rarest
+  // viewer on the channel, and the two are meant to add up rather than one replace the
+  // other - a subscriber's message is then 3 + 1 + 1 = 5.
+  it("stacks the founder bonus with the permanent VIP bonus", async () => {
+    const service = makeUserService();
+    await service.ensureUserExists(TWITCH_ID, USERNAME);
+    await service.setFounder(TWITCH_ID, USERNAME, true);
+    await service.addVipToDb(TWITCH_ID, USERNAME);
+
+    await service.addXpForMessage(TWITCH_ID, 3);
+
+    expect((await prisma.channelUser.findFirstOrThrow()).xp).toBe(5);
+  });
+
+  it("leaves a viewer who is neither founder nor VIP on the base reward", async () => {
+    const service = makeUserService();
+    await service.ensureUserExists(TWITCH_ID, USERNAME);
+
+    await service.addXpForMessage(TWITCH_ID, 3);
+
+    expect((await prisma.channelUser.findFirstOrThrow()).xp).toBe(3);
+  });
+});

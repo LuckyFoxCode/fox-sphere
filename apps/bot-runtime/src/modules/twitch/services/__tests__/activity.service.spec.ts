@@ -108,4 +108,17 @@ describe("TwitchActivityService role sync", () => {
     const channelUser = await prisma.channelUser.findFirstOrThrow();
     expect(channelUser.xp).toBeGreaterThan(0);
   });
+
+  // The whole reward chain in one pass: the subscriber amount comes from the message tags,
+  // the founder and permanent VIP bonuses from the row. 3 + 1 + 1 = 5 for one message.
+  it("pays the founder and VIP bonuses to a subscriber's message", async () => {
+    const { activity, userService } = makeActivityService();
+    await userService.ensureUserExists(TWITCH_ID, USERNAME);
+    await userService.setFounder(TWITCH_ID, USERNAME, true);
+    await userService.addVipToDb(TWITCH_ID, USERNAME);
+
+    await activity.trackActivity(USERNAME, makeMessage({ isMod: false, isSubscriber: true }));
+
+    expect((await prisma.channelUser.findFirstOrThrow()).xp).toBe(5);
+  });
 });

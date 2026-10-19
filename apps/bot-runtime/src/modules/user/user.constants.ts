@@ -17,6 +17,13 @@ export const XP_REWARDS = {
   FOLLOWER: 2,
   LOTTERY: 1,
   VIP_BONUS: 1,
+  /**
+   * The manual `!addfounder` status, and the same +1 as the permanent VIP bonus on purpose:
+   * both are permanent flags a human grants, so a founder keeps this on every message. It
+   * stacks with `VIP_BONUS` rather than replacing it - the two are granted for different
+   * reasons, and a founder who is also a VIP is a subscriber's 3 + 1 + 1 = 5.
+   */
+  FOUNDER_BONUS: 1,
 };
 
 export const isWatchStreakRewardLevel = (streak: number): boolean => {
