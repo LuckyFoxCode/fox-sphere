@@ -147,6 +147,10 @@ export const BOT_MESSAGES = {
       `⚡ @${username} cancelled the XP boost! 🛑`,
     XPBOOST_NO_ACTIVE: (username: string) =>
       `@${username}, there is no active XP boost to cancel.`,
+    PROFILE_SHOW: (username: string) =>
+      `🪪 @${username}, your profile card is on screen! 🦊`,
+    PROFILE_NOT_FOUND: (username: string) =>
+      `🪪 @${username}, I don't have a profile for you yet — say something in chat and try again!`,
   },
   // Награды за баллы канала (Channel Points)
   REWARDS: {

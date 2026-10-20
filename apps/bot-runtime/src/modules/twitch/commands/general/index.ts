@@ -3,6 +3,7 @@ export * from "./help.command";
 export * from "./lurk.command";
 export * from "./pivo.command";
 export * from "./points.commands";
+export * from "./profile.command";
 export * from "./project.command";
 export * from "./stack.command";
 export * from "./tg.command";

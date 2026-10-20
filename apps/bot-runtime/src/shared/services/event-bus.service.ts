@@ -7,6 +7,7 @@ import {
   LotteryTicketEarnedPayload,
   LotteryUserDto,
   LotteryWinnerDrawnPayload,
+  ProfileShowPayload,
   RouletteSpinResultPayload,
   StreamGetSystemStatePayload,
   StreamJackpotUpdatePayload,
@@ -46,6 +47,7 @@ export interface AppEvents {
   };
   "lottery:winner-drawn": LotteryWinnerDrawnPayload;
   "lottery:finished": LotteryFinishedPayload;
+  "profile:show": ProfileShowPayload;
   "roulette:spun": RouletteSpinResultPayload;
   "stream:xp-updated": StreamXpUpdatePayload;
   "stream:xp-boost": StreamXpBoostPayload;

@@ -6,7 +6,7 @@ import {
   prisma,
 } from "@fox-sphere/backend-shared";
 import type { ChannelUser } from "@fox-sphere/db";
-import { HeroRef } from "@fox-sphere/types";
+import { HeroRef, ProfileShowPayload } from "@fox-sphere/types";
 import { globalEventBus } from "../../shared/services";
 import {
   ensureChannelUser,
@@ -28,6 +28,14 @@ type ExchangeChannelPointsResult =
   | { status: "credited"; awarded: number }
   | { status: "duplicate" }
   | { status: "user-not-found" };
+
+/**
+ * Everything `!profile` reads off `ChannelUser`, plus its hero and its best awarded streak.
+ *
+ * `displayName` and `color` are deliberately absent: neither is a column the bot keeps for this
+ * purpose, and both come off the chat message that ran the command.
+ */
+export type ProfileCard = Omit<ProfileShowPayload, "displayName" | "color">;
 
 export class UserService {
   constructor(
@@ -537,6 +545,54 @@ export class UserService {
     streakValue: number,
   ): Promise<WatchStreakAward | null> {
     return await this.watchStreakService.award(twitchId, streakValue);
+  }
+
+  /**
+   * One read for the whole card: the balance row with its `Viewer` and its optional hero.
+   *
+   * `channelId` comes from `resolveChannelContext()` because this is the lookup that *chooses*
+   * the row; every write built from the result takes its channel off the row instead.
+   *
+   * `bestStreak` is the highest awarded milestone, not the current streak - `WatchStreak` is a
+   * log of rewards and the schema keeps no live counter. `null` means no milestone was ever
+   * awarded, which the overlay labels as "no streak yet" rather than as zero.
+   */
+  public async getProfileCard(
+    twitchId: string,
+  ): Promise<ProfileCard | null> {
+    const { channelId } = await resolveChannelContext();
+
+    const channelUser = await prisma.channelUser.findFirst({
+      where: { channelId, viewer: { twitchId } },
+      include: { viewer: true, hero: true },
+    });
+
+    if (!channelUser) return null;
+
+    const bestStreak = await prisma.watchStreak.findFirst({
+      where: {
+        channelId: channelUser.channelId,
+        channelUserId: channelUser.id,
+      },
+      orderBy: { streakValue: "desc" },
+      select: { streakValue: true },
+    });
+
+    return {
+      username: channelUser.viewer.username,
+      userId: channelUser.viewer.twitchId,
+      lvl: channelUser.lvl,
+      xp: channelUser.xp,
+      coins: channelUser.coins,
+      heroId: channelUser.hero?.heroId ?? null,
+      heroLevel: channelUser.hero?.level ?? null,
+      bestStreak: bestStreak?.streakValue ?? null,
+      isMod: channelUser.isMod,
+      isFounder: channelUser.isFounder,
+      isSubscriber: channelUser.isSubscriber,
+      isPermanentVip: channelUser.isPermanentVip,
+      isLuckyVip: channelUser.isLuckyVip,
+    };
   }
 
   public clearCache(): void {
