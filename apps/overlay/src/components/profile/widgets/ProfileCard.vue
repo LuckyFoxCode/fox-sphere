@@ -2,14 +2,26 @@
 import { HeroPortrait } from '@/components/ui';
 import { WidgetFrame } from '@/components/ui/widget-frame';
 import {
+  getRankConfigByLevel,
+  MAX_ICON_TIER,
   PROFILE_ACHIEVEMENT_SLOTS,
   PROFILE_ACHIEVEMENT_SLOT_COUNT,
+  RANK_BADGES,
   type ProfileAchievement,
 } from '@/constants';
 import type { ProfileShowPayload } from '@fox-sphere/types';
 import { computed } from 'vue';
 
 const props = defineProps<{ profile: ProfileShowPayload }>();
+
+/**
+ * Rank comes off `lvl` alone - the payload carries no broadcaster or bot flag, so the special
+ * `GAME MASTER` / `SYSTEM BOT` titles stay in chat and the hero lane. Tier 10 (`OVERLORD`) is
+ * drawn with the ninth badge on purpose, same as `ChatMessageItem`.
+ */
+const rank = computed(() => getRankConfigByLevel(props.profile.lvl));
+
+const rankBadge = computed(() => RANK_BADGES[Math.min(rank.value.tier, MAX_ICON_TIER)]);
 
 interface RoleChip {
   label: string;
@@ -67,18 +79,34 @@ const achievementSlots = computed<(ProfileAchievement | null)[]>(() =>
     position-x="200"
   >
     <div class="flex w-96 flex-col gap-y-8 px-1 py-5">
-      <div class="flex items-baseline justify-between gap-x-2">
-        <span
-          class="truncate text-lg leading-none font-bold"
-          :style="{ color: profile.color }"
-        >
-          {{ profile.displayName }}
-        </span>
-        <span
-          class="bg-event-amber/20 text-event-amber shrink-0 rounded-md px-1.5 py-0.5 text-xs font-bold uppercase"
-        >
-          lvl {{ profile.lvl }}
-        </span>
+      <div class="flex items-stretch gap-x-2">
+        <component
+          :is="rankBadge"
+          class="w-10 shrink-0"
+        />
+
+        <div class="flex min-w-0 flex-1 flex-col justify-between gap-y-1">
+          <div class="flex items-baseline justify-between gap-x-2">
+            <span
+              class="truncate text-lg leading-none font-bold"
+              :style="{ color: profile.color }"
+            >
+              {{ profile.displayName }}
+            </span>
+            <span
+              class="bg-event-amber/20 text-event-amber shrink-0 rounded-md px-1.5 py-0.5 text-xs font-bold uppercase"
+            >
+              lvl {{ profile.lvl }}
+            </span>
+          </div>
+
+          <span
+            class="bg-clip-text text-xs font-semibold tracking-widest text-transparent uppercase"
+            :style="{ backgroundImage: rank.gradient }"
+          >
+            {{ rank.rankTitle }}
+          </span>
+        </div>
       </div>
 
       <div class="flex items-center gap-x-10">
