@@ -80,13 +80,13 @@ const achievementSlots = computed<(ProfileAchievement | null)[]>(() =>
     position-x="200"
   >
     <div class="flex w-96 flex-col gap-y-8 px-1 py-5">
-      <div class="flex items-stretch gap-x-2">
+      <div class="flex items-center gap-x-2">
         <component
           :is="rankBadge"
-          class="w-10 shrink-0"
+          class="size-10 shrink-0"
         />
 
-        <div class="flex min-w-0 flex-1 flex-col justify-between gap-y-1">
+        <div class="flex min-w-0 flex-1 flex-col gap-y-0.5">
           <div class="flex items-baseline justify-between gap-x-2">
             <span
               class="truncate text-lg leading-none font-bold"
