@@ -25,6 +25,13 @@
         "frameRate": 16,
         "columns": 4,
         "rows": 5
+      },
+      "portrait": {
+        "path": "assets/heroes/assassin/front.png",
+        "frames": 16,
+        "frameRate": 12,
+        "columns": 4,
+        "rows": 4
       }
     },
     {
@@ -47,6 +54,13 @@
         "frameRate": 16,
         "columns": 4,
         "rows": 5
+      },
+      "portrait": {
+        "path": "assets/heroes/robber/front.png",
+        "frames": 16,
+        "frameRate": 12,
+        "columns": 4,
+        "rows": 4
       }
     },
     {
@@ -69,6 +83,13 @@
         "frameRate": 16,
         "columns": 4,
         "rows": 5
+      },
+      "portrait": {
+        "path": "assets/heroes/thug/front.png",
+        "frames": 16,
+        "frameRate": 12,
+        "columns": 4,
+        "rows": 4
       }
     }
   ]

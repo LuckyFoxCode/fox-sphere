@@ -42,6 +42,14 @@ export interface HeroDefinition extends HeroSpriteGeometry {
   growth: Omit<HeroStats, "speed">;
   idle: HeroSpriteSheet;
   walk: HeroSpriteSheet;
+  /**
+   * Front-facing sheet the small cards crop a portrait from - the `!profile` circle and the
+   * level-up card. `idle` is a three-quarter view and reads poorly in a small square.
+   *
+   * Optional on purpose: a hero without one falls back to the first frame of its `idle` sheet,
+   * so adding a portrait is a catalog edit rather than a code change.
+   */
+  portrait?: HeroSpriteSheet;
 }
 
 interface HeroCatalog {
