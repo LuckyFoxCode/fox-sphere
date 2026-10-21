@@ -32,10 +32,14 @@ type ExchangeChannelPointsResult =
 /**
  * Everything `!profile` reads off `ChannelUser`, plus its hero and its best awarded streak.
  *
- * `displayName` and `color` are deliberately absent: neither is a column the bot keeps for this
- * purpose, and both come off the chat message that ran the command.
+ * `displayName`, `color` and `isBroadcaster` are deliberately absent: none is a column the bot
+ * keeps for this purpose. The first two come off the chat message that ran the command, and the
+ * last is the message's own broadcaster tag.
  */
-export type ProfileCard = Omit<ProfileShowPayload, "displayName" | "color">;
+export type ProfileCard = Omit<
+  ProfileShowPayload,
+  "displayName" | "color" | "isBroadcaster"
+>;
 
 export class UserService {
   constructor(

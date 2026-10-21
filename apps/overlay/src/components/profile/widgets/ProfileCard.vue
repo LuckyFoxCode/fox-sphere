@@ -15,11 +15,12 @@ import { computed } from 'vue';
 const props = defineProps<{ profile: ProfileShowPayload }>();
 
 /**
- * Rank comes off `lvl` alone - the payload carries no broadcaster or bot flag, so the special
- * `GAME MASTER` / `SYSTEM BOT` titles stay in chat and the hero lane. Tier 10 (`OVERLORD`) is
- * drawn with the ninth badge on purpose, same as `ChatMessageItem`.
+ * The broadcaster tag overrides the level: `getRankConfigByLevel` answers `GAME MASTER` for the
+ * streamer before it looks at `lvl`. There is no bot flag in the payload, so `SYSTEM BOT` stays
+ * in chat and the hero lane. Tier 10 (`OVERLORD`) is drawn with the ninth badge on purpose,
+ * same as `ChatMessageItem`.
  */
-const rank = computed(() => getRankConfigByLevel(props.profile.lvl));
+const rank = computed(() => getRankConfigByLevel(props.profile.lvl, props.profile.isBroadcaster));
 
 const rankBadge = computed(() => RANK_BADGES[Math.min(rank.value.tier, MAX_ICON_TIER)]);
 

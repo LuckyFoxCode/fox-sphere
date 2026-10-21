@@ -20,6 +20,8 @@ export interface ProfileShowPayload {
   isSubscriber: boolean;
   isPermanentVip: boolean;
   isLuckyVip: boolean;
+  // Не колонка в базе, а тег сообщения: от него зависит спецтитул `GAME MASTER`.
+  isBroadcaster: boolean;
 }
 
 // Контракты событий Socket.io

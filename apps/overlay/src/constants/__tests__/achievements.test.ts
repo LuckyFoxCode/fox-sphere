@@ -28,6 +28,7 @@ const profile = (bestStreak: number | null): ProfileShowPayload => ({
   isSubscriber: false,
   isPermanentVip: false,
   isLuckyVip: false,
+  isBroadcaster: false,
 });
 
 describe('getWatchStreakAchievement', () => {

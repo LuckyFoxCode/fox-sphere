@@ -47,6 +47,9 @@ export class ProfileCommand implements TwitchCommand {
       ...profile,
       displayName: ctx.msg.userInfo.displayName,
       color: ctx.msg.userInfo.color || DEFAULT_COLOR,
+      // From the message, not the row: the broadcaster has no column, and this tag is what
+      // turns the card's level title into `GAME MASTER`.
+      isBroadcaster: ctx.msg.userInfo.isBroadcaster,
     });
 
     await this.chatbotService.sendMessage(
