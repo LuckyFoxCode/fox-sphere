@@ -97,16 +97,16 @@ describe('hero catalog', () => {
 
   it('uses its own id as the file name of both sheets', () => {
     for (const hero of HEROES) {
-      expect(hero.idle.path).toBe(`assets/heroes/${hero.id}/idle.png`);
-      expect(hero.walk.path).toBe(`assets/heroes/${hero.id}/walking.png`);
+      expect(hero.idle.path).toBe(`assets/heroes/${hero.id}/idle.webp`);
+      expect(hero.walk.path).toBe(`assets/heroes/${hero.id}/walking.webp`);
     }
   });
 
-  it('uses front.png as the file name of a portrait', () => {
+  it('uses front.webp as the file name of a portrait', () => {
     for (const hero of HEROES) {
       if (!hero.portrait) continue;
 
-      expect(hero.portrait.path).toBe(`assets/heroes/${hero.id}/front.png`);
+      expect(hero.portrait.path).toBe(`assets/heroes/${hero.id}/front.webp`);
     }
   });
 
