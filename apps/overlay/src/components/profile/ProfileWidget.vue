@@ -7,7 +7,7 @@ const { activeProfile } = useProfileSocket(socket);
 </script>
 
 <template>
-  <div class="fixed right-[20%] bottom-[50%]">
+  <div class="fixed right-[20%] bottom-[35%]">
     <Transition
       name="profile-slide"
       mode="out-in"
