@@ -3,6 +3,7 @@ import {
   type TwitchAddVipPaylod,
   type TwitchChatMessagePayload,
   type TwitchFollowPayload,
+  type TwitchGoldenBeerPayload,
   type TwitchRaidPayload,
   type TwitchRewardPayload,
   type TwitchTimerPayload,
@@ -30,6 +31,7 @@ const reward = ref<TwitchRewardPayload | null>(null);
 const timer = ref<TwitchTimerPayload | null>(null);
 const messages = ref<TwitchChatMessagePayload[]>([]);
 const watchStreak = ref<TwitchWatchStreakPayload | null>(null);
+const goldenBeer = ref<TwitchGoldenBeerPayload | null>(null);
 
 const MAX_MESSAGES = 8;
 const MESSAGE_TTL = 18000;
@@ -102,6 +104,12 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
     setStatusWithTimeout('watch-streak', 7000);
   };
 
+  // Без `playSound`: звука пива в проекте нет, и событие по дизайну тихое.
+  const handleGoldenBeer = (data: TwitchGoldenBeerPayload) => {
+    goldenBeer.value = data;
+    setStatusWithTimeout('golden-beer', 7000);
+  };
+
   if (!isSocketInitialized) {
     socketInstance.on('chat:message', (data) => {
       handleChatMessage(data);
@@ -114,6 +122,7 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
     socketInstance.on('twitch:timer', handleTimer);
     socketInstance.on('twitch:timer-stop', handleTimerStop);
     socketInstance.on('twitch:watch-streak', handleWatchStreak);
+    socketInstance.on('twitch:golden-beer', handleGoldenBeer);
 
     watch(timeLeft, (newTimeLeft) => {
       if (newTimeLeft === 0 && isTimerActive.value) {
@@ -131,6 +140,7 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
     currentEventType,
     isTimerActive,
     follow,
+    goldenBeer,
     messages,
     raid,
     reward,

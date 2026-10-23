@@ -5,12 +5,14 @@ import { computed, type Component } from 'vue';
 import {
   TwitchAddVip,
   TwitchFollow,
+  TwitchGoldenBeer,
   TwitchRaid,
   TwitchRewardRedeem,
   TwitchWatchStreak,
 } from './widgets';
 
-const { addVip, currentEventType, follow, raid, reward, watchStreak } = useTwitchSocket(socket);
+const { addVip, currentEventType, follow, goldenBeer, raid, reward, watchStreak } =
+  useTwitchSocket(socket);
 
 interface WidgetMapValue {
   component: Component;
@@ -28,6 +30,7 @@ const widgetConfig = computed(() => {
     raid: { component: TwitchRaid, props: { raid: raid.value } },
     follow: { component: TwitchFollow, props: { follow: follow.value } },
     'watch-streak': { component: TwitchWatchStreak, props: { watchStreak: watchStreak.value } },
+    'golden-beer': { component: TwitchGoldenBeer, props: { goldenBeer: goldenBeer.value } },
   };
 
   return map[currentEventType.value as ActiveTwitchEvents] || null;
