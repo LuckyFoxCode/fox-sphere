@@ -146,6 +146,13 @@ const FORWARDERS: readonly Forwarder[] = [
       `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding twitch:follow to overlay for: ${data.username}`,
     "info",
   ),
+  // Долг: глобальный broadcast — phase-1 multi-tenancy переведёт на per-channel rooms.
+  forward(
+    "twitch:golden-beer",
+    (data) =>
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding golden beer to overlay for: ${data.username}, tier: ${data.tier}`,
+    "info",
+  ),
   forward(
     "twitch:raid",
     (data) =>
