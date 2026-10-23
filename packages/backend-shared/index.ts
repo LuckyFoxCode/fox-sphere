@@ -7,6 +7,7 @@ export * from "./src/xp";
 export * from "./src/random";
 export * from "./src/roulette";
 export * from "./src/fishing";
+export * from "./src/pivo";
 export * from "./src/backfill";
 export * from "./src/stream-constants";
 export * from "./src/stream-state";
