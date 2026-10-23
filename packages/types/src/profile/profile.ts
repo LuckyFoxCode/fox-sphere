@@ -15,6 +15,8 @@ export interface ProfileShowPayload {
   // «Лучшая» серия просмотров, а не текущая: `WatchStreak` — журнал выданных наград,
   // текущей серии в схеме нет.
   bestStreak: number | null;
+  // Пожизненный счётчик золотого пива; ступень из него считает оверлей.
+  goldenBeers: number;
   isMod: boolean;
   isFounder: boolean;
   isSubscriber: boolean;

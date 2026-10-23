@@ -23,6 +23,7 @@ const profile = (bestStreak: number | null): ProfileShowPayload => ({
   heroId: null,
   heroLevel: null,
   bestStreak,
+  goldenBeers: 0,
   isMod: false,
   isFounder: false,
   isSubscriber: false,

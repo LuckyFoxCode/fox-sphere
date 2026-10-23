@@ -591,6 +591,7 @@ export class UserService {
       heroId: channelUser.hero?.heroId ?? null,
       heroLevel: channelUser.hero?.level ?? null,
       bestStreak: bestStreak?.streakValue ?? null,
+      goldenBeers: channelUser.goldenBeers,
       isMod: channelUser.isMod,
       isFounder: channelUser.isFounder,
       isSubscriber: channelUser.isSubscriber,
