@@ -3,6 +3,7 @@ import { socket } from '@/services';
 import { onUnmounted } from 'vue';
 import { LotteryManager } from '../lottery';
 import { HeroWidget } from '../hero';
+import { ProfileWidget } from '../profile';
 import { RouletteSpin } from '../roulette';
 import { StreamWidget } from '../stream';
 import { TwitchWidget } from '../twitch';
@@ -17,6 +18,7 @@ onUnmounted(() => {
 <template>
   <LotteryManager />
   <HeroWidget />
+  <ProfileWidget />
   <RouletteSpin />
   <StreamWidget />
   <TwitchWidget />

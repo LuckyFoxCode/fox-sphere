@@ -7,6 +7,10 @@ import {
   LotteryServerToClientEvents,
 } from "./lottery";
 import {
+  ProfileClientToServerEvents,
+  ProfileServerToClientEvents,
+} from "./profile";
+import {
   RouletteClientToServerEvents,
   RouletteServerToClientEvents,
 } from "./roulette";
@@ -25,6 +29,7 @@ import {
 
 export * from "./hero/index";
 export * from "./lottery/index";
+export * from "./profile/index";
 export * from "./roulette/index";
 export * from "./stream/index";
 export * from "./twitch/index";
@@ -40,6 +45,7 @@ type IntersectionFromTuple<T extends readonly unknown[]> = T extends readonly [
 type AllServerEvents = [
   HeroServerToClientEvents,
   LotteryServerToClientEvents,
+  ProfileServerToClientEvents,
   RouletteServerToClientEvents,
   StreamServerToClientEvents,
   TwitchServerToClientEvents,
@@ -48,6 +54,7 @@ type AllServerEvents = [
 type AllClientEvents = [
   HeroClientToServerEvents,
   LotteryClientToServerEvents,
+  ProfileClientToServerEvents,
   RouletteClientToServerEvents,
   StreamClientToServerEvents,
   TwitchClientToServerEvents,
