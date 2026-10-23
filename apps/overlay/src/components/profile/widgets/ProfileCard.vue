@@ -4,10 +4,8 @@ import { WidgetFrame } from '@/components/ui/widget-frame';
 import {
   getRankConfigByLevel,
   MAX_ICON_TIER,
-  PROFILE_ACHIEVEMENT_SLOTS,
-  PROFILE_ACHIEVEMENT_SLOT_COUNT,
   RANK_BADGES,
-  type ProfileAchievement,
+  resolveProfileAchievementSlots,
 } from '@/constants';
 import type { ProfileShowPayload } from '@fox-sphere/types';
 import { computed } from 'vue';
@@ -61,17 +59,11 @@ const roleChips = computed<RoleChip[]>(() => {
 });
 
 /**
- * One entry per slot of the achievement row, in order. A slot without a resolver - or whose
- * resolver returns `null` because the viewer has not earned it - renders as a placeholder, so
- * the row keeps its shape and a viewer missing one badge does not shift the others left.
+ * Earned badges packed to the left, then placeholders - see `resolveProfileAchievementSlots`.
+ * A viewer without a watch streak shows their beer badge in the first cell instead of an empty
+ * one, and the row keeps its length.
  */
-const achievementSlots = computed<(ProfileAchievement | null)[]>(() =>
-  Array.from({ length: PROFILE_ACHIEVEMENT_SLOT_COUNT }, (_, index) => {
-    const resolve = PROFILE_ACHIEVEMENT_SLOTS[index];
-
-    return resolve ? resolve(props.profile) : null;
-  }),
-);
+const achievementSlots = computed(() => resolveProfileAchievementSlots(props.profile));
 </script>
 
 <template>
@@ -110,73 +102,87 @@ const achievementSlots = computed<(ProfileAchievement | null)[]>(() =>
         </div>
       </div>
 
-      <div class="flex items-center gap-x-10">
-        <div
-          class="border-event-blue/40 bg-event-blue/5 size-32 shrink-0 overflow-hidden rounded-full border-2"
-        >
-          <HeroPortrait
-            v-if="profile.heroId"
-            :hero-id="profile.heroId"
-            size="size-full"
-          />
-          <div
-            v-else
-            class="flex size-full flex-col items-center justify-center"
-          >
-            <span class="text-event-red/60 text-[9px] tracking-[0.2em] uppercase">hero</span>
-            <span class="text-event-red max-w-18 truncate text-xs font-bold">none</span>
-          </div>
-        </div>
+      <div class="flex flex-col gap-y-2">
+        <span class="text-text-second text-[10px] font-bold tracking-widest uppercase">stats</span>
 
-        <div class="flex min-w-0 flex-col gap-y-1.5 text-base">
-          <div class="flex items-center gap-x-1.5">
-            <span class="text-text-second capitalize">hero lvl:</span>
-            <span class="text-event-blue font-bold">{{ profile.heroLevel ?? '—' }}</span>
+        <div class="flex items-center gap-x-10">
+          <div
+            class="border-event-blue/40 bg-event-blue/5 size-32 shrink-0 overflow-hidden rounded-full border-2"
+          >
+            <HeroPortrait
+              v-if="profile.heroId"
+              :hero-id="profile.heroId"
+              size="size-full"
+            />
+            <div
+              v-else
+              class="flex size-full flex-col items-center justify-center"
+            >
+              <span class="text-event-red/60 text-[9px] tracking-[0.2em] uppercase">hero</span>
+              <span class="text-event-red max-w-18 truncate text-xs font-bold">none</span>
+            </div>
           </div>
-          <div class="flex items-center gap-x-1.5">
-            <span class="text-text-second capitalize">best streak:</span>
-            <span class="text-event-blue font-bold">
-              {{ profile.bestStreak ?? '—' }}
-            </span>
-          </div>
-          <div class="flex items-center gap-x-1.5">
-            <span class="text-text-second capitalize">xp:</span>
-            <span class="text-event-blue font-bold">⚡{{ profile.xp }}</span>
-          </div>
-          <div class="flex items-center gap-x-1.5">
-            <span class="text-text-second capitalize">coins:</span>
-            <span class="text-event-amber font-bold">🪙 {{ profile.coins }}</span>
+
+          <div class="flex min-w-0 flex-col gap-y-1.5 text-base">
+            <div class="flex items-center gap-x-1.5">
+              <span class="text-text-second capitalize">hero lvl:</span>
+              <span class="text-event-blue font-bold">{{ profile.heroLevel ?? '—' }}</span>
+            </div>
+            <div class="flex items-center gap-x-1.5">
+              <span class="text-text-second capitalize">best streak:</span>
+              <span class="text-event-blue font-bold">
+                {{ profile.bestStreak ?? '—' }}
+              </span>
+            </div>
+            <div class="flex items-center gap-x-1.5">
+              <span class="text-text-second capitalize">xp:</span>
+              <span class="text-event-blue font-bold">⚡{{ profile.xp }}</span>
+            </div>
+            <div class="flex items-center gap-x-1.5">
+              <span class="text-text-second capitalize">coins:</span>
+              <span class="text-event-amber font-bold">🪙 {{ profile.coins }}</span>
+            </div>
           </div>
         </div>
       </div>
 
       <div
         v-if="roleChips.length > 0"
-        class="flex flex-wrap gap-1.5"
+        class="flex flex-col gap-y-2"
       >
-        <span
-          v-for="chip in roleChips"
-          :key="chip.label"
-          class="flex items-center rounded-md border-2 px-1.5 py-0.5 text-[10px] font-bold uppercase"
-          :class="chip.classes"
-        >
-          {{ chip.label }}
-        </span>
+        <span class="text-text-second text-[10px] font-bold tracking-widest uppercase">status</span>
+
+        <div class="flex flex-wrap gap-1.5">
+          <span
+            v-for="chip in roleChips"
+            :key="chip.label"
+            class="flex items-center rounded-md border-2 px-1.5 py-0.5 text-[10px] font-bold uppercase"
+            :class="chip.classes"
+          >
+            {{ chip.label }}
+          </span>
+        </div>
       </div>
 
-      <div class="grid grid-cols-4 gap-4">
-        <div
-          v-for="(slot, index) in achievementSlots"
-          :key="slot?.key ?? `empty-${index}`"
-          class="flex aspect-square items-center justify-center rounded-lg border-2"
-          :class="slot ? 'border-transparent' : 'border-event-blue/30 border-dashed'"
-        >
-          <img
-            v-if="slot"
-            :src="slot.src"
-            :alt="slot.label"
-            class="size-full object-contain"
-          />
+      <div class="flex flex-col gap-y-2">
+        <span class="text-text-second text-[10px] font-bold tracking-widest uppercase">
+          achievements
+        </span>
+
+        <div class="grid grid-cols-4 gap-4">
+          <div
+            v-for="(slot, index) in achievementSlots"
+            :key="slot?.key ?? `empty-${index}`"
+            class="flex aspect-square items-center justify-center rounded-lg border-2"
+            :class="slot ? 'border-transparent' : 'border-event-blue/30 border-dashed'"
+          >
+            <img
+              v-if="slot"
+              :src="slot.src"
+              :alt="slot.label"
+              class="size-full object-contain"
+            />
+          </div>
         </div>
       </div>
     </div>
