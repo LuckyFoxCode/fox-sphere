@@ -90,6 +90,13 @@ const FORWARDERS: readonly Forwarder[] = [
   ),
   // Долг: глобальный broadcast — phase-1 multi-tenancy переведёт на per-channel rooms.
   forward(
+    "profile:show",
+    (data) =>
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding profile card to overlay for: ${data.username}`,
+    "info",
+  ),
+  // Долг: глобальный broadcast — phase-1 multi-tenancy переведёт на per-channel rooms.
+  forward(
     "roulette:spun",
     (data) =>
       `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding roulette spin result to overlay | User: ${data.username}, Prize: ${data.prizeType}`,

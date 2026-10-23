@@ -135,4 +135,18 @@
   .hero-fade-leave-to {
     opacity: 0;
   }
+
+  /* Прототип карточки профиля: уезжает за правый край, откуда и приходит. */
+  .profile-slide-enter-active,
+  .profile-slide-leave-active {
+    transition:
+      opacity 0.4s ease,
+      transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .profile-slide-enter-from,
+  .profile-slide-leave-to {
+    opacity: 0;
+    transform: translateX(120%);
+  }
 }

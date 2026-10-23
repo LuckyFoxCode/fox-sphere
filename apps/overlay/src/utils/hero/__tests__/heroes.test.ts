@@ -5,11 +5,13 @@ import {
   getHeroStats,
   HEROES,
   isFreeHero,
+  type HeroDefinition,
+  type HeroSpriteSheet,
 } from '@fox-sphere/types';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildHeroPortraitStyle } from '../heroes';
+import { buildHeroPortraitStyle, buildPortraitStyle } from '../heroes';
 
 const OVERLAY_ROOT = resolve(import.meta.dirname, '../../../../');
 
@@ -19,6 +21,13 @@ const NUMBERS = ['price', 'maxLevel', 'frameWidth', 'frameHeight', 'scale'] as c
 const STAT_KEYS = ['health', 'attack', 'defense', 'speed'] as const;
 const GROWTH_KEYS = ['health', 'attack', 'defense'] as const;
 const SHEET_KEYS = ['path', 'frames', 'frameRate', 'columns', 'rows'] as const;
+
+/** `idle` and `walk` are required, `portrait` is not - so a missing one must not break the loops. */
+const sheetsOf = (hero: HeroDefinition): HeroSpriteSheet[] => [
+  hero.idle,
+  hero.walk,
+  ...(hero.portrait ? [hero.portrait] : []),
+];
 
 describe('hero catalog', () => {
   it('is never empty, so a viewer always gets a hero', () => {
@@ -59,7 +68,7 @@ describe('hero catalog', () => {
 
   it('gives every sheet every required field', () => {
     for (const hero of HEROES) {
-      for (const sheet of [hero.idle, hero.walk]) {
+      for (const sheet of sheetsOf(hero)) {
         for (const key of SHEET_KEYS) {
           expect(sheet[key], `${hero.id}.${key}`).toBeDefined();
         }
@@ -72,7 +81,7 @@ describe('hero catalog', () => {
 
   it('has a grid that holds every frame it claims', () => {
     for (const hero of HEROES) {
-      for (const sheet of [hero.idle, hero.walk]) {
+      for (const sheet of sheetsOf(hero)) {
         expect(sheet.columns * sheet.rows).toBeGreaterThanOrEqual(sheet.frames);
       }
     }
@@ -80,15 +89,24 @@ describe('hero catalog', () => {
 
   it('points at sprite sheets that exist on disk', () => {
     for (const hero of HEROES) {
-      expect(existsSync(assetPath(hero.idle.path)), `missing ${hero.idle.path}`).toBe(true);
-      expect(existsSync(assetPath(hero.walk.path)), `missing ${hero.walk.path}`).toBe(true);
+      for (const sheet of sheetsOf(hero)) {
+        expect(existsSync(assetPath(sheet.path)), `missing ${sheet.path}`).toBe(true);
+      }
     }
   });
 
   it('uses its own id as the file name of both sheets', () => {
     for (const hero of HEROES) {
-      expect(hero.idle.path).toBe(`assets/heroes/${hero.id}/idle.png`);
-      expect(hero.walk.path).toBe(`assets/heroes/${hero.id}/walking.png`);
+      expect(hero.idle.path).toBe(`assets/heroes/${hero.id}/idle.webp`);
+      expect(hero.walk.path).toBe(`assets/heroes/${hero.id}/walking.webp`);
+    }
+  });
+
+  it('uses front.webp as the file name of a portrait', () => {
+    for (const hero of HEROES) {
+      if (!hero.portrait) continue;
+
+      expect(hero.portrait.path).toBe(`assets/heroes/${hero.id}/front.webp`);
     }
   });
 
@@ -208,12 +226,27 @@ describe('getHeroStats', () => {
 });
 
 describe('buildHeroPortraitStyle', () => {
-  it('crops the portrait to a single frame with CSS only', () => {
-    const style = buildHeroPortraitStyle(DEFAULT_HERO_ID);
+  const heroWithPortrait = HEROES.find((hero) => hero.portrait !== undefined);
 
+  it('crops the first frame of the front-facing portrait', () => {
+    if (!heroWithPortrait?.portrait) throw new Error('no hero carries a portrait in the catalog');
+
+    const style = buildHeroPortraitStyle(heroWithPortrait.id);
+    const { columns, rows } = heroWithPortrait.portrait;
+
+    expect(style.backgroundImage).toBe(`url('/${heroWithPortrait.portrait.path}')`);
+    expect(style.backgroundSize).toBe(`${columns * 100}% ${rows * 100}%`);
     expect(style.backgroundPosition).toBe('0 0');
     expect(style.imageRendering).toBe('pixelated');
-    expect(style.backgroundImage).toMatch(/^url\('\/assets\/heroes\/.+\/idle\.png'\)$/);
+  });
+
+  it('crops a single idle frame when the hero has no portrait', () => {
+    const hero = getHeroById(DEFAULT_HERO_ID);
+    const style = buildPortraitStyle({ ...hero, portrait: undefined });
+
+    expect(style.backgroundImage).toBe(`url('/${hero.idle.path}')`);
+    expect(style.backgroundPosition).toBe('0 0');
+    expect(style.imageRendering).toBe('pixelated');
   });
 
   it('crops the portrait of an unknown hero without throwing', () => {
