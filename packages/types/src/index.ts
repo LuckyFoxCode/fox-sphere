@@ -29,6 +29,7 @@ import {
 
 export * from "./hero/index";
 export * from "./lottery/index";
+export * from "./pivo/index";
 export * from "./profile/index";
 export * from "./roulette/index";
 export * from "./stream/index";

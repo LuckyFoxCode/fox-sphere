@@ -1,4 +1,5 @@
 import type { ProfileShowPayload } from '@fox-sphere/types';
+import { getGoldenBeerTier } from '@fox-sphere/types';
 
 export const WATCH_STREAK_MILESTONES = [3, 5, 7, 10, 15, 20, 30, 45, 60, 80, 100] as const;
 
@@ -33,6 +34,17 @@ export const getWatchStreakAchievement = (streakValue: number): string | null =>
   return milestone === null ? null : watchStreakAchievementPath(milestone);
 };
 
+const PIVO_ACHIEVEMENTS_BASE_PATH = '/assets/achievements/pivo';
+
+/** Порядок совпадает с `PIVO_TIER_THRESHOLDS` из `@fox-sphere/types`. */
+export const PIVO_TIER_LABELS = ['fresh', 'dark', 'aged', 'golden', 'legendary'] as const;
+
+export const getGoldenBeerTierLabel = (tier: number): string =>
+  PIVO_TIER_LABELS[tier - 1] ?? PIVO_TIER_LABELS[0];
+
+export const pivoTierAchievementPath = (tier: number): string =>
+  `${PIVO_ACHIEVEMENTS_BASE_PATH}/tier-${tier}.webp`;
+
 /** One earned badge, ready to render in a profile-card slot. */
 export interface ProfileAchievement {
   key: string;
@@ -60,6 +72,17 @@ export const PROFILE_ACHIEVEMENT_SLOTS: readonly ProfileAchievementResolver[] = 
       key: 'watch-streak',
       src: watchStreakAchievementPath(milestone),
       label: `watch streak ${milestone}`,
+    };
+  },
+  (profile) => {
+    const tier = getGoldenBeerTier(profile.goldenBeers);
+
+    if (tier === 0) return null;
+
+    return {
+      key: 'golden-beer',
+      src: pivoTierAchievementPath(tier),
+      label: `golden beer x${profile.goldenBeers}`,
     };
   },
 ];

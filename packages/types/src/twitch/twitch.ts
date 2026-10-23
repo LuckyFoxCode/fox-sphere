@@ -77,6 +77,15 @@ export interface TwitchWatchStreakPayload {
   isRepeat: boolean;
 }
 
+export interface TwitchGoldenBeerPayload {
+  userId: string;
+  username: string;
+  displayName: string;
+  goldenBeers: number;
+  tier: number;
+  isNewTier: boolean;
+}
+
 export interface TwitchServerToClientEvents {
   "chat:message": (data: TwitchChatMessagePayload) => void;
   "twitch:add-vip": (data: TwitchAddVipPaylod) => void;
@@ -86,5 +95,6 @@ export interface TwitchServerToClientEvents {
   "twitch:timer": (data: TwitchTimerPayload) => void;
   "twitch:timer-stop": () => void;
   "twitch:watch-streak": (data: TwitchWatchStreakPayload) => void;
+  "twitch:golden-beer": (data: TwitchGoldenBeerPayload) => void;
 }
 export interface TwitchClientToServerEvents {}

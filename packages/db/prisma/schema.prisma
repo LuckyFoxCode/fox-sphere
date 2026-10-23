@@ -189,6 +189,9 @@ model ChannelUser {
   isSubscriber   Boolean  @default(false)
   isPermanentVip Boolean  @default(false)
   spinsCount     Int      @default(0)
+  // Пожизненный счётчик золотого пива из `!pivo`. Денег не двигает, поэтому это счётчик,
+  // а не таблица истории: вопрос к нему всегда «сколько за всё время», никогда «когда».
+  goldenBeers    Int      @default(0)
   totalWin       Int      @default(0)
   totalLoss      Int      @default(0)
   xpThisWeek     Int      @default(0)

@@ -3,6 +3,7 @@ import { ApiClient } from "@twurple/api";
 import { ChatMessage } from "@twurple/chat";
 import { resolveChannelContext } from "../../channel";
 import { FishingService } from "../../fishing";
+import { PivoService } from "../../pivo";
 import { RouletteService } from "../../roulette";
 import { StreamService } from "../../stream";
 import { UserService } from "../../user";
@@ -64,6 +65,7 @@ export class CommandRegistry {
     private apiClient: ApiClient,
     private rouletteService: RouletteService,
     private fishingService: FishingService,
+    private pivoService: PivoService,
   ) {
     this.registerCommands();
   }
@@ -78,7 +80,7 @@ export class CommandRegistry {
       new HelpCommand(this.chatbotService),
       new LotteryCommand(this.userService),
       new LurkCommand(this.chatbotService),
-      new PivoCommand(this.chatbotService),
+      new PivoCommand(this.chatbotService, this.pivoService),
       new PointsCommand(this.chatbotService),
       new ProfileCommand(this.chatbotService, this.userService),
       new ProjectCommand(this.chatbotService),
