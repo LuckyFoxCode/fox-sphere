@@ -13,13 +13,13 @@ const tierLabel = computed(() => getGoldenBeerTierLabel(props.goldenBeer.tier));
 
 <template>
   <WidgetFrame
-    variant="amber"
+    variant="purple"
     position-x="100"
   >
     <div class="relative flex items-center justify-center gap-12 px-4 py-2">
       <span
         v-if="goldenBeer.isNewTier"
-        class="border-event-amber bg-event-amber/15 text-event-amber absolute top-1 right-1 flex w-fit rounded-lg border-2 px-1.5 py-1 text-xs font-semibold tracking-wider uppercase"
+        class="border-event-cyan bg-event-cyan/15 text-event-cyan absolute top-1 right-1 flex w-fit rounded-lg border-2 px-1.5 py-1 text-xs font-semibold tracking-wider uppercase"
       >
         new
       </span>
@@ -30,7 +30,7 @@ const tierLabel = computed(() => getGoldenBeerTierLabel(props.goldenBeer.tier));
         class="size-50 shrink-0 object-contain"
       />
 
-      <div class="flex flex-col items-center text-center">
+      <div class="flex flex-col items-center pt-3 text-center">
         <span
           class="text-event-amber mb-2 flex items-center gap-1.5 text-xs font-medium tracking-[0.35em] uppercase"
         >
@@ -38,7 +38,7 @@ const tierLabel = computed(() => getGoldenBeerTierLabel(props.goldenBeer.tier));
         </span>
 
         <span
-          class="text-event-amber text-6xl leading-none font-semibold drop-shadow-[0_0_7px_var(--color-event-amber)]"
+          class="text-event-purple text-6xl leading-none font-semibold drop-shadow-[0_0_7px_var(--color-event-purple)]"
         >
           x{{ goldenBeer.goldenBeers }}
         </span>
@@ -48,7 +48,7 @@ const tierLabel = computed(() => getGoldenBeerTierLabel(props.goldenBeer.tier));
         </p>
 
         <span
-          class="text-event-amber mb-2 text-base font-semibold drop-shadow-[0_0_5px_var(--color-event-amber)]"
+          class="text-event-red mb-2 text-base font-semibold drop-shadow-[0_0_5px_var(--color-event-red)]"
         >
           {{ goldenBeer.displayName }}
         </span>
