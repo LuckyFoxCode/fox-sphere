@@ -112,6 +112,8 @@ describe('getGoldenBeerTier', () => {
     expect(getGoldenBeerTier(0)).toBe(0);
     expect(getGoldenBeerTier(NaN)).toBe(0);
     expect(getGoldenBeerTier(-3)).toBe(0);
+    expect(getGoldenBeerTier(0.5)).toBe(0);
+    expect(getGoldenBeerTier(2.5)).toBe(0);
   });
 
   it('answers the tier at and between thresholds', () => {

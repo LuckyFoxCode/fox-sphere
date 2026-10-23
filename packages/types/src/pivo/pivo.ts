@@ -11,7 +11,7 @@ export const PIVO_TIER_COUNT = PIVO_TIER_THRESHOLDS.length;
 
 /** 0 — ступени ещё нет; 1..5 — последняя достигнутая. */
 export const getGoldenBeerTier = (goldenBeers: number): number => {
-  if (!Number.isFinite(goldenBeers) || goldenBeers < PIVO_TIER_THRESHOLDS[0]) return 0;
+  if (!Number.isInteger(goldenBeers) || goldenBeers < PIVO_TIER_THRESHOLDS[0]) return 0;
 
   let tier = 0;
 
