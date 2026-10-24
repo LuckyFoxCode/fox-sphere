@@ -1,9 +1,15 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { ProfileShowPayload } from '@fox-sphere/types';
+import { getGoldenBeerTier, PIVO_TIER_COUNT, type ProfileShowPayload } from '@fox-sphere/types';
 import {
+  getGoldenBeerTierLabel,
   getWatchStreakAchievement,
   getWatchStreakMilestone,
+  pivoTierAchievementPath,
   PROFILE_ACHIEVEMENT_SLOTS,
+  PROFILE_ACHIEVEMENT_SLOT_COUNT,
+  resolveProfileAchievementSlots,
 } from '../achievements';
 
 const url = (milestone: number) => `/assets/achievements/watch-streak/streak-${milestone}.webp`;
@@ -19,10 +25,13 @@ const profile = (bestStreak: number | null): ProfileShowPayload => ({
   userId: '42',
   lvl: 1,
   xp: 0,
+  startXp: 0,
+  maxXp: 100,
   coins: 0,
   heroId: null,
   heroLevel: null,
   bestStreak,
+  goldenBeers: 0,
   isMod: false,
   isFounder: false,
   isSubscriber: false,
@@ -91,5 +100,120 @@ describe('profile achievement slot 0', () => {
   it('leaves the slot empty when no milestone was ever awarded', () => {
     expect(resolveWatchStreakSlot(profile(null))).toBeNull();
     expect(resolveWatchStreakSlot(profile(2))).toBeNull();
+  });
+});
+
+const pivoUrl = (tier: number) => `/assets/achievements/pivo/tier-${tier}.webp`;
+
+const resolveGoldenBeerSlot = PROFILE_ACHIEVEMENT_SLOTS[1];
+
+if (!resolveGoldenBeerSlot) throw new Error('slot 1 is the golden-beer slot');
+
+const pivoProfile = (goldenBeers: number): ProfileShowPayload => ({
+  ...profile(null),
+  goldenBeers,
+});
+
+describe('getGoldenBeerTier', () => {
+  it('answers 0 below the first threshold and for a corrupt count', () => {
+    expect(getGoldenBeerTier(0)).toBe(0);
+    expect(getGoldenBeerTier(NaN)).toBe(0);
+    expect(getGoldenBeerTier(-3)).toBe(0);
+    expect(getGoldenBeerTier(0.5)).toBe(0);
+    expect(getGoldenBeerTier(2.5)).toBe(0);
+  });
+
+  it('answers the tier at and between thresholds', () => {
+    expect(getGoldenBeerTier(1)).toBe(1);
+    expect(getGoldenBeerTier(2)).toBe(2);
+    expect(getGoldenBeerTier(3)).toBe(2);
+    expect(getGoldenBeerTier(4)).toBe(3);
+    expect(getGoldenBeerTier(7)).toBe(4);
+    expect(getGoldenBeerTier(13)).toBe(5);
+  });
+
+  it('stays on the top tier past the last threshold', () => {
+    expect(getGoldenBeerTier(14)).toBe(5);
+    expect(getGoldenBeerTier(900)).toBe(5);
+  });
+});
+
+describe('pivo tier art', () => {
+  it('maps every tier to its own file, and every file exists on disk', () => {
+    for (let tier = 1; tier <= PIVO_TIER_COUNT; tier++) {
+      const src = pivoTierAchievementPath(tier);
+      expect(src).toBe(pivoUrl(tier));
+      expect(existsSync(join(process.cwd(), 'public', src)), src).toBe(true);
+    }
+  });
+
+  it('labels all five tiers', () => {
+    expect([1, 2, 3, 4, 5].map(getGoldenBeerTierLabel)).toEqual([
+      'fresh',
+      'dark',
+      'aged',
+      'golden',
+      'legendary',
+    ]);
+  });
+});
+
+describe('profile achievement slot 1', () => {
+  it('renders the badge of the tier reached, labelled with the raw count', () => {
+    expect(resolveGoldenBeerSlot(pivoProfile(9))).toEqual({
+      key: 'golden-beer',
+      src: pivoUrl(4),
+      label: 'golden beer x9',
+    });
+  });
+
+  it('keeps the top badge past the last threshold', () => {
+    expect(resolveGoldenBeerSlot(pivoProfile(40))?.src).toBe(pivoUrl(5));
+  });
+
+  it('leaves the slot empty for a viewer with no golden beer', () => {
+    expect(resolveGoldenBeerSlot(pivoProfile(0))).toBeNull();
+  });
+});
+
+describe('resolveProfileAchievementSlots', () => {
+  it('always answers one entry per cell', () => {
+    expect(resolveProfileAchievementSlots(profile(null))).toHaveLength(
+      PROFILE_ACHIEVEMENT_SLOT_COUNT,
+    );
+    expect(resolveProfileAchievementSlots(pivoProfile(13))).toHaveLength(
+      PROFILE_ACHIEVEMENT_SLOT_COUNT,
+    );
+  });
+
+  it('packs an earned badge into the first cell when the viewer has no watch streak', () => {
+    const slots = resolveProfileAchievementSlots(pivoProfile(12));
+
+    expect(slots[0]).toEqual({
+      key: 'golden-beer',
+      src: pivoUrl(4),
+      label: 'golden beer x12',
+    });
+    expect(slots.slice(1)).toEqual([null, null, null]);
+  });
+
+  it('keeps resolver order when both badges are earned', () => {
+    const slots = resolveProfileAchievementSlots({ ...pivoProfile(1), bestStreak: 10 });
+
+    expect(slots[0]?.key).toBe('watch-streak');
+    expect(slots[1]?.key).toBe('golden-beer');
+    expect(slots.slice(2)).toEqual([null, null]);
+  });
+
+  it('leaves every cell a placeholder for a viewer with nothing earned', () => {
+    expect(resolveProfileAchievementSlots(profile(null))).toEqual([null, null, null, null]);
+  });
+
+  it('never puts a placeholder in front of an earned badge', () => {
+    const slots = resolveProfileAchievementSlots(pivoProfile(13));
+    const firstPlaceholder = slots.indexOf(null);
+
+    expect(firstPlaceholder).toBeGreaterThan(0);
+    expect(slots.slice(firstPlaceholder).every((slot) => slot === null)).toBe(true);
   });
 });

@@ -18,6 +18,7 @@ import {
   TwitchAddVipPaylod,
   TwitchChatMessagePayload,
   TwitchFollowPayload,
+  TwitchGoldenBeerPayload,
   TwitchRaidPayload,
   TwitchRemoveVipPaylod,
   TwitchRewardPayload,
@@ -59,6 +60,7 @@ export interface AppEvents {
   };
   "twitch:add-vip": TwitchAddVipPaylod;
   "twitch:follow": TwitchFollowPayload;
+  "twitch:golden-beer": TwitchGoldenBeerPayload;
   "twitch:raid": TwitchRaidPayload;
   "twitch:remove-vip": TwitchRemoveVipPaylod;
   "twitch:reward-redeem": TwitchRewardPayload;

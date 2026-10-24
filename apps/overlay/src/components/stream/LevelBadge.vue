@@ -2,10 +2,13 @@
 import { getRankConfigByLevel, MAX_ICON_TIER, RANK_RINGS } from '@/constants';
 import { computed } from 'vue';
 
-const props = defineProps<{ level: number }>();
+const props = defineProps<{ level: number; isBroadcaster?: boolean }>();
 
 const ring = computed(
-  () => RANK_RINGS[Math.min(getRankConfigByLevel(props.level).tier, MAX_ICON_TIER)],
+  () =>
+    RANK_RINGS[
+      Math.min(getRankConfigByLevel(props.level, props.isBroadcaster).tier, MAX_ICON_TIER)
+    ],
 );
 </script>
 

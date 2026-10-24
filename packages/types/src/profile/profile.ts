@@ -8,13 +8,22 @@ export interface ProfileShowPayload {
   color: string;
   userId: string;
   lvl: number;
+  // Накопленный опыт, не «внутри уровня»: `checkAndUpgradeLevel` сравнивает его с таким же
+  // накопленным порогом. Поэтому карточка показывает и сам `xp`, и границы текущего уровня.
   xp: number;
+  // Накопленные пороги уровня: `startXp` - порог предыдущего уровня, `maxXp` - текущего.
+  // Считает бот (`getXpThresholdForLevel`), оверлей только рисует процент: формула живёт в
+  // `backend-shared`, который фронтенд не импортирует, и копия в оверлее разъехалась бы молча.
+  startXp: number;
+  maxXp: number;
   coins: number;
   heroId: string | null;
   heroLevel: number | null;
   // «Лучшая» серия просмотров, а не текущая: `WatchStreak` — журнал выданных наград,
   // текущей серии в схеме нет.
   bestStreak: number | null;
+  // Пожизненный счётчик золотого пива; ступень из него считает оверлей.
+  goldenBeers: number;
   isMod: boolean;
   isFounder: boolean;
   isSubscriber: boolean;

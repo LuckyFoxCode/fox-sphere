@@ -587,10 +587,17 @@ export class UserService {
       userId: channelUser.viewer.twitchId,
       lvl: channelUser.lvl,
       xp: channelUser.xp,
+      // The card's XP bar needs both ends of the current level, and the threshold formula lives
+      // in `backend-shared` - the overlay cannot import it, so the bot answers the two numbers.
+      // Same cumulative scheme `checkAndUpgradeLevel` compares against, and the same pair the
+      // stream widget receives from `getStreamStatePrepared`.
+      startXp: getXpThresholdForLevel(channelUser.lvl - 1, 100),
+      maxXp: getXpThresholdForLevel(channelUser.lvl, 100),
       coins: channelUser.coins,
       heroId: channelUser.hero?.heroId ?? null,
       heroLevel: channelUser.hero?.level ?? null,
       bestStreak: bestStreak?.streakValue ?? null,
+      goldenBeers: channelUser.goldenBeers,
       isMod: channelUser.isMod,
       isFounder: channelUser.isFounder,
       isSubscriber: channelUser.isSubscriber,
