@@ -8,6 +8,8 @@ import {
   getWatchStreakMilestone,
   pivoTierAchievementPath,
   PROFILE_ACHIEVEMENT_SLOTS,
+  PROFILE_ACHIEVEMENT_SLOT_COUNT,
+  resolveProfileAchievementSlots,
 } from '../achievements';
 
 const url = (milestone: number) => `/assets/achievements/watch-streak/streak-${milestone}.webp`;
@@ -23,6 +25,8 @@ const profile = (bestStreak: number | null): ProfileShowPayload => ({
   userId: '42',
   lvl: 1,
   xp: 0,
+  startXp: 0,
+  maxXp: 100,
   coins: 0,
   heroId: null,
   heroLevel: null,
@@ -105,7 +109,10 @@ const resolveGoldenBeerSlot = PROFILE_ACHIEVEMENT_SLOTS[1];
 
 if (!resolveGoldenBeerSlot) throw new Error('slot 1 is the golden-beer slot');
 
-const pivoProfile = (goldenBeers: number): ProfileShowPayload => ({ ...profile(null), goldenBeers });
+const pivoProfile = (goldenBeers: number): ProfileShowPayload => ({
+  ...profile(null),
+  goldenBeers,
+});
 
 describe('getGoldenBeerTier', () => {
   it('answers 0 below the first threshold and for a corrupt count', () => {
@@ -166,5 +173,47 @@ describe('profile achievement slot 1', () => {
 
   it('leaves the slot empty for a viewer with no golden beer', () => {
     expect(resolveGoldenBeerSlot(pivoProfile(0))).toBeNull();
+  });
+});
+
+describe('resolveProfileAchievementSlots', () => {
+  it('always answers one entry per cell', () => {
+    expect(resolveProfileAchievementSlots(profile(null))).toHaveLength(
+      PROFILE_ACHIEVEMENT_SLOT_COUNT,
+    );
+    expect(resolveProfileAchievementSlots(pivoProfile(13))).toHaveLength(
+      PROFILE_ACHIEVEMENT_SLOT_COUNT,
+    );
+  });
+
+  it('packs an earned badge into the first cell when the viewer has no watch streak', () => {
+    const slots = resolveProfileAchievementSlots(pivoProfile(12));
+
+    expect(slots[0]).toEqual({
+      key: 'golden-beer',
+      src: pivoUrl(4),
+      label: 'golden beer x12',
+    });
+    expect(slots.slice(1)).toEqual([null, null, null]);
+  });
+
+  it('keeps resolver order when both badges are earned', () => {
+    const slots = resolveProfileAchievementSlots({ ...pivoProfile(1), bestStreak: 10 });
+
+    expect(slots[0]?.key).toBe('watch-streak');
+    expect(slots[1]?.key).toBe('golden-beer');
+    expect(slots.slice(2)).toEqual([null, null]);
+  });
+
+  it('leaves every cell a placeholder for a viewer with nothing earned', () => {
+    expect(resolveProfileAchievementSlots(profile(null))).toEqual([null, null, null, null]);
+  });
+
+  it('never puts a placeholder in front of an earned badge', () => {
+    const slots = resolveProfileAchievementSlots(pivoProfile(13));
+    const firstPlaceholder = slots.indexOf(null);
+
+    expect(firstPlaceholder).toBeGreaterThan(0);
+    expect(slots.slice(firstPlaceholder).every((slot) => slot === null)).toBe(true);
   });
 });
