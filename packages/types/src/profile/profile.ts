@@ -8,7 +8,14 @@ export interface ProfileShowPayload {
   color: string;
   userId: string;
   lvl: number;
+  // Накопленный опыт, не «внутри уровня»: `checkAndUpgradeLevel` сравнивает его с таким же
+  // накопленным порогом. Поэтому карточка показывает и сам `xp`, и границы текущего уровня.
   xp: number;
+  // Накопленные пороги уровня: `startXp` - порог предыдущего уровня, `maxXp` - текущего.
+  // Считает бот (`getXpThresholdForLevel`), оверлей только рисует процент: формула живёт в
+  // `backend-shared`, который фронтенд не импортирует, и копия в оверлее разъехалась бы молча.
+  startXp: number;
+  maxXp: number;
   coins: number;
   heroId: string | null;
   heroLevel: number | null;

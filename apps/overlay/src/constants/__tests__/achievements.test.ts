@@ -25,6 +25,8 @@ const profile = (bestStreak: number | null): ProfileShowPayload => ({
   userId: '42',
   lvl: 1,
   xp: 0,
+  startXp: 0,
+  maxXp: 100,
   coins: 0,
   heroId: null,
   heroLevel: null,
