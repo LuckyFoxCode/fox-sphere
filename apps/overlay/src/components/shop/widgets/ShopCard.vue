@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { HeroPortrait } from '@/components/ui';
 import { WidgetFrame } from '@/components/ui/widget-frame';
-import { buildHeroPortraitStyle, HEROES } from '@/utils/hero';
+import { HEROES } from '@/utils/hero';
 import type { HeroStats } from '@fox-sphere/types';
 
 /**
@@ -40,11 +41,9 @@ const formatPrice = (price: number): string => (price === 0 ? 'free' : `🪙 ${p
           :key="hero.id"
           class="border-event-purple/30 bg-event-purple/5 flex min-w-0 flex-1 basis-0 flex-col items-center gap-y-2 rounded-xl border-2 px-2 py-3"
         >
-          <div
-            class="aspect-square w-full max-w-24 bg-no-repeat"
-            :style="buildHeroPortraitStyle(hero.id)"
-            role="img"
-            :aria-label="hero.name"
+          <HeroPortrait
+            :hero-id="hero.id"
+            size="w-full max-w-24"
           />
 
           <div class="flex min-w-0 flex-col items-center gap-y-0.5">

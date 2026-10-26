@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { globalEventBus } from "../../../../../shared/services";
-import { BOT_MESSAGES, COOLDOWNS } from "../../../twitch.constants";
+import { BOT_MESSAGES } from "../../../twitch.constants";
 import type { ChatbotService } from "../../../chatbot.service";
 import type { CommandContext } from "../../command.interface";
 import { ShopCommand } from "../shop.command";
@@ -12,6 +12,9 @@ import { ShopCommand } from "../shop.command";
 
 const CHANNEL = "luckyfoxcode";
 const CALLER = "alice";
+
+/** The overlay keeps the storefront up for this long — see `useShopSocket`. */
+const SHOP_DISPLAY_MS = 10_000;
 
 const makeChatbot = () => ({ sendMessage: vi.fn(async () => {}) } as unknown as ChatbotService);
 
@@ -36,9 +39,17 @@ describe("ShopCommand", () => {
   });
 
   it("uses a global cooldown longer than the display", () => {
-    expect(new ShopCommand(makeChatbot()).cooldown).toEqual({
-      time: COOLDOWNS.SHOP_COMMAND,
-      type: "global",
-    });
+    const cooldown = new ShopCommand(makeChatbot()).cooldown;
+
+    // The literal, not `COOLDOWNS.SHOP_COMMAND`: comparing the command's cooldown against the
+    // constant it is built from would stay green for any value, including one shorter than the
+    // window it is supposed to outlast. `60000` is the number the brief fixes, so a changed
+    // constant has to be a deliberate edit here too.
+    expect(cooldown).toEqual({ time: 60000, type: "global" });
+
+    // The relation the title claims. `SHOP_DISPLAY_MS` mirrors the overlay's
+    // `setStatusWithTimeout('show', 10000)` in `useShopSocket` - a frontend module this suite
+    // cannot import, so the window is restated rather than shared.
+    expect(cooldown?.time).toBeGreaterThan(SHOP_DISPLAY_MS);
   });
 });
