@@ -9,6 +9,7 @@ import { ChatClient, type ChatMessage } from "@twurple/chat";
 import { randomUUID } from "node:crypto";
 import { globalEventBus } from "../../shared/services";
 import { FishingService } from "../fishing";
+import { HeroService } from "../hero";
 import { PivoService } from "../pivo";
 import { RouletteService } from "../roulette";
 import { StreamService } from "../stream";
@@ -53,6 +54,7 @@ export class ChatbotService {
     private userService: UserService,
     private streamService: StreamService,
     private twitchConfig: TwitchConfig,
+    private heroService: HeroService,
   ) {
     this.apiClient = new ApiClient({ authProvider: this.authProvider });
     this.activityService = new TwitchActivityService(
@@ -68,6 +70,7 @@ export class ChatbotService {
       new RouletteService(this.userService),
       new FishingService(this.userService),
       new PivoService(),
+      this.heroService,
     );
     this.announcementService = new AnnouncementService(
       this.apiClient,

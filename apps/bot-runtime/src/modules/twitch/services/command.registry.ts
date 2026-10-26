@@ -3,6 +3,7 @@ import { ApiClient } from "@twurple/api";
 import { ChatMessage } from "@twurple/chat";
 import { resolveChannelContext } from "../../channel";
 import { FishingService } from "../../fishing";
+import { HeroService } from "../../hero";
 import { PivoService } from "../../pivo";
 import { RouletteService } from "../../roulette";
 import { StreamService } from "../../stream";
@@ -10,6 +11,7 @@ import { UserService } from "../../user";
 import { ChatbotService } from "../chatbot.service";
 import { CommandError, TwitchCommand } from "../commands/command.interface";
 import {
+  BuyCommand,
   CoinsCommand,
   FishingCastCommand,
   SpinCommand,
@@ -66,12 +68,14 @@ export class CommandRegistry {
     private rouletteService: RouletteService,
     private fishingService: FishingService,
     private pivoService: PivoService,
+    private heroService: HeroService,
   ) {
     this.registerCommands();
   }
 
   private registerCommands(): void {
     const commandToRegister: TwitchCommand[] = [
+      new BuyCommand(this.chatbotService, this.heroService, this.userService),
       new CoinsCommand(this.chatbotService, this.userService),
       new SpinCommand(this.chatbotService, this.userService, this.rouletteService),
       new SpinStatsCommand(this.chatbotService, this.userService),

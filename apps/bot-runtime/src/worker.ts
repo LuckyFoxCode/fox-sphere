@@ -49,6 +49,7 @@ export async function bootstrap() {
     userService,
     streamService,
     twitchConfig,
+    heroService,
   );
   const eventSubClient = new TwitchEventSubClient(authProvider, twitchConfig);
 
