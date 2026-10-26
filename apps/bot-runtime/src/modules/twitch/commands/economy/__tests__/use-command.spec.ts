@@ -46,17 +46,29 @@ describe("UseCommand", () => {
       CHANNEL,
       BOT_MESSAGES.COMMANDS.USE_SUCCESS(CALLER, "Thug"),
     );
+
+    // Presence is not the requirement - sequence is. With the emit first the overlay re-spawns
+    // correctly, but the viewer's next message still carries the old hero id out of the warm
+    // cache and puts the old sprite back, so `invalidateHero` has to run before the emit. The
+    // command emits exactly once, so index 0 of the spy is the `hero:changed` call.
+    expect(vi.mocked(user.invalidateHero).mock.invocationCallOrder[0]).toBeLessThan(
+      spy.mock.invocationCallOrder[0],
+    );
   });
 
   it("does not touch the overlay when the hero is not owned", async () => {
     const spy = vi.spyOn(globalEventBus, "emit");
     const chatbot = makeChatbot();
+    const user = makeUser();
+    const heroes = makeHeroes("not-owned");
 
-    await new UseCommand(chatbot, makeHeroes("not-owned"), makeUser()).execute(
-      makeContext(["hero", "thug"]),
-    );
+    await new UseCommand(chatbot, heroes, user).execute(makeContext(["hero", "thug"]));
 
-    expect(spy).not.toHaveBeenCalledWith("hero:changed", expect.anything());
+    // One argument, not `("hero:changed", expect.anything())`: the two-argument form only fails
+    // on an emit that carries a payload, so a payload-less `hero:changed` would slip through.
+    expect(spy).not.toHaveBeenCalledWith("hero:changed");
+    expect(user.invalidateHero).not.toHaveBeenCalled();
+    expect(heroes.equipHero).toHaveBeenCalledWith("twitch_111", "thug");
     expect(chatbot.sendMessage).toHaveBeenCalledWith(
       CHANNEL,
       BOT_MESSAGES.COMMANDS.USE_NOT_OWNED(CALLER, "Thug"),
@@ -64,15 +76,49 @@ describe("UseCommand", () => {
   });
 
   it("says the hero is already active", async () => {
+    const spy = vi.spyOn(globalEventBus, "emit");
     const chatbot = makeChatbot();
+    const user = makeUser();
 
-    await new UseCommand(chatbot, makeHeroes("already-active"), makeUser()).execute(
+    await new UseCommand(chatbot, makeHeroes("already-active"), user).execute(
       makeContext(["hero", "thug"]),
     );
 
+    expect(spy).not.toHaveBeenCalledWith("hero:changed");
+    expect(user.invalidateHero).not.toHaveBeenCalled();
     expect(chatbot.sendMessage).toHaveBeenCalledWith(
       CHANNEL,
       BOT_MESSAGES.COMMANDS.USE_ALREADY_ACTIVE(CALLER, "Thug"),
+    );
+  });
+
+  it("asks for a hero name when the argument is missing", async () => {
+    const chatbot = makeChatbot();
+    const user = makeUser();
+    const heroes = makeHeroes("equipped");
+
+    await new UseCommand(chatbot, heroes, user).execute(makeContext(["hero"]));
+
+    expect(heroes.equipHero).not.toHaveBeenCalled();
+    expect(user.invalidateHero).not.toHaveBeenCalled();
+    expect(chatbot.sendMessage).toHaveBeenCalledWith(
+      CHANNEL,
+      BOT_MESSAGES.COMMANDS.USE_USAGE(CALLER),
+    );
+  });
+
+  it("asks for a hero name when the category is not a hero", async () => {
+    const chatbot = makeChatbot();
+    const user = makeUser();
+    const heroes = makeHeroes("equipped");
+
+    await new UseCommand(chatbot, heroes, user).execute(makeContext(["skin", "thug"]));
+
+    expect(heroes.equipHero).not.toHaveBeenCalled();
+    expect(user.invalidateHero).not.toHaveBeenCalled();
+    expect(chatbot.sendMessage).toHaveBeenCalledWith(
+      CHANNEL,
+      BOT_MESSAGES.COMMANDS.USE_USAGE(CALLER),
     );
   });
 });
