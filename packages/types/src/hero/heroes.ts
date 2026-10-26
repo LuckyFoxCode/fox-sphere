@@ -97,6 +97,22 @@ export const isFreeHero = (id: string): boolean =>
 export const getHeroById = (id: string): HeroDefinition =>
   heroesById.get(id) ?? getDefaultHero();
 
+/**
+ * Резолвит героя по id, затем по имени, без учёта регистра.
+ *
+ * Отдельно от `getHeroById`, который молча отдаёт дефолтного героя на неизвестный id: для
+ * рендера это правильно, для парсера покупки - нет, иначе `!buy hero tugg` купит `assassin`
+ * и отрапортует об успехе.
+ */
+export const findHeroByTerm = (term: string): HeroDefinition | undefined => {
+  const needle = term.trim().toLowerCase();
+
+  return (
+    heroesById.get(needle) ??
+    HEROES.find((hero) => hero.name.toLowerCase() === needle)
+  );
+};
+
 /** Fractional growth rates make `base + growth * steps` accumulate float noise. */
 const round2 = (value: number): number => Number(value.toFixed(2));
 

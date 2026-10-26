@@ -15,6 +15,10 @@ import {
   RouletteServerToClientEvents,
 } from "./roulette";
 import {
+  ShopClientToServerEvents,
+  ShopServerToClientEvents,
+} from "./shop";
+import {
   StreamClientToServerEvents,
   StreamServerToClientEvents,
 } from "./stream";
@@ -32,6 +36,7 @@ export * from "./lottery/index";
 export * from "./pivo/index";
 export * from "./profile/index";
 export * from "./roulette/index";
+export * from "./shop/index";
 export * from "./stream/index";
 export * from "./twitch/index";
 export * from "./user/index";
@@ -48,6 +53,7 @@ type AllServerEvents = [
   LotteryServerToClientEvents,
   ProfileServerToClientEvents,
   RouletteServerToClientEvents,
+  ShopServerToClientEvents,
   StreamServerToClientEvents,
   TwitchServerToClientEvents,
   UserServerToClientEvents,
@@ -57,6 +63,7 @@ type AllClientEvents = [
   LotteryClientToServerEvents,
   ProfileClientToServerEvents,
   RouletteClientToServerEvents,
+  ShopClientToServerEvents,
   StreamClientToServerEvents,
   TwitchClientToServerEvents,
   UserClientToServerEvents,
