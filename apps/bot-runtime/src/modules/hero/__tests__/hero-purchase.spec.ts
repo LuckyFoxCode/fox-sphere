@@ -40,6 +40,12 @@ describe("HeroService.buyHero", () => {
     expect(row.isActive).toBe(false);
 
     const history = await prisma.coinHistory.findFirstOrThrow();
+    // Both halves of the pair, the same way `fishing.service.spec.ts` pins them:
+    // `CoinHistory.channelId` is a plain column with no foreign key, so nothing in the schema
+    // stops it drifting from the balance row it explains - and `User.id` / `ChannelUser.id` are
+    // unrelated sequences, so a history write handed the wrong id files it under another viewer.
+    expect(history.channelId).toBe(TEST_CHANNEL_ID);
+    expect(history.channelUserId).toBe(channelUser.id);
     expect(history.amount).toBe(-300);
     expect(history.reason).toBe("HERO_PURCHASE");
     expect(history.details).toBe("Hero: robber");

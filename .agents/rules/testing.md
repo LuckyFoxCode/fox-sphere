@@ -26,7 +26,14 @@ Vitest, in four members only:
 | `apps/bot-runtime` | `src/modules/fishing/__tests__/fishing.service.spec.ts` | a coin and an XP catch paid to a viewer with no legacy `User` row, the `CoinHistory` / `XpHistory` rows filed under that viewer's `(channelId, channelUserId)`, a bank catch feeding the jackpot only, and an unpayable viewer named rather than skipped |
 | `apps/bot-runtime` | `src/modules/roulette/__tests__/roulette.service.spec.ts` | the debit, the ledger rows, per-channel isolation of one viewer's two balances, and honest `totalLoss` — a prize above the stake books `0` loss rather than the stake, pinned for both a big coin prize and a jackpot |
 | `apps/bot-runtime` | `src/modules/user/__tests__/watch-streak.service.spec.ts` | first award and its repeat halves, and the two history rows it writes |
-| `apps/bot-runtime` | `src/modules/hero/__tests__/hero.service.spec.ts` | hero assignment and progression per viewer |
+| `apps/bot-runtime` | `src/modules/hero/__tests__/hero.service.spec.ts` | hero assignment and progression per viewer - the default hero filed under both halves of the pair, no second row on a repeat, an inactive row healed to active, one hero row per channel for the same viewer, and a sweep that touches only this channel |
+| `apps/bot-runtime` | `src/modules/hero/__tests__/hero-equip.spec.ts` | `equipHero` - the active flag moving to the newly equipped hero, an already-active hero reported without rewriting `updatedAt`, an unowned hero refused with the active one kept, and two channels' active heroes independent |
+| `apps/bot-runtime` | `src/modules/hero/__tests__/hero-purchase.spec.ts` | `buyHero` - the debit and its `CoinHistory` row filed under the same `(channelId, channelUserId)` pair, ownership recorded inactive, the exact-price and one-coin-short edges, no second charge on a repeat, `already-owned` answered before the price, a zero-price grant with no ledger row, and a viewer with no balance row refused |
+| `apps/bot-runtime` | `src/modules/hero/__tests__/find-hero-by-term.spec.ts` | `findHeroByTerm` - by id and by display name, case-insensitively, and `undefined` for a typo instead of the default hero - pure |
+| `apps/bot-runtime` | `src/modules/twitch/commands/economy/__tests__/buy-command.spec.ts` | `!buy` - the success and free-hero replies, already-owned, the shortfall line, a typo not buying the default hero, and the usage hint for a missing item - pure |
+| `apps/bot-runtime` | `src/modules/twitch/commands/economy/__tests__/use-command.spec.ts` | `!use` - the equip, `invalidateHero` **before** the `hero:changed` emit, the success line, and no event and no cache drop on `not-owned`, `already-active`, a missing argument or a non-hero category - pure |
+| `apps/bot-runtime` | `src/modules/twitch/commands/economy/__tests__/item-args.spec.ts` | `parseItemArgs` - the category/term split, lowercasing, a multi-word term kept joined, and both null cases - pure |
+| `apps/bot-runtime` | `src/modules/twitch/commands/general/__tests__/shop-command.spec.ts` | `!shop` - the storefront event payload with no database on the path, and a cooldown longer than the display - pure |
 | `apps/bot-runtime` | `src/modules/user/__tests__/user-cache.spec.ts` | the `${channelId}:${twitchId}` key and the two TTLs - pure |
 | `apps/bot-runtime` | `src/modules/twitch/services/__tests__/activity.service.spec.ts` | the message path - `trackActivity` mirrors the mod / subscriber tags of a message onto `ChannelUser`, unflags a lost role on the next message past the `verifiedUsers` cache, and awards the XP the sync sits in front of, founder and VIP bonuses included |
 | `apps/bot-runtime` | `src/modules/pivo/__tests__/pivo.service.spec.ts` | the golden-beer counter - a regular roll writes nothing, a golden one increments `goldenBeers` on that viewer's `ChannelUser`, `isNewTier` fires exactly on the crossing drop, tier 5 holds past the top threshold, and an unknown viewer throws instead of being credited |
@@ -35,23 +42,34 @@ Vitest, in four members only:
 | `apps/overlay` | `src/constants/__tests__/rouletteSegments.test.ts` | segment catalog, rarity tiers, and tape strip constants |
 | `apps/overlay` | `src/utils/roulette/__tests__/tapeFill.test.ts` | tape strip fill algorithm - center winner, no adjacent duplicates, weights match backend |
 | `apps/overlay` | `src/components/roulette/__tests__/RouletteSpin.test.ts` | roulette widget status smoke test (idle/spinning/jackpot takeover) |
+| `apps/overlay` | `src/phaser/__tests__/hero-lane.test.ts` | the hero-lane bridge - buffering before a scene exists and replaying on the next one, label attach order, removal from scene/buffer/labels, a stale generation ignored, and both halves of the identity check: a changed `heroId` re-adds the sprite, an unchanged one does not |
+| `apps/overlay` | `src/components/hero/components/__tests__/ActiveHero.test.ts` | `ActiveHero`'s `heroId` watch - re-spawns the sprite on a changed hero and stays put on an unchanged one |
+| `apps/overlay` | `src/composables/__tests__/useHeroOverlay.test.ts` | the lane's data - a bubble cleared after `MESSAGE_TTL`, a replaced bubble, a `heroId` change picked up on the next message while still in the lane, and a viewer flag change carried by the same payload |
+| `apps/overlay` | `src/constants/__tests__/achievements.test.ts` | watch-streak milestones and their badge art, golden-beer tiers and their files on disk, and `resolveProfileAchievementSlots` packing order |
+| `apps/overlay` | `src/constants/__tests__/ranks.test.ts` | rank bands and their edges, the broadcaster and bot overrides, and badge / gradient coverage for every level |
+| `apps/overlay` | `src/utils/hero/__tests__/heroes.test.ts` | every `heroes.json` entry - shape, frame grid, sprite sheets that exist on disk, unique ids, and no negative price or level |
+| `apps/overlay` | `src/utils/wander/__tests__/movement.test.ts` | the wander step - the wait/walk coin flip, the duration floor, the lane bounds, and the animation time scale |
 | `apps/admin` | `src/__tests__/App.test.ts` | every documented status branch, including the 500 that used to render nothing |
 | `apps/admin` | `src/views/__tests__/ChannelView.test.ts` | channel detail screen - load, edit, delete, and every status branch |
 | `apps/admin` | `src/views/__tests__/ChannelUsersView.test.ts` | viewers screen - list, leaderboard and viewer detail, with the route login and page state resolved before the hook call |
 
 `pnpm test` runs all of it (`pnpm -r test`); CI runs it in the gate. All of it is a pure
-function, a mounted component with the generated client stubbed, or - in ten files - a real
+function, a mounted component with its dependencies stubbed, or - in twelve files - a real
 connection to a throwaway Postgres. So:
 
 - "Tests pass" means those units and nothing else. Never let it stand for the bot working.
   The two are not the same kind of claim: `reset-db.spec.ts` covers the harness and
   `channel-context.spec.ts` covers the resolver - real bot code, but one function that reads
-  one row, with no Twitch and no chat behind it. The service specs (`user`, `lottery`,
-  `roulette`, `watch-streak`, `hero`, `fishing`, `pivo`) go further - the first six really do
-  move a balance and assert the ledger row beside it, which is what caught the `User` gate in
-  `grantCatch` that was silently dropping every new viewer's fishing coins, and `pivo` moves
-  the lifetime golden-beer counter with no ledger to move. `activity.service.spec.ts` and
-  `founder-commands.spec.ts` go one step further again: they hand a synthetic message and a
+  one row, with no Twitch and no chat behind it. The database-backed service specs (`user`,
+  `lottery`, `roulette`, `watch-streak`, `hero`, `hero-equip`, `hero-purchase`, `fishing`,
+  `pivo`, `activity`) go further - and **five** of them (`user.service`, `roulette`,
+  `watch-streak`, `fishing`, `hero-purchase`) really do move a balance and assert the ledger
+  row beside it, which is what caught the `User` gate in `grantCatch` that was silently
+  dropping every new viewer's fishing coins. The other five move less: `lottery` weekly XP and
+  `activity` the message XP with no history row to write, `pivo` the lifetime golden-beer
+  counter with no ledger to move, and `hero` / `hero-equip` hero rows without touching coins.
+  `activity.service.spec.ts` and the command specs (`founder-commands`, `buy-command`,
+  `use-command`, `shop-command`) go one step further again: they hand a synthetic message and a
   synthetic command context straight to one service and one command pair. They still have
   **no** Twitch, **no** socket, and nothing that dispatches a command from a real IRC
   message: none of them would catch a command that never fires (a wrong name in

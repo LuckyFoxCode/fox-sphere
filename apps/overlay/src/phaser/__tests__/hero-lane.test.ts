@@ -64,7 +64,7 @@ describe('hero-lane bridge', () => {
     cleanup(['live']);
   });
 
-  it('re-plays buffered spawns on the next scene, because a restart clears the added set', () => {
+  it('re-plays buffered spawns on the next scene, because a restart clears what was added', () => {
     setHeroLaneHost(null);
 
     spawnHero('restart', 'assassin');
@@ -102,14 +102,35 @@ describe('hero-lane bridge', () => {
     cleanup([]);
   });
 
-  it('ignores a second spawn for the same user instead of adding a second sprite', () => {
+  it('does not re-add a sprite when the same hero is spawned again for one user', () => {
     const host = makeHost();
     setHeroLaneHost(host);
 
     spawnHero('swapped', 'assassin');
-    spawnHero('swapped', 'assassin');
+    spawnHero('swapped', 'thug');
+    spawnHero('swapped', 'thug');
 
-    expect(host.addHero).toHaveBeenCalledTimes(1);
+    // Two adds for two distinct heroes; the third spawn repeats the one already in the scene,
+    // and a second sprite for it would stack two agents on one nickname card.
+    expect(host.addHero).toHaveBeenCalledTimes(2);
+    expect(host.addHero).toHaveBeenLastCalledWith('swapped', 'thug');
+
+    cleanup(['swapped']);
+  });
+
+  it('re-adds the sprite when a viewer already in the lane changes hero', () => {
+    const host = makeHost();
+    setHeroLaneHost(host);
+
+    // This is the whole `!use` path: `ActiveHero`'s watch re-spawns with the new hero id, and
+    // the lane has to hand it to the scene. Keying by user id alone swallows it, and since
+    // `HERO_TTL` refreshes on every message an active chatter never falls out of the lane - so
+    // for exactly the viewers the feature is for, `!use` would never visibly work.
+    spawnHero('swapped', 'assassin');
+    spawnHero('swapped', 'thug');
+
+    expect(host.addHero).toHaveBeenCalledTimes(2);
+    expect(host.addHero).toHaveBeenLastCalledWith('swapped', 'thug');
 
     cleanup(['swapped']);
   });

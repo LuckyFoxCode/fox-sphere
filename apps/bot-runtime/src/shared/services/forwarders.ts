@@ -109,6 +109,7 @@ const FORWARDERS: readonly Forwarder[] = [
       `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding hero:assigned to overlay for: ${data.username}`,
     "info",
   ),
+  // Долг: глобальный broadcast — phase-1 multi-tenancy переведёт на per-channel rooms.
   forward(
     "hero:changed",
     (data) =>
