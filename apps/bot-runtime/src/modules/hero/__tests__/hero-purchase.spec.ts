@@ -78,6 +78,27 @@ describe("HeroService.buyHero", () => {
     expect(await prisma.coinHistory.count()).toBe(1);
   });
 
+  it("answers already-owned before looking at the price", async () => {
+    // Баланс 0 против цены 300 - единственный случай, где порядок проверок виден снаружи:
+    // при проверке денег первой ответ был бы `insufficient-funds`. Тест на 1000 монетах
+    // этого не различает, потому что P2002 откатывает транзакцию и даёт тот же ответ.
+    const channelUser = await seedChannelUser(0);
+    await prisma.userHero.create({
+      data: {
+        channelUserId: channelUser.id,
+        channelId: TEST_CHANNEL_ID,
+        heroId: ROBBIE.id,
+      },
+    });
+
+    expect(await new HeroService().buyHero(TWITCH_ID, ROBBIE)).toEqual({
+      status: "already-owned",
+    });
+    expect((await prisma.channelUser.findFirstOrThrow()).coins).toBe(0);
+    expect(await prisma.userHero.count()).toBe(1);
+    expect(await prisma.coinHistory.count()).toBe(0);
+  });
+
   it("grants a zero-price hero without a debit or a ledger row", async () => {
     await seedChannelUser(50);
 
