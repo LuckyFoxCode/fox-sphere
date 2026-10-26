@@ -16,6 +16,7 @@ import {
   FishingCastCommand,
   SpinCommand,
   SpinStatsCommand,
+  UseCommand,
 } from "../commands/economy";
 import {
   GitHubCommand,
@@ -79,6 +80,7 @@ export class CommandRegistry {
       new CoinsCommand(this.chatbotService, this.userService),
       new SpinCommand(this.chatbotService, this.userService, this.rouletteService),
       new SpinStatsCommand(this.chatbotService, this.userService),
+      new UseCommand(this.chatbotService, this.heroService, this.userService),
       new FishingCastCommand(this.chatbotService, this.fishingService),
       new GitHubCommand(this.chatbotService),
       new HelpCommand(this.chatbotService),

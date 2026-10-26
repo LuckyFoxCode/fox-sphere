@@ -110,6 +110,12 @@ const FORWARDERS: readonly Forwarder[] = [
     "info",
   ),
   forward(
+    "hero:changed",
+    (data) =>
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding hero:changed to overlay | User: ${data.twitchId}, Hero: ${data.heroId}`,
+    "info",
+  ),
+  forward(
     "stream:level-up",
     (data) =>
       `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding stream level-up to overlay |  New Level: ${data.lvl}`,

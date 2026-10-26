@@ -54,6 +54,7 @@ export const COOLDOWNS = {
   LURK_COMMAND: 300000,
   PIVO_COMMAND: 60000,
   BUY_COMMAND: 10000,
+  USE_COMMAND: 10000,
 };
 
 export const BOT_MESSAGES = {
@@ -163,6 +164,13 @@ export const BOT_MESSAGES = {
       `🛒 @${username} bought ${heroName} for ${price} coins! Left: ${coinsAfter}`,
     BUY_FREE: (username: string, heroName: string) =>
       `🎁 @${username} received ${heroName} for free!`,
+    USE_USAGE: (username: string) => `@${username}, use: !use hero <name>`,
+    USE_NOT_OWNED: (username: string, heroName: string) =>
+      `@${username}, you don't own ${heroName} - !buy hero ${heroName.toLowerCase()}`,
+    USE_ALREADY_ACTIVE: (username: string, heroName: string) =>
+      `@${username}, ${heroName} is already active`,
+    USE_SUCCESS: (username: string, heroName: string) =>
+      `⚔️ @${username} now plays ${heroName}!`,
   },
   // Награды за баллы канала (Channel Points)
   REWARDS: {

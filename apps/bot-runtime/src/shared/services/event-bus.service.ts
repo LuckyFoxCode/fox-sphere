@@ -1,5 +1,6 @@
 import {
   HeroAssignedPayload,
+  HeroChangedPayload,
   LotteryFinishedPayload,
   LotteryNoParticipantsPayload,
   LotteryParticipantsPayload,
@@ -37,6 +38,7 @@ export interface AppEvents {
   // не успел»: окно ответа удалено вместе с командой.
   "fish:bite": { channel: string; username: string; catch: FishCatch };
   "hero:assigned": HeroAssignedPayload;
+  "hero:changed": HeroChangedPayload;
   "lottery:started": LotteryStartedPayload;
   "lottery:participants": LotteryParticipantsPayload;
   "lottery:no-participants": LotteryNoParticipantsPayload;

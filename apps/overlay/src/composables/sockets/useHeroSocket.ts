@@ -1,5 +1,6 @@
-import type { HeroAssignedPayload } from '@fox-sphere/types';
+import type { HeroAssignedPayload, HeroChangedPayload } from '@fox-sphere/types';
 import { ref } from 'vue';
+import { applyHeroChange } from '../useHeroOverlay';
 import { type HeroEventType, type WidgetSocket } from './types';
 import { useWidgetTimer } from './useWidgetTimer';
 
@@ -17,8 +18,13 @@ export function useHeroSocket(socketInstance: WidgetSocket) {
     setStatusWithTimeout('assigned', 10000);
   };
 
+  const handleChanged = (data: HeroChangedPayload) => {
+    applyHeroChange(data.twitchId, data.heroId);
+  };
+
   if (!isSocketInitialized) {
     socketInstance.on('hero:assigned', handleAssigned);
+    socketInstance.on('hero:changed', handleChanged);
 
     isSocketInitialized = true;
   }
