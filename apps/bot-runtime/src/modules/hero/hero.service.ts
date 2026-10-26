@@ -1,7 +1,19 @@
 import { Logger, prisma } from "@fox-sphere/backend-shared";
-import { getDefaultHero } from "@fox-sphere/types";
+import { getDefaultHero, type HeroDefinition } from "@fox-sphere/types";
 import { globalEventBus } from "../../shared/services";
-import { findChannelUser, resolveChannelContext } from "../channel";
+import { findChannelUser, requireChannelUser, resolveChannelContext } from "../channel";
+
+/**
+ * The three answers a purchase can give.
+ *
+ * All of them are values rather than throws: "already owned" and "not enough coins" are the
+ * normal outcomes of a shop command, and the command registry logs a throw as a failure. The
+ * only exception left is a viewer with no balance row, which is a bug rather than a state.
+ */
+export type BuyHeroResult =
+  | { status: "bought"; coinsAfter: number }
+  | { status: "already-owned" }
+  | { status: "insufficient-funds"; coins: number; shortfall: number };
 
 /**
  * Owns hero assignment. Persisting and announcing are deliberately separate:
@@ -83,6 +95,98 @@ export class HeroService {
     }
 
     return hero.id;
+  }
+
+  /**
+   * Sells one catalog hero to one viewer: the debit, the ownership row and the ledger row in
+   * one transaction.
+   *
+   * The ownership check and the balance check run before the transaction for the sake of a
+   * human answer - `shortfall` cannot be computed from a rolled-back transaction. The
+   * transaction then re-checks the balance atomically, because the row it read could have been
+   * spent between the two, the same guard `roulette.service.ts` uses. A zero-price hero is
+   * granted with no debit and no ledger row: an amount of `0` in `CoinHistory` would claim
+   * money moved.
+   *
+   * `isActive` is left at its `false` default on purpose - buying is not equipping, and
+   * `UserHero_one_active_per_user` allows exactly one active row anyway.
+   */
+  public async buyHero(twitchId: string, hero: HeroDefinition): Promise<BuyHeroResult> {
+    const channelUser = await requireChannelUser(twitchId);
+
+    const owned = await prisma.userHero.findUnique({
+      where: { channelUserId_heroId: { channelUserId: channelUser.id, heroId: hero.id } },
+    });
+
+    if (owned) {
+      return { status: "already-owned" };
+    }
+
+    if (channelUser.coins < hero.price) {
+      return {
+        status: "insufficient-funds",
+        coins: channelUser.coins,
+        shortfall: hero.price - channelUser.coins,
+      };
+    }
+
+    try {
+      const coinsAfter = await prisma.$transaction(async (tx) => {
+        // Атомарное списание с условием достаточности: проверка выше читала баланс раньше.
+        // При `count === 0` ничего не записано, поэтому пустая транзакция коммитится вхолостую.
+        const debited = await tx.channelUser.updateMany({
+          where: { id: channelUser.id, coins: { gte: hero.price } },
+          data: { coins: { decrement: hero.price } },
+        });
+
+        if (debited.count === 0) {
+          return null;
+        }
+
+        await tx.userHero.create({
+          data: {
+            channelUserId: channelUser.id,
+            channelId: channelUser.channelId,
+            heroId: hero.id,
+          },
+        });
+
+        // Ноль в истории монет значил бы "деньги двигались". Бесплатный герой просто выдаётся.
+        if (hero.price > 0) {
+          await tx.coinHistory.create({
+            data: {
+              channelId: channelUser.channelId,
+              channelUserId: channelUser.id,
+              amount: -hero.price,
+              reason: "HERO_PURCHASE",
+              details: `Hero: ${hero.id}`,
+            },
+          });
+        }
+
+        return channelUser.coins - hero.price;
+      });
+
+      if (coinsAfter === null) {
+        const fresh = await requireChannelUser(twitchId);
+
+        return {
+          status: "insufficient-funds",
+          coins: fresh.coins,
+          shortfall: Math.max(0, hero.price - fresh.coins),
+        };
+      }
+
+      return { status: "bought", coinsAfter };
+    } catch (error) {
+      // P2002 на `(channelUserId, heroId)`: такую же покупку успели провести между проверкой
+      // и вставкой. Транзакция откатилась целиком, включая списание.
+      if (error instanceof Error && "code" in error && error.code === "P2002") {
+        return { status: "already-owned" };
+      }
+
+      throw error;
+    }
   }
 
   public async assignHeroToExistingUsersWithoutOne(): Promise<void> {
