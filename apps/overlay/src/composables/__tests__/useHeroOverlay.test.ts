@@ -96,8 +96,11 @@ describe('useHeroOverlay', () => {
   });
 
   /**
-   * A viewer already in the lane keeps their `ActiveHero` for HERO_TTL, so a hero swapped in
-   * the database stays invisible until they fall out of the lane and come back.
+   * A viewer already in the lane keeps their `ActiveHero` for HERO_TTL, so a hero swapped in the
+   * database only reaches them on their next message - `handleHeroMessage` refreshes
+   * `existing.heroId`, and the lane's identity-keyed bridge re-spawns the sprite from it. What
+   * still hides a raw database edit for the length of its TTL is `UserService.heroCache`, one
+   * layer up: the hero in the chat payload is the cached one.
    */
   it('picks up a heroId change on the next message while still in the lane', async () => {
     handleHeroMessage(payload('first message', 'user-swap', 'assassin'));
