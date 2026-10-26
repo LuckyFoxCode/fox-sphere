@@ -39,9 +39,36 @@ describe("BuyCommand", () => {
     expect(user.invalidateCoins).toHaveBeenCalledWith("twitch_111");
   });
 
+  it("grants a free hero with the gift line instead of the success line", async () => {
+    const chatbot = makeChatbot();
+    const user = makeUser();
+    const heroes = makeHeroes({ status: "bought", coinsAfter: 50 });
+
+    await new BuyCommand(chatbot, heroes, user).execute(makeContext(["hero", "assassin"]));
+
+    // `assassin` is the free catalog hero. The branch is unreachable from chat today - every
+    // viewer already owns the default hero - so this is the only thing that exercises it.
+    expect(heroes.buyHero).toHaveBeenCalledWith(
+      "twitch_111",
+      expect.objectContaining({ id: "assassin", price: 0 }),
+    );
+    expect(chatbot.sendMessage).toHaveBeenCalledTimes(1);
+    expect(chatbot.sendMessage).toHaveBeenCalledWith(
+      CHANNEL,
+      BOT_MESSAGES.COMMANDS.BUY_FREE(CALLER, "Assassin"),
+    );
+    expect(chatbot.sendMessage).not.toHaveBeenCalledWith(
+      CHANNEL,
+      BOT_MESSAGES.COMMANDS.BUY_SUCCESS(CALLER, "Assassin", 0, 50),
+    );
+    // Still a `bought`: the collection changed even though no coins did.
+    expect(user.invalidateCoins).toHaveBeenCalledWith("twitch_111");
+  });
+
   it("says the hero is already owned", async () => {
     const chatbot = makeChatbot();
-    await new BuyCommand(chatbot, makeHeroes({ status: "already-owned" }), makeUser()).execute(
+    const user = makeUser();
+    await new BuyCommand(chatbot, makeHeroes({ status: "already-owned" }), user).execute(
       makeContext(["hero", "thug"]),
     );
 
@@ -49,20 +76,25 @@ describe("BuyCommand", () => {
       CHANNEL,
       BOT_MESSAGES.COMMANDS.BUY_ALREADY_OWNED(CALLER, "Thug"),
     );
+    // Nothing moved, so the cached balance is still correct. Without this, hoisting the
+    // invalidation above the `switch` keeps every spec green.
+    expect(user.invalidateCoins).not.toHaveBeenCalled();
   });
 
   it("names the shortfall when there is not enough money", async () => {
     const chatbot = makeChatbot();
+    const user = makeUser();
     await new BuyCommand(
       chatbot,
       makeHeroes({ status: "insufficient-funds", coins: 200, shortfall: 100 }),
-      makeUser(),
+      user,
     ).execute(makeContext(["hero", "thug"]));
 
     expect(chatbot.sendMessage).toHaveBeenCalledWith(
       CHANNEL,
       BOT_MESSAGES.COMMANDS.BUY_NOT_ENOUGH(CALLER, "Thug", 800, 200, 100),
     );
+    expect(user.invalidateCoins).not.toHaveBeenCalled();
   });
 
   it("does not buy the default hero for a typo", async () => {
