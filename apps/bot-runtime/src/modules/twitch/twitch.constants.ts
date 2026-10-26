@@ -55,6 +55,9 @@ export const COOLDOWNS = {
   PIVO_COMMAND: 60000,
   BUY_COMMAND: 10000,
   USE_COMMAND: 10000,
+  // Longer than the storefront stays on screen: the overlay shows it for ten seconds, and the
+  // global cooldown is what stops a second `!shop` re-opening the same window mid-display.
+  SHOP_COMMAND: 60000,
 };
 
 export const BOT_MESSAGES = {
@@ -153,6 +156,7 @@ export const BOT_MESSAGES = {
       `🪪 @${username}, your profile card is on screen! 🦊`,
     PROFILE_NOT_FOUND: (username: string) =>
       `🪪 @${username}, I don't have a profile for you yet — say something in chat and try again!`,
+    SHOP_OPEN: "🔮 FoxSphere Shop • открыт на 10 секунд",
     BUY_USAGE: (username: string) => `@${username}, use: !buy hero <name>`,
     BUY_UNKNOWN_HERO: (username: string, available: string) =>
       `@${username}, no such hero. Available: ${available}`,

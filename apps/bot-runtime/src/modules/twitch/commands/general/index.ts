@@ -5,6 +5,7 @@ export * from "./pivo.command";
 export * from "./points.commands";
 export * from "./profile.command";
 export * from "./project.command";
+export * from "./shop.command";
 export * from "./stack.command";
 export * from "./tg.command";
 export * from "./version.command";

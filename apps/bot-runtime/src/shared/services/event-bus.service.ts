@@ -10,6 +10,7 @@ import {
   LotteryWinnerDrawnPayload,
   ProfileShowPayload,
   RouletteSpinResultPayload,
+  ShopShowPayload,
   StreamGetSystemStatePayload,
   StreamJackpotUpdatePayload,
   StreamLevelUpPayload,
@@ -52,6 +53,7 @@ export interface AppEvents {
   "lottery:finished": LotteryFinishedPayload;
   "profile:show": ProfileShowPayload;
   "roulette:spun": RouletteSpinResultPayload;
+  "shop:show": ShopShowPayload;
   "stream:xp-updated": StreamXpUpdatePayload;
   "stream:xp-boost": StreamXpBoostPayload;
   "stream:level-up": StreamLevelUpPayload;

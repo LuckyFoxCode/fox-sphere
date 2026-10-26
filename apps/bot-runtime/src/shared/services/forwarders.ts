@@ -115,6 +115,13 @@ const FORWARDERS: readonly Forwarder[] = [
       `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding hero:changed to overlay | User: ${data.twitchId}, Hero: ${data.heroId}`,
     "info",
   ),
+  // Долг: глобальный broadcast — phase-1 multi-tenancy переведёт на per-channel rooms.
+  forward(
+    "shop:show",
+    (data) =>
+      `.𖥔 ݁ ˖ִ🛸༄˖°. Forwarding shop window to overlay | Opened by: ${data.openedBy}`,
+    "info",
+  ),
   forward(
     "stream:level-up",
     (data) =>
