@@ -41,6 +41,7 @@ describe("HeroService on ChannelUser", () => {
     expect(hero.channelUserId).toBe(channelUser.id);
     expect(hero.channelId).toBe(TEST_CHANNEL_ID);
     expect(hero.heroId).toBe(heroId);
+    expect(hero.isActive).toBe(true);
   });
 
   it("returns the existing hero instead of writing a second row", async () => {
@@ -52,6 +53,44 @@ describe("HeroService on ChannelUser", () => {
 
     expect(second).toBe(first);
     expect(await prisma.userHero.count()).toBe(1);
+    expect((await prisma.userHero.findFirstOrThrow()).isActive).toBe(true);
+  });
+
+  it("activates an owned hero when the viewer has rows but none active", async () => {
+    const channelUser = await seedChannelUser(TEST_CHANNEL_ID, TWITCH_ID, "alice");
+    // Окно деплоя: строки уже есть, флага нет ни у одной.
+    await prisma.userHero.create({
+      data: { channelUserId: channelUser.id, channelId: TEST_CHANNEL_ID, heroId: "thug" },
+    });
+    // Один из купленных - дефолтный герой, и лечение обязано выбрать именно его: без него
+    // ответ зависел бы от порядка `findMany`, то есть от того, что зритель купил первым.
+    await prisma.userHero.create({
+      data: {
+        channelUserId: channelUser.id,
+        channelId: TEST_CHANNEL_ID,
+        heroId: getDefaultHero().id,
+      },
+    });
+
+    const heroId = await new HeroService().ensureUserHasHero(
+      channelUser.id,
+      TEST_CHANNEL_ID,
+    );
+
+    expect(heroId).toBe(getDefaultHero().id);
+    expect(await prisma.userHero.count()).toBe(2);
+    expect(
+      await prisma.userHero.count({
+        where: { channelUserId: channelUser.id, isActive: true },
+      }),
+    ).toBe(1);
+    expect(
+      (
+        await prisma.userHero.findFirstOrThrow({
+          where: { channelUserId: channelUser.id, isActive: true },
+        })
+      ).heroId,
+    ).toBe(getDefaultHero().id);
   });
 
   it("gives the same viewer a separate hero row per channel", async () => {

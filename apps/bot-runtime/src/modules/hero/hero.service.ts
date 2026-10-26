@@ -22,17 +22,37 @@ export class HeroService {
    * and the caller that already holds the balance row is the only one that can guarantee the
    * two agree. A `ChannelUser.id` passed without its channel would either need a second lookup
    * or a default that could file a hero under the wrong channel.
+   *
+   * Three steps, because a viewer can now own several heroes and exactly one of them is active:
+   * the active row answers, an owned-but-flagless collection is healed in place, and only a
+   * viewer with no row at all gets a new one.
    */
   public async ensureUserHasHero(
     channelUserId: number,
     channelId: string,
   ): Promise<string> {
-    const existing = await prisma.userHero.findUnique({
-      where: { channelUserId },
+    const active = await prisma.userHero.findFirst({
+      where: { channelUserId, isActive: true },
     });
 
-    if (existing) {
-      return existing.heroId;
+    if (active) {
+      return active.heroId;
+    }
+
+    // Окно между `migrate deploy` и сменой контейнера: старый контейнер успевает создать
+    // строки без `isActive`, и такой зритель пропадает из лейна. Лечим на первом же сообщении.
+    const owned = await prisma.userHero.findMany({ where: { channelUserId } });
+
+    if (owned.length > 0) {
+      const preferred =
+        owned.find((row) => row.heroId === getDefaultHero().id) ?? owned[0]!;
+
+      await prisma.userHero.updateMany({
+        where: { id: preferred.id },
+        data: { isActive: true },
+      });
+
+      return preferred.heroId;
     }
 
     // Deliberately the free default rather than a random catalog pick: every paid
@@ -41,15 +61,18 @@ export class HeroService {
 
     try {
       await prisma.userHero.create({
-        data: { channelUserId, channelId, heroId: hero.id },
+        data: { channelUserId, channelId, heroId: hero.id, isActive: true },
       });
     } catch (error) {
       // Two callers can reach this for the same brand-new viewer - the `user:created`
       // handler and the lazy per-message path - and both miss the row before either
-      // inserts it. `channelUserId` is unique, so the loser of that race gets P2002 and the
-      // winner's hero is the one to keep.
+      // inserts it. `(channelUserId, heroId)` is unique and `UserHero_one_active_per_user`
+      // allows one active row, so the loser of that race gets P2002 and the winner's hero
+      // is the one to keep.
       if (error instanceof Error && "code" in error && error.code === "P2002") {
-        const raced = await prisma.userHero.findUnique({ where: { channelUserId } });
+        const raced = await prisma.userHero.findFirst({
+          where: { channelUserId, isActive: true },
+        });
 
         if (raced) {
           return raced.heroId;
@@ -69,7 +92,7 @@ export class HeroService {
     // has been in this chat but not in another one is a genuine "without a hero" here, and
     // the sweep must not reach across channels to fix it.
     const channelUsersWithoutHero = await prisma.channelUser.findMany({
-      where: { channelId, hero: null },
+      where: { channelId, heroes: { none: {} } },
       select: { id: true },
     });
 

@@ -313,7 +313,8 @@ export class UserService {
               username: true,
             },
           },
-          hero: {
+          heroes: {
+            where: { isActive: true },
             select: {
               heroId: true,
             },
@@ -327,8 +328,8 @@ export class UserService {
         userId: freshChannelUser.viewer.twitchId,
         username: freshChannelUser.viewer.username,
         newLevel: currentLvl,
-        hero: freshChannelUser.hero
-          ? { heroId: freshChannelUser.hero.heroId }
+        hero: freshChannelUser.heroes[0]
+          ? { heroId: freshChannelUser.heroes[0].heroId }
           : undefined,
       });
     }
@@ -552,7 +553,7 @@ export class UserService {
   }
 
   /**
-   * One read for the whole card: the balance row with its `Viewer` and its optional hero.
+   * One read for the whole card: the balance row with its `Viewer` and its hero collection.
    *
    * `channelId` comes from `resolveChannelContext()` because this is the lookup that *chooses*
    * the row; every write built from the result takes its channel off the row instead.
@@ -568,10 +569,14 @@ export class UserService {
 
     const channelUser = await prisma.channelUser.findFirst({
       where: { channelId, viewer: { twitchId } },
-      include: { viewer: true, hero: true },
+      include: { viewer: true, heroes: true },
     });
 
     if (!channelUser) return null;
+
+    // `UserHero` is a collection now, so "the hero" is the one active row - never `heroes[0]`
+    // by insertion order, which is whichever the viewer happened to own first.
+    const activeHero = channelUser.heroes.find((row) => row.isActive) ?? null;
 
     const bestStreak = await prisma.watchStreak.findFirst({
       where: {
@@ -594,8 +599,8 @@ export class UserService {
       startXp: getXpThresholdForLevel(channelUser.lvl - 1, 100),
       maxXp: getXpThresholdForLevel(channelUser.lvl, 100),
       coins: channelUser.coins,
-      heroId: channelUser.hero?.heroId ?? null,
-      heroLevel: channelUser.hero?.level ?? null,
+      heroId: activeHero?.heroId ?? null,
+      heroLevel: activeHero?.level ?? null,
       bestStreak: bestStreak?.streakValue ?? null,
       goldenBeers: channelUser.goldenBeers,
       isMod: channelUser.isMod,
