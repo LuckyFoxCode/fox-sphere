@@ -16,6 +16,15 @@ export type BuyHeroResult =
   | { status: "insufficient-funds"; coins: number; shortfall: number };
 
 /**
+ * The three answers an equip can give.
+ *
+ * Values rather than throws for the same reason as `BuyHeroResult`: "already active" and
+ * "not owned" are ordinary shop states, and the registry logs a throw as a failure. A viewer
+ * with no balance row still throws, because that is a bug and not a state.
+ */
+export type EquipHeroResult = "equipped" | "already-active" | "not-owned";
+
+/**
  * Owns hero assignment. Persisting and announcing are deliberately separate:
  * `ensureUserHasHero` never emits, so the startup backfill and the lazy
  * per-message assignment stay silent and only a genuinely new viewer produces
@@ -187,6 +196,51 @@ export class HeroService {
 
       throw error;
     }
+  }
+
+  /**
+   * Switches the active hero to one the viewer already owns.
+   *
+   * The ownership row is the gate: a hero bought but never equipped has `isActive: false`, and
+   * an unknown id simply has no row, so both are answered here rather than in the command. The
+   * two writes share a transaction because `UserHero_one_active_per_user` permits one active row
+   * per viewer - the old flag has to come off before the new one goes on, and a failure between
+   * them would otherwise leave the viewer with no active hero at all.
+   *
+   * Two concurrent equips of one viewer are deliberately not retried: the bot is a single
+   * process and commands run one at a time, so a `P2002` here would be a real defect and the
+   * registry logs it as one.
+   */
+  public async equipHero(twitchId: string, heroId: string): Promise<EquipHeroResult> {
+    const channelUser = await requireChannelUser(twitchId);
+
+    const owned = await prisma.userHero.findUnique({
+      where: { channelUserId_heroId: { channelUserId: channelUser.id, heroId } },
+    });
+
+    if (!owned) {
+      return "not-owned";
+    }
+
+    if (owned.isActive) {
+      return "already-active";
+    }
+
+    // Порядок обязателен: частичный уникальный индекс `UserHero_one_active_per_user` не даст
+    // записать второго активного, поэтому старый флаг снимается первым.
+    await prisma.$transaction(async (tx) => {
+      await tx.userHero.updateMany({
+        where: { channelUserId: channelUser.id, isActive: true },
+        data: { isActive: false },
+      });
+
+      await tx.userHero.update({
+        where: { channelUserId_heroId: { channelUserId: channelUser.id, heroId } },
+        data: { isActive: true },
+      });
+    });
+
+    return "equipped";
   }
 
   public async assignHeroToExistingUsersWithoutOne(): Promise<void> {
