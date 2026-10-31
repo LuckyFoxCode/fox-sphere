@@ -26,8 +26,11 @@ const formatPrice = (price: number): string => (price === 0 ? 'free' : `🪙 ${p
 </script>
 
 <template>
-  <WidgetFrame variant="purple">
-    <div class="flex w-[44rem] max-w-[80vw] flex-col gap-y-4 px-1 py-1">
+  <WidgetFrame
+    variant="purple"
+    position-x="75"
+  >
+    <div class="flex w-176 max-w-[80vw] flex-col gap-y-4 px-1 pt-1 pb-3">
       <div class="flex flex-col items-center gap-y-0.5">
         <span class="text-event-purple text-[10px] font-bold tracking-[0.3em] uppercase">
           foxsphere
@@ -66,7 +69,7 @@ const formatPrice = (price: number): string => (price === 0 ? 'free' : `🪙 ${p
               >
                 {{ stat.label }}
               </span>
-              <span class="text-event-purple shrink-0 text-xs font-bold">
+              <span class="text-event-rose shrink-0 text-xs font-bold">
                 {{ hero.baseStats[stat.key] }}
               </span>
             </div>
