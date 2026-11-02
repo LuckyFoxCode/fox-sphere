@@ -1,5 +1,6 @@
 import {
   HeroAssignedPayload,
+  HeroChangedPayload,
   LotteryFinishedPayload,
   LotteryNoParticipantsPayload,
   LotteryParticipantsPayload,
@@ -9,6 +10,7 @@ import {
   LotteryWinnerDrawnPayload,
   ProfileShowPayload,
   RouletteSpinResultPayload,
+  ShopShowPayload,
   StreamGetSystemStatePayload,
   StreamJackpotUpdatePayload,
   StreamLevelUpPayload,
@@ -37,6 +39,7 @@ export interface AppEvents {
   // не успел»: окно ответа удалено вместе с командой.
   "fish:bite": { channel: string; username: string; catch: FishCatch };
   "hero:assigned": HeroAssignedPayload;
+  "hero:changed": HeroChangedPayload;
   "lottery:started": LotteryStartedPayload;
   "lottery:participants": LotteryParticipantsPayload;
   "lottery:no-participants": LotteryNoParticipantsPayload;
@@ -50,6 +53,7 @@ export interface AppEvents {
   "lottery:finished": LotteryFinishedPayload;
   "profile:show": ProfileShowPayload;
   "roulette:spun": RouletteSpinResultPayload;
+  "shop:show": ShopShowPayload;
   "stream:xp-updated": StreamXpUpdatePayload;
   "stream:xp-boost": StreamXpBoostPayload;
   "stream:level-up": StreamLevelUpPayload;

@@ -57,6 +57,18 @@ const setMessage = (userId: string, data: TwitchChatMessagePayload): void => {
   }, MESSAGE_TTL);
 };
 
+/**
+ * Меняет героя у зрителя, который уже стоит в лейне. Записи может не быть - тогда зритель
+ * получит нового героя со своим следующим сообщением, кэш в боте уже сброшен.
+ */
+export const applyHeroChange = (twitchId: string, heroId: string): void => {
+  const entry = activeHeroes.value.get(twitchId);
+
+  if (entry) {
+    entry.heroId = heroId;
+  }
+};
+
 export function useHeroOverlay() {
   const applyViewerFlags = (hero: ActiveHero, data: TwitchChatMessagePayload): void => {
     hero.userLvl = data.userLvl;

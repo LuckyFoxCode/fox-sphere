@@ -6,7 +6,8 @@ export interface HeroLaneHost {
 
 const requested = new Map<string, string>();
 const labels = new Map<string, HTMLElement>();
-const added = new Set<string>();
+/** `userId -> the heroId currently in the scene`, so a changed hero re-adds and a repeat does not. */
+const added = new Map<string, string>();
 const generations = new Map<string, number>();
 
 let host: HeroLaneHost | null = null;
@@ -21,9 +22,12 @@ const flush = (): void => {
   if (!host) return;
 
   for (const [userId, heroId] of requested) {
-    if (!added.has(userId)) {
+    // Identity, not membership: `!use` reaches here with the same `userId` and a new `heroId`,
+    // and a set of user ids would swallow it. `MainScene.addHero` removes the old agent first,
+    // so a re-add swaps the sprite rather than stacking a second one.
+    if (added.get(userId) !== heroId) {
       host.addHero(userId, heroId);
-      added.add(userId);
+      added.set(userId, heroId);
     }
 
     const label = labels.get(userId);

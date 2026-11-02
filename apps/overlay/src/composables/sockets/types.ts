@@ -6,6 +6,7 @@ export type WidgetSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 export type HeroEventType = 'idle' | 'assigned';
 export type LotteryStatus = 'idle' | 'ticket' | 'started' | 'drawer' | 'finished' | 'participants';
 export type ProfileEventType = 'idle' | 'show';
+export type ShopEventType = 'idle' | 'show';
 export type StreamEventType = 'idle' | 'level-up' | 'xp-update';
 export type TwitchEventType =
   | 'idle'

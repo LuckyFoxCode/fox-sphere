@@ -9,9 +9,18 @@ export interface HeroAssignedPayload extends HeroRef {
   username: string;
 }
 
+/**
+ * `twitchId`, а не `userId`: лейн ключует зрителя по Twitch id, а `hero:assigned` носит
+ * `ChannelUser.id` - разные числа из разных последовательностей.
+ */
+export interface HeroChangedPayload extends HeroRef {
+  twitchId: string;
+}
+
 // Контракты событий Socket.io
 export interface HeroServerToClientEvents {
   "hero:assigned": (data: HeroAssignedPayload) => void;
+  "hero:changed": (data: HeroChangedPayload) => void;
 }
 
 export interface HeroClientToServerEvents {}
