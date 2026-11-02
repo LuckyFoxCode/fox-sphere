@@ -3,6 +3,7 @@ export * from './useHeroSocket';
 export * from './useLotterySocket';
 export * from './useProfileSocket';
 export * from './useRouletteSocket';
+export * from './useShopSocket';
 export * from './useStreamSocket';
 export * from './useTwitchSocket';
 export * from './useUserSocket';

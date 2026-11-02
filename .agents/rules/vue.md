@@ -53,7 +53,7 @@ and the HTML labels; Phaser owns the sprites and their movement. `phaser/hero-la
 module singleton bridging them, so a `chat:message` that arrives before Phaser's async
 `preload()` finishes is buffered and replayed in `create()`.
 
-Two invariants that are easy to break from the Vue side:
+Three invariants that are easy to break from the Vue side:
 
 - **The scene owns `style.transform` on the label root, exclusively.** `HeroAgent.syncLabel`
   writes it every frame. So the element must carry no transform of its own, and its
@@ -63,6 +63,12 @@ Two invariants that are easy to break from the Vue side:
 - **`Phaser.GameObjects.DOMElement` is deliberately unused.** It needs
   `dom: { createContainer: true }` and reparents the element you hand it, which breaks Vue's
   ownership of the node.
+- **The bridge's `added` map keys by identity (`userId -> heroId`), not by membership.** So
+  `spawnHero` with a **changed** hero swaps the sprite (`MainScene.addHero` destroys the old
+  agent first) and with an **unchanged** one is a no-op. A `Set<string>` of user ids compiles
+  and reads fine, and silently turns every `!use` into nothing for a viewer who is already in
+  the lane - which is every viewer still chatting, because `HERO_TTL` refreshes on each
+  message. `phaser/__tests__/hero-lane.test.ts` holds both halves.
 
 `spawnHero` returns a generation and `removeHero` ignores a stale one, so a label component
 that has already been superseded - a viewer who chatted again inside its own leave

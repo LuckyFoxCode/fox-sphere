@@ -53,6 +53,11 @@ export const COOLDOWNS = {
   GENERAL_COMMAND: 10000,
   LURK_COMMAND: 300000,
   PIVO_COMMAND: 60000,
+  BUY_COMMAND: 10000,
+  USE_COMMAND: 10000,
+  // Longer than the storefront stays on screen: the overlay shows it for ten seconds, and the
+  // global cooldown is what stops a second `!shop` re-opening the same window mid-display.
+  SHOP_COMMAND: 60000,
 };
 
 export const BOT_MESSAGES = {
@@ -78,7 +83,7 @@ export const BOT_MESSAGES = {
     TG: `📢 Telegram • Join for weekly devlogs, project updates, and live announcements: https://t.me/TheCodingFox 🦊🌐`,
     STACK: `💻 Tech Stack • Express / TypeScript • Vue 3 / TailwindCSS • PostgreSQL / Prisma / Docker ⚙️`,
     PROJECT: `🛠️ Current Project • FoxSphere: A custom Full-Stack Twitch interactive & gamification platform built from scratch (Vue 3 / Express / Postgres / Docker) to level up my dev skills live! 🦊🔮`,
-    HELP: `🔮 FoxSphere • Commands: !coins • Fun: !lurk • !pivo | Info: !gh • !tg • !stack • !project • !version ➔ Type any command for details! 🚀`,
+    HELP: `🔮 FoxSphere • Commands: !coins • Shop: !shop • !buy • !use • Fun: !lurk • !pivo | Info: !gh • !tg • !stack • !project • !version ➔ Type any command for details! 🚀`,
     VERSION: (version: string) =>
       `🦊 FoxSphere is running version ${version}! 🚀`,
     LURK: [
@@ -151,6 +156,25 @@ export const BOT_MESSAGES = {
       `🪪 @${username}, your profile card is on screen! 🦊`,
     PROFILE_NOT_FOUND: (username: string) =>
       `🪪 @${username}, I don't have a profile for you yet — say something in chat and try again!`,
+    SHOP_OPEN: "🔮 FoxSphere Shop • открыт на 10 секунд",
+    BUY_USAGE: (username: string) => `@${username}, use: !buy hero <name>`,
+    BUY_UNKNOWN_HERO: (username: string, available: string) =>
+      `@${username}, no such hero. Available: ${available}`,
+    BUY_ALREADY_OWNED: (username: string, heroName: string) =>
+      `@${username}, ${heroName} is already in your collection`,
+    BUY_NOT_ENOUGH: (username: string, heroName: string, price: number, coins: number, shortfall: number) =>
+      `@${username}, ${heroName} costs ${price}, you have ${coins} - ${shortfall} short`,
+    BUY_SUCCESS: (username: string, heroName: string, price: number, coinsAfter: number) =>
+      `🛒 @${username} bought ${heroName} for ${price} coins! Left: ${coinsAfter}`,
+    BUY_FREE: (username: string, heroName: string) =>
+      `🎁 @${username} received ${heroName} for free!`,
+    USE_USAGE: (username: string) => `@${username}, use: !use hero <name>`,
+    USE_NOT_OWNED: (username: string, heroName: string) =>
+      `@${username}, you don't own ${heroName} - !buy hero ${heroName.toLowerCase()}`,
+    USE_ALREADY_ACTIVE: (username: string, heroName: string) =>
+      `@${username}, ${heroName} is already active`,
+    USE_SUCCESS: (username: string, heroName: string) =>
+      `⚔️ @${username} now plays ${heroName}!`,
   },
   // Награды за баллы канала (Channel Points)
   REWARDS: {

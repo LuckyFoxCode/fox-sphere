@@ -59,9 +59,12 @@ const spawn = (): void => {
 onMounted(spawn);
 
 /**
- * The lane is keyed by `userId`, so a hero swapped in the database updates this prop without
- * remounting the component — the Phaser sprite would stay the old hero until the viewer
- * fell out of the lane. Re-spawning claims a new generation, which is what makes the pending
+ * The lane's `v-for` is keyed by `userId`, so a hero swapped by `!use` (or edited in the
+ * database) updates this prop without remounting the component - and the lane bridge keys the
+ * scene by `userId -> heroId`, so this `spawnHero` with a *different* hero re-adds the sprite
+ * while the same hero is a no-op. Without that identity check the sprite would stay the old
+ * hero until the viewer fell out of the lane, which `HERO_TTL` postpones for anyone still
+ * chatting. Re-spawning also claims a new generation, which is what makes the pending
  * `removeHero` on unmount drop the *current* sprite rather than this superseded one.
  */
 watch(() => props.activeHero.heroId, spawn);
