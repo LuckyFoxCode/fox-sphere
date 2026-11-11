@@ -56,9 +56,9 @@ const liStyle = computed(() => {
 </script>
 
 <template>
-  <li class="relative flex flex-col gap-1 rounded-xl border-2 border-cyan-500 text-sm">
+  <li class="relative flex flex-col gap-1 rounded-xl border-2 border-gray-500 text-sm">
     <div
-      class="rounded-lg border-2 border-slate-800 bg-linear-to-r from-cyan-400/80 to-cyan-700 pt-10"
+      class="rounded-lg border-2 border-slate-800 bg-linear-to-r from-gray-400 to-gray-800 pt-10"
     >
       <div class="absolute top-0 left-0 flex w-full items-center justify-between pr-2">
         <div>
@@ -70,13 +70,30 @@ const liStyle = computed(() => {
         </div>
         <div class="flex items-center gap-x-2">
           <span
-            class="rounded-lg border-2 border-cyan-400 bg-cyan-800 px-1.5 py-0.5 text-[10px] font-medium uppercase"
-            >viewer</span
+            v-if="message.isAnnouncement"
+            class="rounded-full border-2 bg-gray-950 px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase"
+            :style="{
+              borderColor: announceStyle?.borderColor,
+              color: announceStyle?.borderColor,
+            }"
+          >
+            Announcement
+          </span>
+          <span
+            v-if="message.watchStreak"
+            class="rounded-full border-2 px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase"
+            :style="{ borderColor: message.color, color: message.color }"
+          >
+            Watch Streak
+          </span>
+          <span
+            class="rounded-lg border-2 border-gray-300 bg-gray-800 px-1.5 py-0.5 text-[10px] font-medium uppercase"
+            >{{ message.isBot ? 'bot' : 'sub' }}</span
           >
         </div>
       </div>
       <div
-        class="sh flex flex-col gap-y-1 rounded-lg bg-linear-to-r from-cyan-50 to-cyan-200 px-3 py-2"
+        class="sh flex flex-col gap-y-1 rounded-lg bg-linear-to-r from-gray-50 to-gray-300 px-3 py-2"
       >
         <div class="flex items-center gap-1 font-semibold">
           <div
@@ -91,20 +108,6 @@ const liStyle = computed(() => {
               class="size-5 object-contain"
             />
           </div>
-          <span
-            v-if="message.isAnnouncement"
-            class="rounded-full border px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase"
-            :style="{ borderColor: announceStyle?.borderColor, color: announceStyle?.borderColor }"
-          >
-            Announcement
-          </span>
-          <span
-            v-if="message.watchStreak"
-            class="rounded-full border px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase"
-            :style="{ borderColor: message.color, color: message.color }"
-          >
-            Watch Streak
-          </span>
 
           <span
             :style="{ color: message.color }"
