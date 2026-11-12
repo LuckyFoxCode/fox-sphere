@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { TwitchEmote } from '@/components/ui';
-import { getRankConfigByLevel, MAX_ICON_TIER, RANK_BADGES } from '@/constants';
+import {
+  CHAT_ROLE_STYLES,
+  getRankConfigByLevel,
+  MAX_ICON_TIER,
+  RANK_BADGES,
+  resolveChatRole,
+} from '@/constants';
 import { getAnnounceStyle, parseTwitchEmotes } from '@/utils/twitch';
 import type { TwitchChatMessagePayload } from '@fox-sphere/types';
 import { computed } from 'vue';
@@ -29,35 +35,23 @@ const announceStyle = computed(() =>
   props.message.isAnnouncement ? getAnnounceStyle(props.message.announceColor ?? 'blue') : null,
 );
 
+const roleStyle = computed(() => CHAT_ROLE_STYLES[resolveChatRole(props.message)]);
+
 const watchStreakSummary = computed(() => {
   const streak = props.message.watchStreak;
   if (!streak) return null;
   return `🔥 ${streak.value} streams in a row! +${streak.reward} channel points`;
 });
-
-const liStyle = computed(() => {
-  if (props.message.watchStreak) {
-    return {
-      boxShadow: `inset 0 0px 8px 3px color-mix(in srgb, #ff0 100%, transparent)`,
-    };
-  }
-
-  if (props.message.isHighlight) {
-    return {
-      boxShadow: `inset 0 0px 8px 3px color-mix(in srgb, ${props.message.color} 100%, transparent)`,
-    };
-  }
-
-  return {
-    boxShadow: 'none',
-  };
-});
 </script>
 
 <template>
-  <li class="relative flex flex-col gap-1 rounded-xl border-2 border-gray-500 text-sm">
+  <li
+    class="relative flex flex-col gap-1 rounded-xl border-2 text-sm"
+    :class="roleStyle.frame"
+  >
     <div
-      class="rounded-lg border-2 border-slate-800 bg-linear-to-r from-gray-400 to-gray-800 pt-10"
+      class="rounded-lg border-2 bg-linear-to-r pt-10"
+      :class="roleStyle.header"
     >
       <div class="absolute top-0 left-0 flex w-full items-center justify-between pr-2">
         <div>
@@ -79,6 +73,12 @@ const liStyle = computed(() => {
             Announcement
           </span>
           <span
+            v-if="message.isHighlight"
+            class="rounded-full border-2 border-red-500 bg-red-800 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-red-400 uppercase"
+          >
+            Highlight
+          </span>
+          <span
             v-if="message.watchStreak"
             class="rounded-full border-2 px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase"
             :style="{ borderColor: message.color, color: message.color }"
@@ -86,14 +86,15 @@ const liStyle = computed(() => {
             Watch Streak
           </span>
           <span
-            class="rounded-lg border-2 border-gray-300 bg-gray-800 px-1.5 py-0.5 text-[10px] font-medium uppercase"
-            >{{ message.isBot ? 'bot' : 'sub' }}</span
+            class="rounded-lg border-2 px-1.5 py-0.5 text-[10px] font-medium uppercase"
+            :class="roleStyle.chip"
+            >{{ roleStyle.label }}</span
           >
         </div>
       </div>
       <div
-        class="sh flex flex-col gap-y-1 rounded-lg bg-linear-to-r from-gray-50 to-gray-300 px-3 py-2"
-        :style="liStyle"
+        class="sh font-quicksand flex flex-col gap-y-1 rounded-lg bg-linear-to-r px-3 py-2"
+        :class="roleStyle.body"
       >
         <div class="flex items-center gap-1 font-semibold">
           <div
