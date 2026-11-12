@@ -33,8 +33,8 @@ const messages = ref<TwitchChatMessagePayload[]>([]);
 const watchStreak = ref<TwitchWatchStreakPayload | null>(null);
 const goldenBeer = ref<TwitchGoldenBeerPayload | null>(null);
 
-const MAX_MESSAGES = 8;
-const MESSAGE_TTL = 360000; //18000
+const MAX_MESSAGES = 5;
+const MESSAGE_TTL = 18000;
 
 let isSocketInitialized = false;
 

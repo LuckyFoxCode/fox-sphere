@@ -17,19 +17,16 @@ const props = defineProps<{
 
 const tokens = computed(() => parseTwitchEmotes(props.message.text, props.message.emotes));
 
-const medal = computed(
-  () =>
-    RANK_BADGES[
-      Math.min(
-        getRankConfigByLevel(
-          props.message.userLvl,
-          props.message.isBroadcaster,
-          props.message.isBot,
-        ).tier,
-        MAX_ICON_TIER,
-      )
-    ],
+/**
+ * Титул и медаль берутся из одного конфига, поэтому не могут разойтись. Для стримера
+ * `getRankConfigByLevel` отвечает `GAME MASTER`, для бота - `SYSTEM BOT`, для зрителя - титул
+ * его уровня; флаги уже есть в payload, расширять `TwitchChatMessagePayload` не нужно.
+ */
+const rank = computed(() =>
+  getRankConfigByLevel(props.message.userLvl, props.message.isBroadcaster, props.message.isBot),
 );
+
+const medal = computed(() => RANK_BADGES[Math.min(rank.value.tier, MAX_ICON_TIER)]);
 
 const announceStyle = computed(() =>
   props.message.isAnnouncement ? getAnnounceStyle(props.message.announceColor ?? 'blue') : null,
@@ -59,12 +56,12 @@ const watchStreakSummary = computed(() => {
             :is="medal"
             class="size-10 shrink-0"
           />
-          <span>GAME MASTER</span>
+          <span class="drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">{{ rank.rankTitle }}</span>
         </div>
         <div class="flex items-center gap-x-2">
           <span
             v-if="message.isAnnouncement"
-            class="rounded-full border-2 bg-gray-950 px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase"
+            class="rounded-full border-2 bg-slate-900 px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase"
             :style="{
               borderColor: announceStyle?.borderColor,
               color: announceStyle?.borderColor,
@@ -74,7 +71,7 @@ const watchStreakSummary = computed(() => {
           </span>
           <span
             v-if="message.isHighlight"
-            class="rounded-full border-2 border-red-500 bg-red-800 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-red-400 uppercase"
+            class="rounded-full border-2 border-rose-500 bg-rose-900 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-rose-300 uppercase"
           >
             Highlight
           </span>
@@ -93,7 +90,7 @@ const watchStreakSummary = computed(() => {
         </div>
       </div>
       <div
-        class="sh font-quicksand flex flex-col gap-y-1 rounded-lg bg-linear-to-r px-3 py-2"
+        class="sh font-quicksand flex flex-col gap-y-1 rounded-lg bg-linear-to-r px-3 py-2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]"
         :class="roleStyle.body"
       >
         <div class="flex items-center gap-1 font-semibold">
@@ -135,7 +132,11 @@ const watchStreakSummary = computed(() => {
             v-for="(token, index) in tokens"
             :key="index"
           >
-            <span v-if="token.type === 'text'">{{ token.content }}</span>
+            <span
+              v-if="token.type === 'text'"
+              class="font-medium"
+              >{{ token.content }}</span
+            >
             <span
               v-else-if="token.type === 'link'"
               class="text-link"
