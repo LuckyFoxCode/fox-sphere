@@ -36,21 +36,20 @@ const watchStreakSummary = computed(() => {
 });
 
 const liStyle = computed(() => {
-  const accent =
-    props.message.watchStreak || props.message.isHighlight
-      ? { borderColor: props.message.color, borderLeftColor: props.message.color }
-      : { borderLeftColor: props.message.color };
+  if (props.message.watchStreak) {
+    return {
+      boxShadow: `inset 0 0px 8px 3px color-mix(in srgb, #ff0 100%, transparent)`,
+    };
+  }
 
-  const announce = announceStyle.value
-    ? {
-        borderColor: announceStyle.value.borderColor,
-        backgroundImage: `linear-gradient(${announceStyle.value.tint}, ${announceStyle.value.tint})`,
-      }
-    : accent;
+  if (props.message.isHighlight) {
+    return {
+      boxShadow: `inset 0 0px 8px 3px color-mix(in srgb, ${props.message.color} 100%, transparent)`,
+    };
+  }
 
   return {
-    boxShadow: `0 0 5px color-mix(in srgb, ${props.message.color} 55%, transparent)`,
-    ...announce,
+    boxShadow: 'none',
   };
 });
 </script>
@@ -94,6 +93,7 @@ const liStyle = computed(() => {
       </div>
       <div
         class="sh flex flex-col gap-y-1 rounded-lg bg-linear-to-r from-gray-50 to-gray-300 px-3 py-2"
+        :style="liStyle"
       >
         <div class="flex items-center gap-1 font-semibold">
           <div
