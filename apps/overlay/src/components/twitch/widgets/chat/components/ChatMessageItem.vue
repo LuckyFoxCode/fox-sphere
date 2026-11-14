@@ -43,7 +43,7 @@ const watchStreakSummary = computed(() => {
 
 <template>
   <li
-    class="relative flex flex-col gap-1 rounded-xl border-2 text-sm"
+    class="relative flex flex-col gap-1 rounded-xl border-2 text-base"
     :class="roleStyle.frame"
   >
     <div
@@ -61,7 +61,7 @@ const watchStreakSummary = computed(() => {
         <div class="flex items-center gap-x-2">
           <span
             v-if="message.isAnnouncement"
-            class="rounded-full border-2 bg-slate-900 px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase"
+            class="rounded-full border-2 bg-slate-900 px-1.5 py-0.5 text-xs font-bold tracking-wide uppercase"
             :style="{
               borderColor: announceStyle?.borderColor,
               color: announceStyle?.borderColor,
@@ -71,19 +71,19 @@ const watchStreakSummary = computed(() => {
           </span>
           <span
             v-if="message.isHighlight"
-            class="rounded-full border-2 border-rose-500 bg-rose-900 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-rose-300 uppercase"
+            class="rounded-full border-2 border-rose-500 bg-rose-900 px-1.5 py-0.5 text-xs font-bold tracking-wide text-rose-300 uppercase"
           >
             Highlight
           </span>
           <span
             v-if="message.watchStreak"
-            class="rounded-full border-2 px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase"
+            class="rounded-full border-2 px-1.5 py-0.5 text-xs font-bold tracking-wide uppercase"
             :style="{ borderColor: message.color, color: message.color }"
           >
             Watch Streak
           </span>
           <span
-            class="rounded-lg border-2 px-1.5 py-0.5 text-[10px] font-medium uppercase"
+            class="rounded-lg border-2 px-1.5 py-0.5 text-xs font-medium uppercase"
             :class="roleStyle.chip"
             >{{ roleStyle.label }}</span
           >
@@ -109,7 +109,7 @@ const watchStreakSummary = computed(() => {
 
           <span
             :style="{ color: message.color }"
-            class="truncate text-base"
+            class="truncate"
           >
             {{ message.displayName }}
           </span>
@@ -125,7 +125,7 @@ const watchStreakSummary = computed(() => {
         <p
           v-if="message.text"
           class="text-bg leading-snug wrap-break-word"
-          :class="{ 'text-base italic opacity-80': message.watchStreak, italic: message.isAction }"
+          :class="{ 'italic opacity-80': message.watchStreak, italic: message.isAction }"
         >
           <span v-if="message.watchStreak">💬&nbsp;</span>
           <template
