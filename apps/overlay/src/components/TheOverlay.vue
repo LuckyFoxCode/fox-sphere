@@ -42,7 +42,7 @@ onUnmounted(() => {
     <HeroLane class="pointer-events-none absolute inset-0 z-10" />
 
     <TheHeader class="relative z-10" />
-    <main class="relative z-10 flex w-full flex-1 justify-end">
+    <main class="relative z-10 flex w-full flex-1 justify-start">
       <WidgetEventsHub />
       <TheSidebar />
     </main>

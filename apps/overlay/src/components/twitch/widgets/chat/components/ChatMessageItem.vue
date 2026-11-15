@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { TwitchEmote } from '@/components/ui';
-import { getRankConfigByLevel, MAX_ICON_TIER, RANK_BADGES } from '@/constants';
+import {
+  CHAT_ROLE_STYLES,
+  getRankConfigByLevel,
+  MAX_ICON_TIER,
+  RANK_BADGES,
+  resolveChatRole,
+} from '@/constants';
 import { getAnnounceStyle, parseTwitchEmotes } from '@/utils/twitch';
 import type { TwitchChatMessagePayload } from '@fox-sphere/types';
 import { computed } from 'vue';
@@ -11,127 +17,140 @@ const props = defineProps<{
 
 const tokens = computed(() => parseTwitchEmotes(props.message.text, props.message.emotes));
 
-const medal = computed(
-  () =>
-    RANK_BADGES[
-      Math.min(
-        getRankConfigByLevel(
-          props.message.userLvl,
-          props.message.isBroadcaster,
-          props.message.isBot,
-        ).tier,
-        MAX_ICON_TIER,
-      )
-    ],
+/**
+ * Титул и медаль берутся из одного конфига, поэтому не могут разойтись. Для стримера
+ * `getRankConfigByLevel` отвечает `GAME MASTER`, для бота - `SYSTEM BOT`, для зрителя - титул
+ * его уровня; флаги уже есть в payload, расширять `TwitchChatMessagePayload` не нужно.
+ */
+const rank = computed(() =>
+  getRankConfigByLevel(props.message.userLvl, props.message.isBroadcaster, props.message.isBot),
 );
+
+const medal = computed(() => RANK_BADGES[Math.min(rank.value.tier, MAX_ICON_TIER)]);
 
 const announceStyle = computed(() =>
   props.message.isAnnouncement ? getAnnounceStyle(props.message.announceColor ?? 'blue') : null,
 );
+
+const roleStyle = computed(() => CHAT_ROLE_STYLES[resolveChatRole(props.message)]);
 
 const watchStreakSummary = computed(() => {
   const streak = props.message.watchStreak;
   if (!streak) return null;
   return `🔥 ${streak.value} streams in a row! +${streak.reward} channel points`;
 });
-
-const liStyle = computed(() => {
-  const accent =
-    props.message.watchStreak || props.message.isHighlight
-      ? { borderColor: props.message.color, borderLeftColor: props.message.color }
-      : { borderLeftColor: props.message.color };
-
-  const announce = announceStyle.value
-    ? {
-        borderColor: announceStyle.value.borderColor,
-        backgroundImage: `linear-gradient(${announceStyle.value.tint}, ${announceStyle.value.tint})`,
-      }
-    : accent;
-
-  return {
-    boxShadow: `0 0 5px color-mix(in srgb, ${props.message.color} 55%, transparent)`,
-    ...announce,
-  };
-});
 </script>
 
 <template>
   <li
-    class="bg-card/80 border-text-second/10 relative flex items-center gap-1 rounded-r-xl border-2 border-l-4 py-1 pr-2 text-sm backdrop-blur-md"
-    :style="liStyle"
+    class="relative flex flex-col gap-1 rounded-xl border-2 text-base"
+    :class="roleStyle.frame"
   >
-    <component
-      :is="medal"
-      class="size-10 shrink-0"
-    />
-    <div class="flex flex-col gap-y-1">
-      <div class="flex items-center gap-1 font-semibold">
-        <div
-          v-if="message.badges?.length"
-          class="flex shrink-0 items-center gap-0.5"
-        >
-          <img
-            v-for="badge in message.badges"
-            :key="badge"
-            :src="badge"
-            alt="badge"
-            class="size-5 object-contain"
+    <div
+      class="rounded-lg border-2 bg-linear-to-r pt-10"
+      :class="roleStyle.header"
+    >
+      <div class="absolute top-0 left-0 flex w-full items-center justify-between pr-2">
+        <div>
+          <component
+            :is="medal"
+            class="size-10 shrink-0"
           />
+          <span class="text-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">{{ rank.rankTitle }}</span>
         </div>
-        <span
-          v-if="message.isAnnouncement"
-          class="rounded-full border px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase"
-          :style="{ borderColor: announceStyle?.borderColor, color: announceStyle?.borderColor }"
-        >
-          Announcement
-        </span>
-        <span
-          v-if="message.watchStreak"
-          class="rounded-full border px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase"
-          :style="{ borderColor: message.color, color: message.color }"
-        >
-          Watch Streak
-        </span>
-
-        <span
-          :style="{ color: message.color }"
-          class="truncate text-base"
-        >
-          {{ message.displayName }}
-        </span>
-      </div>
-
-      <p
-        v-if="watchStreakSummary"
-        class="text-text-main text-sm leading-snug font-medium"
-      >
-        {{ watchStreakSummary }}
-      </p>
-
-      <p
-        v-if="message.text"
-        class="text-text-main leading-snug wrap-break-word"
-        :class="{ 'text-base italic opacity-80': message.watchStreak, italic: message.isAction }"
-      >
-        <span v-if="message.watchStreak">💬&nbsp;</span>
-        <template
-          v-for="(token, index) in tokens"
-          :key="index"
-        >
-          <span v-if="token.type === 'text'">{{ token.content }}</span>
+        <div class="flex items-center gap-x-2">
           <span
-            v-else-if="token.type === 'link'"
-            class="text-link"
-            >{{ token.content }}</span
+            v-if="message.isAnnouncement"
+            class="rounded-full border-2 bg-slate-900 px-1.5 py-0.5 text-xs font-bold tracking-wide uppercase"
+            :style="{
+              borderColor: announceStyle?.borderColor,
+              color: announceStyle?.borderColor,
+            }"
           >
-          <TwitchEmote
-            v-else
-            :url="token.url"
-            :name="token.name"
-            :size="36"
-          />
-        </template>
-      </p>
+            Announcement
+          </span>
+          <span
+            v-if="message.isHighlight"
+            class="rounded-full border-2 border-rose-500 bg-rose-900 px-1.5 py-0.5 text-xs font-bold tracking-wide text-rose-300 uppercase"
+          >
+            Highlight
+          </span>
+          <span
+            v-if="message.watchStreak"
+            class="rounded-full border-2 px-1.5 py-0.5 text-xs font-bold tracking-wide uppercase"
+            :style="{ borderColor: message.color, color: message.color }"
+          >
+            Watch Streak
+          </span>
+          <span
+            class="rounded-lg border-2 px-1.5 py-0.5 text-xs font-medium uppercase"
+            :class="roleStyle.chip"
+            >{{ roleStyle.label }}</span
+          >
+        </div>
+      </div>
+      <div
+        class="font-quicksand flex flex-col gap-y-1 rounded-lg bg-linear-to-r px-3 py-2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]"
+        :class="roleStyle.body"
+      >
+        <div class="flex items-center gap-1 font-semibold">
+          <div
+            v-if="message.badges?.length"
+            class="flex shrink-0 items-center gap-0.5"
+          >
+            <img
+              v-for="badge in message.badges"
+              :key="badge"
+              :src="badge"
+              alt="badge"
+              class="size-5 object-contain"
+            />
+          </div>
+
+          <span
+            :style="{ color: message.color }"
+            class="truncate text-[15px]"
+          >
+            {{ message.displayName }}
+          </span>
+        </div>
+
+        <p
+          v-if="watchStreakSummary"
+          class="text-text-main text-sm leading-snug font-medium"
+        >
+          {{ watchStreakSummary }}
+        </p>
+
+        <p
+          v-if="message.text"
+          class="text-bg leading-snug wrap-break-word"
+          :class="{ 'italic opacity-80': message.watchStreak, italic: message.isAction }"
+        >
+          <span v-if="message.watchStreak">💬&nbsp;</span>
+          <template
+            v-for="(token, index) in tokens"
+            :key="index"
+          >
+            <span
+              v-if="token.type === 'text'"
+              class="font-medium"
+              >{{ token.content }}</span
+            >
+            <span
+              v-else-if="token.type === 'link'"
+              class="text-link"
+              >{{ token.content }}</span
+            >
+            <TwitchEmote
+              v-else
+              :url="token.url"
+              :name="token.name"
+              :size="36"
+            />
+          </template>
+        </p>
+      </div>
     </div>
   </li>
 </template>
