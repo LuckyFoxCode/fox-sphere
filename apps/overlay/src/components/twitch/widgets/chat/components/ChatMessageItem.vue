@@ -56,7 +56,7 @@ const watchStreakSummary = computed(() => {
             :is="medal"
             class="size-10 shrink-0"
           />
-          <span class="drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">{{ rank.rankTitle }}</span>
+          <span class="text-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">{{ rank.rankTitle }}</span>
         </div>
         <div class="flex items-center gap-x-2">
           <span
@@ -90,7 +90,7 @@ const watchStreakSummary = computed(() => {
         </div>
       </div>
       <div
-        class="sh font-quicksand flex flex-col gap-y-1 rounded-lg bg-linear-to-r px-3 py-2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]"
+        class="font-quicksand flex flex-col gap-y-1 rounded-lg bg-linear-to-r px-3 py-2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]"
         :class="roleStyle.body"
       >
         <div class="flex items-center gap-1 font-semibold">
@@ -109,7 +109,7 @@ const watchStreakSummary = computed(() => {
 
           <span
             :style="{ color: message.color }"
-            class="truncate"
+            class="truncate text-[15px]"
           >
             {{ message.displayName }}
           </span>
@@ -154,8 +154,3 @@ const watchStreakSummary = computed(() => {
     </div>
   </li>
 </template>
-<style scoped>
-.sh {
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
-}
-</style>
