@@ -27,6 +27,12 @@ colors:
   sticker-track: "#423b4c"
   sticker-rose: "#e08aa4"
   sticker-mint: "#8fc9b8"
+  paper-amber: "#f2dfba"
+  paper-blue: "#d8e3f7"
+  paper-cyan: "#cfe9e1"
+  paper-purple: "#e8d9f2"
+  paper-red: "#f7dcd7"
+  paper-rose: "#f8dbe8"
 typography:
   display:
     fontFamily: "Rubik, sans-serif"
@@ -198,15 +204,22 @@ A small set of custom, event-driven components — no generic UI kit.
 
 ## Direction in rollout: graphite stickers
 
-**Status: the header is done; the rest of the overlay still ships the neon marquee above.** Both worlds
-are in the repo at once on purpose. Do not "fix" one into the other by half-measures: a widget either
-belongs to the graphite HUD or it is an event widget still waiting for its migration.
+**Status: the header and the timer are done; the rest of the overlay still ships the neon marquee
+above.** Both worlds are in the repo at once on purpose. Do not "fix" one into the other by
+half-measures: a widget either belongs to the graphite HUD or it is an event widget still waiting for
+its migration.
 
 ### The rule that decides which world a widget belongs to
-**Furniture is graphite; content is paper.** Anything that is always on screen and only reports a
-number - bank, XP, level, timers, counters - is a graphite sticker. Anything that *is* the content - a
-chat message, a hero, a prize - stays light paper with its own colour. The two meet because they share
-one material language: a warm keyline, paper grain, and Quicksand.
+Three materials, and a widget picks one by its job - not by which component it is.
+
+| Material | Who | Why |
+|---|---|---|
+| **graphite** | anything always on screen that only reports a number - bank, XP, level | it must never compete with the game |
+| **paper** | the content itself - a chat message, a hero, a prize | it *is* the thing you came to watch |
+| **coloured paper** | an event, or a widget the streamer coloured - timer, follow, raid, reward | it is news, and its colour is part of the news |
+
+**Furniture is graphite; content is paper; events are coloured paper.** The three meet because they
+share one material language: a warm keyline, paper grain, and Quicksand.
 
 ### Palette
 | Token | Value | Job |
@@ -218,6 +231,17 @@ one material language: a warm keyline, paper grain, and Quicksand.
 | `--sticker-track` | `#423b4c` | empty progress cells |
 | `--sticker-rose` | `#e08aa4` | filled progress cells, the roulette wheel |
 | `--sticker-mint` | `#8fc9b8` | the leading cell and the percentage - the only "live" signal |
+| `--paper-amber` | `#f2dfba` | the timer's `amber` |
+| `--paper-blue` | `#d8e3f7` | the timer's `blue` (the command's default) |
+| `--paper-cyan` | `#cfe9e1` | the timer's `cyan` |
+| `--paper-purple` | `#e8d9f2` | the timer's `purple` |
+| `--paper-red` | `#f7dcd7` | the timer's `red` |
+| `--paper-rose` | `#f8dbe8` | the timer's `rose` |
+
+The six `--paper-*` values are the six `--twitch-*` hues taken down in chroma and up in lightness until
+they stop emitting light and start being stock. That lift is not cosmetic: a saturated `--twitch-red`
+tile with graphite digits would vibrate, and the whole point of the material is that a number printed on
+it is the most readable thing in the widget.
 
 ### Named rules
 **The One-Hairline Rule.** The keyline is a 2px oat hairline, not a frame, and it is deliberately the
@@ -234,6 +258,20 @@ printed beside it; the icon is the label. `LevelBadge` still defaults to 64px fo
 is a paper widget and sizes the ring to its own grid.
 **The Matte Rule.** No halo, no outer glow, no pulse. Depth is one soft offset shadow plus paper grain,
 so the widget reads as a physical sticker lying on the capture.
+**The Event-Paper Rule.** An event widget keeps its colour and gives up its glow: the colour becomes
+the **paper** of its tiles, never the body of the widget. The body stays graphite, because an event
+widget sits beside the furniture and has to belong to the same shelf. The colour is not decoration that
+can be dropped either - `!timer 5 red BRB` is a choice the streamer made, and if `red` looks like
+`blue` on stream the command has quietly lost a feature. So it goes where the eye already is: on the
+digits' tiles, under graphite numerals, which is also the highest-contrast combination of all six. A
+second colour mark beside it (a dot, a seal, a tinted title) duplicates what the tiles already say and
+is not added.
+**The Flip Carries Meaning.** The flip is the only motion left in the HUD, and it earns its place
+because it says *time is running* - whereas a pulse says nothing and is banned by the Matte Rule. It
+runs 260ms with the digit swapped at the midpoint, never 600ms: at a one-second tick, 600ms leaves the
+seconds tile moving 60% of its life, which reads as twitchy rather than mechanical. Tiles carry no
+border while they flip - a 2px keyline on a rotating plate collapses into a single line at 90° and
+pops.
 **The Square Rule.** Stickers sit square. A hand-cut look comes from the paper grain and the hairline,
 not from rotating the frame - a tilt fights the horizontal text baseline beside it and makes a small
 widget read as a mistake.
@@ -242,13 +280,24 @@ widget read as a mistake.
 Quicksand carries every HUD number and label. Figures are always `tabular-nums`: a bank that jitters as
 it counts up is the loudest possible tell that a stream widget was not built for its job.
 
+The timer's digits are the largest figures in the HUD at 48px, graphite on paper - not the other way
+round. Its title is 16px in `--sticker-ink`, truncated rather than wrapped, and the title is never
+capitalised for the streamer: `!timer 5 red Brb — 5 min` prints what was typed.
+
 ### Migration state
 | Widget | World |
 |---|---|
 | `RouletteTicker`, `XpWidget`, `XpProgressBar`, `LevelBadge` | graphite - done |
+| `TwitchTimer`, `FlipDigit` | graphite body + event paper - done; the template for the event family |
 | `StickerFrame` (`components/ui/sticker-frame/`) | the shared shell every future HUD widget uses |
 | `ChatMessageItem` and the rest of `components/twitch/` | paper - stays, shares the keyline and grain |
 | `WidgetFrame` and every event widget | neon marquee - **not migrated** |
+
+`TwitchTimer` is the pilot for the event family: `WIDGET_PAPER` in `src/constants/paperSurfaces.ts`
+maps each `WidgetVariant` to its paper, and the next event widget (`TwitchFollow`, `TwitchRaid`,
+`TwitchRewardRedeem`, `TwitchGoldenBeer`, `TwitchWatchStreak`, `TwitchAddVip`) reuses that map rather
+than inventing its own. The map is tested against the theme - a `bg-paper-*` class with no token behind
+it renders transparent and leaves graphite digits on a graphite body, which is a silent failure.
 
 Do not migrate `WidgetFrame` by editing it in place. It is the signature of the old world and its
 caps, bolts and rim glow have no counterpart here; a graphite `StickerFrame` replaces it outright for

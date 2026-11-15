@@ -1,39 +1,35 @@
 <script setup lang="ts">
-import { FlipDigit } from '@/components/ui';
-import { WidgetFrame } from '@/components/ui/widget-frame';
+import { FlipDigit, StickerFrame } from '@/components/ui';
 import type { TwitchTimerPayload } from '@fox-sphere/types';
 
 defineProps<{ timer: TwitchTimerPayload; timeDigits: string[] }>();
 </script>
 
 <template>
-  <div>
-    <WidgetFrame
-      :variant="timer.color"
-      :is-shadow="false"
-    >
-      <div class="flex h-full w-full flex-col items-center">
-        <h4 class="w-full truncate px-1 text-center text-base leading-none capitalize">
-          {{ timer.title }}
-        </h4>
-        <div class="flex w-3/4 flex-1 items-center justify-center gap-x-2">
-          <template
-            v-for="(char, index) in timeDigits"
-            :key="index"
-          >
-            <span
-              v-if="char === ':'"
-              class="mx-1 animate-pulse text-5xl"
-              >:</span
-            >
-            <FlipDigit
-              v-else
-              :char="char"
-              :color="timer.color"
-            />
-          </template>
-        </div>
-      </div>
-    </WidgetFrame>
-  </div>
+  <StickerFrame
+    role="timer"
+    :aria-label="`${timer.title} — ${timeDigits.join('')}`"
+    class="w-full flex-col gap-y-2.5 px-3.5 pt-2.5 pb-3"
+  >
+    <h4 class="text-sticker-ink w-full truncate text-center text-base leading-none font-bold">
+      {{ timer.title }}
+    </h4>
+    <div class="flex items-center justify-center gap-x-2">
+      <template
+        v-for="(char, index) in timeDigits"
+        :key="index"
+      >
+        <span
+          v-if="char === ':'"
+          class="text-sticker-ink/55 text-[34px] leading-none font-bold select-none"
+          >:</span
+        >
+        <FlipDigit
+          v-else
+          :char="char"
+          :color="timer.color"
+        />
+      </template>
+    </div>
+  </StickerFrame>
 </template>
