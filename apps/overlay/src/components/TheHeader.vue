@@ -5,7 +5,7 @@ import { XpWidget } from './stream';
 
 <template>
   <header class="from-card/90 flex w-full justify-end bg-linear-to-b to-transparent">
-    <div class="flex items-center gap-x-3">
+    <div class="flex items-center gap-x-2 pt-2 pr-3">
       <RouletteTicker />
       <XpWidget />
     </div>

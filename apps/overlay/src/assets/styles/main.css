@@ -26,6 +26,32 @@
   --twitch-rose: #f6339a;
 
   --link: #3b82f6;
+
+  /* --- graphite sticker HUD -------------------------------------------------
+     The header widgets are die-cut stickers: one warm oat keyline around a cool
+     graphite body, matte ink, no glow. The keyline is what separates the widget
+     from bright gameplay, so it never drops below 5px. It is the only warm value
+     in the palette, and that is its job - it is the paper the sticker is cut
+     from, so nothing else may take its place. */
+  --sticker-body: #2b2630;
+  --sticker-edge: #dccbb2;
+  --sticker-ink: #f2ecf6;
+  --sticker-muted: #a49ab0;
+  --sticker-track: #423b4c;
+  --sticker-rose: #e08aa4;
+  --sticker-mint: #8fc9b8;
+
+  /* --- event paper ----------------------------------------------------------
+     An event widget keeps its own colour, but a colour that is paper rather
+     than light: the same six hues the streamer picks with `!timer ... red`,
+     desaturated and lifted so they stop glowing and start being material.
+     They are tiles and plates, never a body on their own. */
+  --paper-amber: #f2dfba;
+  --paper-blue: #d8e3f7;
+  --paper-cyan: #cfe9e1;
+  --paper-purple: #e8d9f2;
+  --paper-red: #f7dcd7;
+  --paper-rose: #f8dbe8;
 }
 
 @theme {
@@ -55,6 +81,21 @@
   --color-event-rose: var(--twitch-rose);
 
   --color-link: var(--link);
+
+  --color-sticker-body: var(--sticker-body);
+  --color-sticker-edge: var(--sticker-edge);
+  --color-sticker-ink: var(--sticker-ink);
+  --color-sticker-muted: var(--sticker-muted);
+  --color-sticker-track: var(--sticker-track);
+  --color-sticker-rose: var(--sticker-rose);
+  --color-sticker-mint: var(--sticker-mint);
+
+  --color-paper-amber: var(--paper-amber);
+  --color-paper-blue: var(--paper-blue);
+  --color-paper-cyan: var(--paper-cyan);
+  --color-paper-purple: var(--paper-purple);
+  --color-paper-red: var(--paper-red);
+  --color-paper-rose: var(--paper-rose);
 }
 
 @layer base {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { StickerFrame } from '@/components/ui';
 import { useStreamSocket } from '@/composables/sockets';
 import { socket } from '@/services';
 import { computed } from 'vue';
@@ -16,15 +17,18 @@ const progressPercentage = computed(() => {
 </script>
 
 <template>
-  <div
+  <StickerFrame
     v-if="!isLoading"
-    class="relative my-auto flex w-100 items-center gap-x-1.5"
+    class="w-100 gap-x-2.5 py-1 pr-3 pl-2.5"
   >
-    <LevelBadge :level="level" />
+    <LevelBadge
+      :level="level"
+      :size="46"
+    />
     <XpProgressBar
       :max-xp="maxXp"
       :new-xp="newXp"
       :progress-percentage="progressPercentage"
     />
-  </div>
+  </StickerFrame>
 </template>
