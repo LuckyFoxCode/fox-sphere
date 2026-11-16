@@ -8,7 +8,7 @@ defineProps<{ messages: TwitchChatMessagePayload[] }>();
 
 <template>
   <div
-    class="flex h-187.5 flex-col gap-y-2 overflow-hidden rounded-2xl border-2 border-slate-600 bg-slate-700/30 pt-3"
+    class="flex h-181.25 flex-col gap-y-2 overflow-hidden rounded-2xl border-2 border-slate-600 bg-slate-700/30 pt-3"
   >
     <div class="flex items-center gap-x-2 px-3">
       <div class="relative size-4 rounded-full bg-rose-500">

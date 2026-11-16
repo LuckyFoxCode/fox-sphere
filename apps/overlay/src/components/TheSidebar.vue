@@ -8,7 +8,7 @@ const { isTimerActive, timer, timeDigits, messages } = useTwitchSocket(socket);
 </script>
 
 <template>
-  <aside class="flex h-[85%] w-100 flex-col justify-between pt-1.5">
+  <aside class="flex h-[85%] w-100 flex-col justify-between gap-y-2">
     <div>
       <Transition
         name="zoom-in"
