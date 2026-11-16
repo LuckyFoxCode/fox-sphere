@@ -1,0 +1,41 @@
+<template>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+  >
+    <g
+      fill="none"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="1.5"
+    >
+      <ellipse
+        cx="12"
+        cy="16.6"
+        rx="4.5"
+        ry="3.6"
+      />
+      <circle
+        cx="6.2"
+        cy="11.6"
+        r="2.1"
+      />
+      <circle
+        cx="9.8"
+        cy="8.2"
+        r="2.2"
+      />
+      <circle
+        cx="14.2"
+        cy="8.2"
+        r="2.2"
+      />
+      <circle
+        cx="17.8"
+        cy="11.6"
+        r="2.1"
+      />
+    </g>
+  </svg>
+</template>

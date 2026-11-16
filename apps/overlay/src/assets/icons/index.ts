@@ -1,7 +1,12 @@
 export { default as IconBot } from './IconBot.vue';
+export { default as IconCrown } from './IconCrown.vue';
 export { default as IconDna } from './IconDna.vue';
+export { default as IconFlame } from './IconFlame.vue';
+export { default as IconGift } from './IconGift.vue';
 export { default as IconLightning } from './IconLightning.vue';
 export { default as IconLotteryWheel } from './IconLotteryWheel.vue';
+export { default as IconPaw } from './IconPaw.vue';
+export { default as IconPint } from './IconPint.vue';
 export { default as IconRank } from './IconRank.vue';
 export { default as IconStar } from './IconStar.vue';
 export { default as IconUser } from './IconUser.vue';

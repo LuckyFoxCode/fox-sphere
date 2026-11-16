@@ -1,5 +1,9 @@
 import type { RouletteSpinResultPayload } from "@fox-sphere/types";
-import { RouletteService, ROULETTE_CONFIG, ROULETTE_MESSAGES } from "../../../roulette";
+import {
+  ROULETTE_CONFIG,
+  ROULETTE_MESSAGES,
+  RouletteService,
+} from "../../../roulette";
 import { UserService } from "../../../user";
 import { ChatbotService } from "../../chatbot.service";
 import {
@@ -11,7 +15,7 @@ import {
 
 export class SpinCommand implements TwitchCommand {
   readonly name = "spin";
-  readonly alliases = ["roll"];
+  readonly alliases = ["roll", "спин", "лудка"];
   readonly cooldown: CooldownConfig = {
     time: ROULETTE_CONFIG.SPIN_COOLDOWN,
     type: "user",
@@ -71,7 +75,10 @@ export class SpinCommand implements TwitchCommand {
         // Пустой результат не идёт в чат — его показывает колесо на оверлее.
         return null;
       case "coins":
-        return ROULETTE_MESSAGES.COINS_RESULT(result.username, result.coinAmount);
+        return ROULETTE_MESSAGES.COINS_RESULT(
+          result.username,
+          result.coinAmount,
+        );
       case "xp":
         return ROULETTE_MESSAGES.XP_RESULT(result.username, result.xpAmount);
       case "jackpot":

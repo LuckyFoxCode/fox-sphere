@@ -4,17 +4,29 @@ export function useTimer() {
   const timeLeft = ref(0);
   let timerInterval: ReturnType<typeof setInterval> | null = null;
 
-  const startTimer = (durationInMinutes: number) => {
-    stopTimer();
-    timeLeft.value = durationInMinutes * 60;
+  /**
+   * Остаток считается от абсолютного `endsAt`, а не вычитанием единицы из
+   * счётчика. Разница видна ровно в двух случаях, и оба реальные: браузер в OBS
+   * троттлит таймеры (свёрнутое окно, сон машины) — тогда вычитание отстаёт от
+   * часов на всё время простоя, — и таймер, поднятый посреди стрика, обязан
+   * показать настоящее время, а не то, сколько тиков успело пройти.
+   */
+  const tick = (endsAt: number) => {
+    const secondsLeft = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+    timeLeft.value = secondsLeft;
 
-    timerInterval = setInterval(() => {
-      if (timeLeft.value > 0) {
-        timeLeft.value--;
-      } else {
-        stopTimer();
-      }
-    }, 1000);
+    if (secondsLeft === 0) {
+      stopTimer();
+    }
+  };
+
+  const startTimer = (endsAt: number) => {
+    stopTimer();
+    tick(endsAt);
+
+    if (timeLeft.value > 0) {
+      timerInterval = setInterval(() => tick(endsAt), 1000);
+    }
   };
 
   const stopTimer = () => {

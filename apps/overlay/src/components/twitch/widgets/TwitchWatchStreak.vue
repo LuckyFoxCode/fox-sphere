@@ -1,90 +1,57 @@
 <script setup lang="ts">
-import { IconLightning } from '@/assets/icons';
-import { WidgetFrame } from '@/components/ui/widget-frame';
+import { IconFlame } from '@/assets/icons';
+import { EventSticker } from '@/components/ui';
 import { getWatchStreakAchievement } from '@/constants';
 import type { TwitchWatchStreakPayload } from '@fox-sphere/types';
 import { computed } from 'vue';
 
 const props = defineProps<{ watchStreak: TwitchWatchStreakPayload }>();
 
-function getWatchStreakMessage(streak: number): string {
-  if (streak === 3) return '🔥 3 streams in a row — the fire ignites!';
-  if (streak === 5) return '⚡ 5 streams — streak machine!';
-  if (streak === 7) return '💥 7 streams — unstoppable!';
-
-  if (streak % 10 === 0) return `👑 MASSIVE JUBILEE! x${streak} streams in a row!`;
-  if (streak % 5 === 0) return `🏆 ROUND NUMBER! x${streak} streams in a row!`;
-
-  return `🔥 Solid streak x${streak}!`;
-}
-
-const streakText = computed(() => getWatchStreakMessage(props.watchStreak.streakValue));
-
+/**
+ * Стрик — событие с артом: знак на пластине отдан бейджу достижения, а когда
+ * бейджа ещё нет (до первого рубежа), пластину занимает огонь. Пустой она не
+ * остаётся никогда.
+ */
 const achievementSrc = computed(() => getWatchStreakAchievement(props.watchStreak.streakValue));
+
+/**
+ * Фраза без эмодзи: знак события несёт пластина, картинке в тексте там не место.
+ * Возвращает именно продолжение под фигурой — «x7 / unstoppable» — поэтому
+ * единица измерения («streams in a row») нужна только в последней ветке.
+ */
+const getStreakFlavor = (streak: number): string => {
+  if (streak === 3) return 'the fire ignites';
+  if (streak === 5) return 'streak machine';
+  if (streak === 7) return 'unstoppable';
+  if (streak % 10 === 0) return 'a jubilee run';
+  if (streak % 5 === 0) return 'a round number';
+
+  return 'streams in a row';
+};
+
+const flavor = computed(() => getStreakFlavor(props.watchStreak.streakValue));
+
+const chips = computed(() => {
+  const facts: string[] = [];
+
+  if (props.watchStreak.xpAwarded > 0) facts.push(`+${props.watchStreak.xpAwarded} XP`);
+  if (props.watchStreak.coinsAwarded > 0) facts.push(`+${props.watchStreak.coinsAwarded} coins`);
+
+  return facts;
+});
 </script>
 
 <template>
-  <WidgetFrame
-    variant="rose"
-    position-x="100"
-  >
-    <div
-      v-if="achievementSrc"
-      class="relative flex items-center justify-center gap-12 px-4 py-2"
-    >
-      <span
-        v-if="!watchStreak.isRepeat"
-        class="border-event-blue bg-event-blue/15 text-lime absolute top-1 right-1 flex w-fit rounded-lg border-2 px-1.5 py-1 text-xs font-semibold tracking-wider uppercase"
-      >
-        new
-      </span>
-
-      <img
-        :src="achievementSrc"
-        alt="Watch streak achievement"
-        class="size-50 shrink-0 object-contain"
-      />
-
-      <div class="flex flex-col items-center text-center">
-        <span
-          class="text-event-rose mb-2 flex items-center gap-1.5 text-xs font-medium tracking-[0.35em] uppercase"
-        >
-          <IconLightning class="size-4" />
-          Stream Streak
-        </span>
-
-        <span
-          class="text-event-amber text-6xl leading-none font-semibold drop-shadow-[0_0_7px_var(--color-event-amber)]"
-        >
-          {{ watchStreak.streakValue }}
-        </span>
-
-        <p class="text-text-main/80 mt-2 mb-2 text-sm font-medium">
-          {{ streakText }}
-        </p>
-
-        <span
-          class="text-event-amber mb-2 text-base font-semibold drop-shadow-[0_0_5px_var(--color-event-amber)]"
-        >
-          {{ watchStreak.displayName }}
-        </span>
-
-        <div
-          v-if="watchStreak.xpAwarded > 0"
-          class="flex items-center gap-2"
-        >
-          <span
-            class="bg-event-blue/10 border-event-blue/80 text-event-amber rounded-full border px-2.5 py-0.5 text-sm font-semibold"
-          >
-            +{{ watchStreak.xpAwarded }} XP
-          </span>
-          <span
-            class="bg-event-blue/10 border-event-blue/80 text-event-amber rounded-full border px-2.5 py-0.5 text-sm font-semibold"
-          >
-            🪙 +{{ watchStreak.coinsAwarded }}
-          </span>
-        </div>
-      </div>
-    </div>
-  </WidgetFrame>
+  <EventSticker
+    variant="blue"
+    :icon="achievementSrc ? undefined : IconFlame"
+    :media-src="achievementSrc ?? undefined"
+    media-alt="Watch streak achievement"
+    label="stream streak"
+    :figure="`x${watchStreak.streakValue}`"
+    :title="watchStreak.displayName"
+    :detail="flavor"
+    :tag="watchStreak.isRepeat ? undefined : 'new'"
+    :chips="chips"
+  />
 </template>

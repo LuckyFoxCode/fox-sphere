@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { FlipDigit, StickerFrame } from '@/components/ui';
-import type { TwitchTimerPayload } from '@fox-sphere/types';
+import type { ActiveStreamTimer } from '@fox-sphere/types';
 
-defineProps<{ timer: TwitchTimerPayload; timeDigits: string[] }>();
+defineProps<{ timer: ActiveStreamTimer; timeDigits: string[] }>();
 </script>
 
 <template>

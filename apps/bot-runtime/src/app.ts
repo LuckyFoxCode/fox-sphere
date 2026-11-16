@@ -1,6 +1,7 @@
 import {
   config,
   errorHandler,
+  getActiveStreamTimer,
   getStreamStatePrepared,
   Logger,
 } from "@fox-sphere/backend-shared";
@@ -48,6 +49,15 @@ io.on("connection", (socket) => {
         `stream:get-system-state failed for ${socket.id}`,
         error,
       );
+    }
+  });
+  socket.on("twitch:get-timer", async (_, socketCallback) => {
+    try {
+      socketCallback(await getActiveStreamTimer());
+    } catch (error) {
+      // Тот же риск, что у `stream:get-system-state`: без этой ветки ack не
+      // придёт и оверлей ждёт вечно, а unhandled rejection кладёт процесс.
+      Logger.error("Socket", `twitch:get-timer failed for ${socket.id}`, error);
     }
   });
   socket.on("disconnect", () => {

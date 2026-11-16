@@ -49,6 +49,19 @@ socket.on("stream:get-system-state", async (_, socketCallback) => {
 
 The callback's type belongs in `ClientToServerEvents` next to the event.
 
+## State that must outlive a page load does not live in the overlay
+
+`!timer` is the worked example. The deadline is a column (`SystemState.timerEndsAt`,
+an absolute moment and never a remaining count), the live `twitch:timer` event carries
+that same `endsAt`, and `twitch:get-timer` exists so a reloaded OBS scene can catch up -
+the overlay counts down from the deadline rather than decrementing its own counter, so
+a throttled tab or a page loaded mid-timer still shows the real time.
+
+Anything the overlay must still show after an F5 keeps its truth in the database and
+gets an ack beside `stream:get-system-state`. A widget that owns the countdown in its
+own `setInterval` is a widget that dies on reload - and takes a second viewer's copy
+and a bot restart with it.
+
 ## Client subscriptions live in composables
 
 Every `socket.on` belongs in a `useXSocket` composable under

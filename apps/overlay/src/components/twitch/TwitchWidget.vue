@@ -38,9 +38,9 @@ const widgetConfig = computed(() => {
 </script>
 
 <template>
-  <div class="fixed bottom-[15%] left-1/2 -translate-1/2">
+  <div class="fixed bottom-48 left-1/2 -translate-x-1/2">
     <Transition
-      name="zoom-in"
+      name="sticker-slap"
       mode="out-in"
     >
       <component
