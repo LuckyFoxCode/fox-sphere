@@ -145,6 +145,31 @@
     transform: translateY(8px) scale(0.95);
   }
 
+  /* Наклейка пришлёпывается: 180ms входа, 140ms выхода. Старый `zoom-in` держал
+     двойное переключение 1.4s, из которых 700ms в доке не было ничего — на пятисекундном
+     событии это половина показа. Кривая та же, что у барабана рулетки. */
+  .sticker-slap-enter-active {
+    transition:
+      opacity 180ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .sticker-slap-leave-active {
+    transition:
+      opacity 140ms cubic-bezier(0.4, 0, 1, 1),
+      transform 140ms cubic-bezier(0.4, 0, 1, 1);
+  }
+
+  .sticker-slap-enter-from {
+    opacity: 0;
+    transform: scale(1.06) translateY(-2px);
+  }
+
+  .sticker-slap-leave-to {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+
   .bubble-fade-enter-active {
     transition:
       opacity 0.2s ease,

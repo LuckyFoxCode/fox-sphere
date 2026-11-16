@@ -288,16 +288,41 @@ capitalised for the streamer: `!timer 5 red Brb — 5 min` prints what was typed
 | Widget | World |
 |---|---|
 | `RouletteTicker`, `XpWidget`, `XpProgressBar`, `LevelBadge` | graphite - done |
-| `TwitchTimer`, `FlipDigit` | graphite body + event paper - done; the template for the event family |
+| `TwitchTimer`, `FlipDigit` | graphite body + event paper - done; the pilot for the event family |
 | `StickerFrame` (`components/ui/sticker-frame/`) | the shared shell every future HUD widget uses |
-| `ChatMessageItem` and the rest of `components/twitch/` | paper - stays, shares the keyline and grain |
-| `WidgetFrame` and every event widget | neon marquee - **not migrated** |
+| `EventSticker` (`components/ui/event-sticker/`) | graphite body + one event paper - the event family's shell |
+| `TwitchFollow`, `TwitchRaid`, `TwitchRewardRedeem`, `TwitchAddVip`, `TwitchWatchStreak`, `TwitchGoldenBeer` | graphite + event paper - done |
+| `ChatMessageItem` and the chat card | paper - stays, shares the keyline and grain |
+| `WidgetFrame` and the lottery / profile / shop / stream / hero-card widgets | neon marquee - **not migrated** |
 
 `TwitchTimer` is the pilot for the event family: `WIDGET_PAPER` in `src/constants/paperSurfaces.ts`
-maps each `WidgetVariant` to its paper, and the next event widget (`TwitchFollow`, `TwitchRaid`,
-`TwitchRewardRedeem`, `TwitchGoldenBeer`, `TwitchWatchStreak`, `TwitchAddVip`) reuses that map rather
-than inventing its own. The map is tested against the theme - a `bg-paper-*` class with no token behind
-it renders transparent and leaves graphite digits on a graphite body, which is a silent failure.
+maps each `WidgetVariant` to its paper, and every event widget reuses that map rather than inventing
+its own. The map is tested against the theme - a `bg-paper-*` class with no token behind it renders
+transparent and leaves graphite digits on a graphite body, which is a silent failure.
+
+### The event family
+
+Six events, one anatomy, in `EventSticker`: a paper plate on the left carrying the event's sign (a
+drawn 24px icon, or the achievement art at 108px when the event has one), and a graphite column of
+kicker / figure / name / detail / chips. A widget passes data and nothing else, so the six cannot
+drift apart - the same reason `route()` owns both the Express handler and the OpenAPI path.
+
+**Paper is assigned by meaning, one per event, no duplicates.** `follow` red (a new person said yes),
+`raid` cyan (the neon world already gave cyan to raids), `reward` purple (redemptions),
+`add-vip` rose (status), `watch-streak` blue (a cool, steady record), `golden-beer` amber (gold).
+
+Three details are what make it read as one family:
+
+- **The plate is the only place the event colour appears.** Chips stay graphite (`sticker-track`),
+  and the one oat chip (`sticker-edge` + graphite ink) is the same part as `!spin` on the roulette
+  ticker - it is reserved for a flag (`NEW`, `NEW TIER`), never for a fact.
+- **Signs are drawn, not typed.** Five stroke icons (`IconPaw`, `IconGift`, `IconCrown`, `IconFlame`,
+  `IconPint`) beside the existing `IconLightning`, at `stroke-width: 1.5` like `IconUser`. Emoji were
+  the last full-colour element in a matte HUD, and they render differently on every machine.
+- **One width, two heights.** 420px for all six, so the dock at `bottom-48` moves only upward between
+  events; `-translate-x-1/2` without `-y`, because a percentage anchor would drift with the height.
+  The transition is `sticker-slap` (180ms in, 140ms out) - the old `zoom-in` spent 1.4s on a swap,
+  half of it with an empty dock.
 
 Do not migrate `WidgetFrame` by editing it in place. It is the signature of the old world and its
 caps, bolts and rim glow have no counterpart here; a graphite `StickerFrame` replaces it outright for
