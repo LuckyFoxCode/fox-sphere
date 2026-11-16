@@ -1,5 +1,5 @@
-import { globalEventBus } from "../../../../shared/services";
 import { ChatbotService } from "../../chatbot.service";
+import { StreamService } from "../../../stream";
 import { BOT_MESSAGES, COOLDOWNS } from "../../twitch.constants";
 import {
   CommandContext,
@@ -15,7 +15,10 @@ export class TimerStopCommand implements TwitchCommand {
     type: "global" as const,
   };
 
-  constructor(private chatbotService: ChatbotService) {}
+  constructor(
+    private chatbotService: ChatbotService,
+    private streamService: StreamService,
+  ) {}
 
   async execute(ctx: CommandContext): Promise<void> {
     if (!ctx.msg.userInfo.isBroadcaster && !ctx.msg.userInfo.isMod) {
@@ -24,7 +27,8 @@ export class TimerStopCommand implements TwitchCommand {
       return;
     }
 
-    globalEventBus.emit("twitch:timer-stop", {});
+    await this.streamService.stopStreamTimer();
+
     const message = BOT_MESSAGES.COMMANDS.TIMER_STOP(ctx.user);
     await this.chatbotService.sendMessage(ctx.channel, message);
   }

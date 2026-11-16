@@ -1,12 +1,12 @@
 import { SOUNDS } from '@/constants/sound';
 import {
+  type ActiveStreamTimer,
   type TwitchAddVipPaylod,
   type TwitchChatMessagePayload,
   type TwitchFollowPayload,
   type TwitchGoldenBeerPayload,
   type TwitchRaidPayload,
   type TwitchRewardPayload,
-  type TwitchTimerPayload,
   type TwitchWatchStreakPayload,
 } from '@fox-sphere/types';
 import { ref, watch } from 'vue';
@@ -28,7 +28,7 @@ const addVip = ref<TwitchAddVipPaylod | null>(null);
 const follow = ref<TwitchFollowPayload | null>(null);
 const raid = ref<TwitchRaidPayload | null>(null);
 const reward = ref<TwitchRewardPayload | null>(null);
-const timer = ref<TwitchTimerPayload | null>(null);
+const timer = ref<ActiveStreamTimer | null>(null);
 const messages = ref<TwitchChatMessagePayload[]>([]);
 const watchStreak = ref<TwitchWatchStreakPayload | null>(null);
 const goldenBeer = ref<TwitchGoldenBeerPayload | null>(null);
@@ -87,15 +87,39 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
     setStatusWithTimeout('reward', 5000);
   };
 
-  const handleTimer = (data: TwitchTimerPayload) => {
+  const handleTimer = (data: ActiveStreamTimer) => {
     timer.value = data;
     isTimerActive.value = true;
-    startTimer(data.time);
+    startTimer(data.endsAt);
   };
 
+  // `isTimerActive` снимается до `resetTimer`: тот обнуляет `timeLeft`, а на
+  // ноль подписан звук окончания, поэтому `!stoptimer` иначе играл бы его как
+  // доигравший таймер.
   const handleTimerStop = () => {
     timer.value = null;
+    isTimerActive.value = false;
     resetTimer();
+  };
+
+  /**
+   * Догоняет идущий таймер после загрузки страницы. Живое событие `twitch:timer`
+   * несёт `endsAt` само, но перезагруженная сцена его уже пропустила — и без
+   * этого запроса `!timer`, запущенный до открытия OBS, не появлялся вовсе.
+   */
+  const fetchTimer = () => {
+    socketInstance.emit('twitch:get-timer', {}, (activeTimer) => {
+      if (!activeTimer) {
+        timer.value = null;
+        isTimerActive.value = false;
+        resetTimer();
+        return;
+      }
+
+      timer.value = activeTimer;
+      isTimerActive.value = true;
+      startTimer(activeTimer.endsAt);
+    });
   };
 
   const handleWatchStreak = (data: TwitchWatchStreakPayload) => {
@@ -123,6 +147,12 @@ export function useTwitchSocket(socketInstance: WidgetSocket) {
     socketInstance.on('twitch:timer-stop', handleTimerStop);
     socketInstance.on('twitch:watch-streak', handleWatchStreak);
     socketInstance.on('twitch:golden-beer', handleGoldenBeer);
+
+    if (socketInstance.connected) {
+      fetchTimer();
+    } else {
+      socketInstance.on('connect', fetchTimer);
+    }
 
     watch(timeLeft, (newTimeLeft) => {
       if (newTimeLeft === 0 && isTimerActive.value) {

@@ -1,4 +1,8 @@
-import type { StreamXpBoostPayload } from "@fox-sphere/types";
+import type {
+  StreamXpBoostPayload,
+  TwitchTimerPayload,
+  WidgetVariant,
+} from "@fox-sphere/types";
 import {
   getXpThresholdForLevel,
   prisma,
@@ -106,6 +110,73 @@ export class StreamService {
       canceled: true,
     };
     globalEventBus.emit("stream:xp-boost", payload);
+  }
+
+  /**
+   * Запускает `!timer` и делает это единственным местом, где таймер записан.
+   *
+   * Хранится абсолютный `endsAt`, а не остаток: перезагруженная сцена OBS
+   * догоняет идущий таймер запросом `twitch:get-timer`, и дедлайн — это то, что
+   * переживает и перезагрузку, и рестарт бота. Событие эмитится после `upsert`,
+   * поэтому оверлей, поднятый посреди стрима, и оверлей, открытый до команды,
+   * видят один и тот же момент окончания.
+   */
+  public async startStreamTimer(input: {
+    minutes: number;
+    color: WidgetVariant;
+    title: string;
+  }): Promise<void> {
+    const endsAt = new Date(Date.now() + input.minutes * 60_000);
+
+    await prisma.systemState.upsert({
+      where: { id: XP_CONFIG.STREAM_STATE_ID },
+      update: {
+        timerTitle: input.title,
+        timerColor: input.color,
+        timerEndsAt: endsAt,
+      },
+      create: {
+        id: XP_CONFIG.STREAM_STATE_ID,
+        streamLevel: 1,
+        streamCurrentXp: 0,
+        timerTitle: input.title,
+        timerColor: input.color,
+        timerEndsAt: endsAt,
+      },
+    });
+
+    const payload: TwitchTimerPayload = {
+      title: input.title,
+      color: input.color,
+      endsAt: endsAt.getTime(),
+    };
+    globalEventBus.emit("twitch:timer", payload);
+  }
+
+  /**
+   * Убирает таймер. Команда остаётся единственным способом это сделать —
+   * истечение таймера лишь перестаёт его показывать (`resolveActiveTimer`), а
+   * строка не чистится, чтобы повторный `!stoptimer` не был пустышкой.
+   */
+  public async stopStreamTimer(): Promise<void> {
+    await prisma.systemState.upsert({
+      where: { id: XP_CONFIG.STREAM_STATE_ID },
+      update: {
+        timerTitle: null,
+        timerColor: null,
+        timerEndsAt: null,
+      },
+      create: {
+        id: XP_CONFIG.STREAM_STATE_ID,
+        streamLevel: 1,
+        streamCurrentXp: 0,
+        timerTitle: null,
+        timerColor: null,
+        timerEndsAt: null,
+      },
+    });
+
+    globalEventBus.emit("twitch:timer-stop", {});
   }
 
   public async updateStreamXp(xpAmount: number): Promise<void> {

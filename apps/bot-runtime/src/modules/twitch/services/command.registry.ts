@@ -97,8 +97,8 @@ export class CommandRegistry {
       new VersionCommand(this.chatbotService),
       new TicketCommand(this.chatbotService),
       new TicketsCommand(this.chatbotService),
-      new TimerCommand(this.chatbotService),
-      new TimerStopCommand(this.chatbotService),
+      new TimerCommand(this.chatbotService, this.streamService),
+      new TimerStopCommand(this.chatbotService, this.streamService),
       new XpBoostCommand(this.chatbotService, this.streamService),
       new AddVipCommand(this.chatbotService, this.userService, this.apiClient),
       new RemoveVipCommand(

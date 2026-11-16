@@ -34,11 +34,23 @@ export interface TwitchRewardPayload {
   redemptionId: string;
 }
 
-export interface TwitchTimerPayload {
-  time: number;
-  color: WidgetVariant;
+/**
+ * Живой `!timer` в том виде, в котором он лежит в `SystemState`.
+ *
+ * `endsAt` — абсолютный момент окончания в epoch-миллисекундах, а не остаток:
+ * остатка не хватает, чтобы пережить перезагрузку сцены OBS, второй открытый
+ * оверлей или рестарт бота. Остаток каждая копия оверлея считает сама от часов
+ * машины, поэтому и дрейф от троттлинга `setInterval` не накапливается.
+ */
+export interface ActiveStreamTimer {
   title: string;
+  color: WidgetVariant;
+  endsAt: number;
 }
+
+export type TwitchTimerPayload = ActiveStreamTimer;
+
+export type TwitchGetTimerPayload = Record<string, never>;
 
 export interface TwitchChatMessagePayload {
   id: string;
@@ -97,4 +109,14 @@ export interface TwitchServerToClientEvents {
   "twitch:watch-streak": (data: TwitchWatchStreakPayload) => void;
   "twitch:golden-beer": (data: TwitchGoldenBeerPayload) => void;
 }
-export interface TwitchClientToServerEvents {}
+export interface TwitchClientToServerEvents {
+  /**
+   * Что показывать в таймере прямо сейчас. Актуален только после коннекта:
+   * живое событие несёт `endsAt` само, а этот запрос нужен перезагруженной
+   * сцене, чтобы догнать идущий таймер. `null` — таймера нет или он истёк.
+   */
+  "twitch:get-timer": (
+    _data: TwitchGetTimerPayload,
+    callback: (timer: ActiveStreamTimer | null) => void,
+  ) => void;
+}

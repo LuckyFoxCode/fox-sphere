@@ -130,6 +130,9 @@ model SystemState {
   updatedAt         DateTime  @updatedAt
   xpBoostMultiplier Int       @default(1)
   xpBoostExpiresAt  DateTime?
+  timerTitle        String?
+  timerColor        String?
+  timerEndsAt       DateTime?
 }
 
 enum ChannelStatus {

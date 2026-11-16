@@ -17,6 +17,7 @@ Vitest, in four members only:
 | Where | File | Covers |
 |---|---|---|
 | `packages/backend-shared` | `src/__tests__/xp.spec.ts` | `getXpThresholdForLevel`, `resolveActiveXpBoost` |
+| `packages/backend-shared` | `src/__tests__/stream-timer.spec.ts` | `resolveActiveTimer` - `null` on a missing title, a missing deadline or an expired one, the exact expiry instant counted as expired, the live case returning the stored deadline as epoch ms, and a colour that is not a widget variant falling back to `blue` |
 | `packages/backend-shared` | `src/__tests__/channel-backfill.spec.ts` | the pure `User` -> `Viewer` / `ChannelUser` row mapper - every copied balance and flag field, the three lottery fields, the no-lottery default, and the missing-viewer throw; plus `channelUserKey`, `selectMissingRows` (insert-only selection, including that one channel's existing rows never suppress another's), and `parseBackfillArgs` |
 | `apps/bot-runtime` | `src/__tests__/helpers/test-db.spec.ts` | `assertTestDatabase` in both directions - no database needed |
 | `apps/bot-runtime` | `src/__tests__/helpers/reset-db.spec.ts` | `resetDb` against the live `foxsphere_test` |
