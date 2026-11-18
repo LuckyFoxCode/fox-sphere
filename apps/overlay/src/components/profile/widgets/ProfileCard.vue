@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconLightning } from '@/assets/icons';
+import { IconBoot, IconHeartPlus, IconLightning, IconShield, IconSword } from '@/assets/icons';
 import { LevelBadge } from '@/components/stream';
 import { HeroPortrait, PaperFrame } from '@/components/ui';
 import {
@@ -13,7 +13,7 @@ import {
 } from '@/constants';
 import { getHeroById, getHeroStats } from '@/utils/hero';
 import type { HeroStats, ProfileShowPayload } from '@fox-sphere/types';
-import { computed } from 'vue';
+import { computed, type Component } from 'vue';
 
 const props = defineProps<{ profile: ProfileShowPayload }>();
 
@@ -64,12 +64,36 @@ const heroLine = computed(() =>
     : 'no hero assigned yet',
 );
 
+/**
+ * Each tile is a sign and a reading. The sign is the stat it belongs to - heart for health,
+ * sword for attack, shield for defence, boot for speed - which is one glyph a viewer already
+ * knows, so the three-letter label under it can stay a whisper.
+ *
+ * Two decisions ride in `iconClass`, and neither is a code style:
+ *
+ * - **The hue is the sign's, the number stays graphite.** Rose heart, orange sword, sky shield,
+ *   emerald boot read as coloured pencil on paper - the stat sheet's own vocabulary, not the
+ *   neon event colours, which belong to events. All four sit on the `700` stop so no single
+ *   icon outshouts its neighbours, and no opacity thins them: a coloured glyph at 50% loses
+ *   the contrast it was given the colour for. The value is separated by weight and size instead.
+ *   The stop is measured, not taste: the tile is `bg-white/55` over whichever role paper the
+ *   card is wearing, and `700` holds at least 4.4:1 against all seven of them - `600` drops to
+ *   3.06:1 for the orange on a viewer's blue paper, which is the thin end of legible.
+ * - **The size is optical.** The three game-icons glyphs fill ~88% of their 512 canvas, while
+ *   the shield is drawn to 58% of a 24 unit one, so at one shared size it reads a head shorter
+ *   than the boot beside it. One step up puts all four on the same line.
+ */
 const HERO_STAT_LABELS = [
-  { key: 'health', label: 'hp' },
-  { key: 'attack', label: 'atk' },
-  { key: 'defense', label: 'def' },
-  { key: 'speed', label: 'spd' },
-] as const satisfies readonly { key: keyof HeroStats; label: string }[];
+  { key: 'health', label: 'hp', icon: IconHeartPlus, iconClass: 'size-4.5 text-rose-700' },
+  { key: 'attack', label: 'atk', icon: IconSword, iconClass: 'size-4.5 text-orange-700' },
+  { key: 'defense', label: 'def', icon: IconShield, iconClass: 'size-5 text-sky-700' },
+  { key: 'speed', label: 'spd', icon: IconBoot, iconClass: 'size-4.5 text-emerald-700' },
+] as const satisfies readonly {
+  key: keyof HeroStats;
+  label: string;
+  icon: Component;
+  iconClass: string;
+}[];
 
 /**
  * The hero's numbers at the level the viewer actually has, not the level-1 catalogue entry:
@@ -82,7 +106,7 @@ const heroStats = computed(() => {
 
   return HERO_STAT_LABELS.map((stat) => ({
     ...stat,
-    value: stats ? `${Math.round(stats[stat.key])}` : '—',
+    value: stats ? `${stats[stat.key]}` : '—',
   }));
 });
 
@@ -164,7 +188,7 @@ const ROLE_FLAGS: readonly RoleFlagDefinition[] = [
   { key: 'founder', label: 'founder', role: null, has: (profile) => profile.isFounder },
   { key: 'mod', label: 'mod', role: 'mod', has: (profile) => profile.isMod },
   { key: 'vip', label: 'vip', role: 'vip', has: (profile) => profile.isPermanentVip },
-  { key: 'lucky-vip', label: 'lucky vip', role: null, has: (profile) => profile.isLuckyVip },
+  { key: 'lucky-vip', label: 'lucky vip', role: 'vip', has: (profile) => profile.isLuckyVip },
   { key: 'sub', label: 'sub', role: 'sub', has: (profile) => profile.isSubscriber },
 ];
 
@@ -191,19 +215,17 @@ const achievementSlots = computed(() => resolveProfileAchievementSlots(props.pro
     class="text-text-inverse w-96 bg-linear-to-b"
     :class="roleStyle.body"
   >
-    <!-- Шапка повторяет шапку сообщения в чате: тот же градиент роли и та же тёмная
-         подложка под медаль. Цвет роли звучит здесь один раз и больше нигде. -->
     <div
-      class="flex items-center gap-x-2.5 border-b-2 border-slate-800 bg-linear-to-r px-3 py-2"
+      class="flex items-center border-b-2 border-slate-800 bg-linear-to-r px-3 py-2"
       :class="roleStyle.header"
     >
       <component
         :is="rankBadge"
-        class="size-8.5 shrink-0"
+        class="size-12 shrink-0"
       />
 
       <span
-        class="min-w-0 flex-1 truncate bg-clip-text text-xs leading-none font-extrabold tracking-[0.2em] text-transparent uppercase"
+        class="min-w-0 flex-1 truncate bg-clip-text text-base leading-none font-extrabold tracking-widest text-transparent uppercase"
         :style="{ backgroundImage: rank.gradient }"
       >
         {{ rank.rankTitle }}
@@ -212,15 +234,15 @@ const achievementSlots = computed(() => resolveProfileAchievementSlots(props.pro
       <LevelBadge
         :level="profile.lvl"
         :is-broadcaster="profile.isBroadcaster"
-        :size="40"
+        :size="48"
         class="shrink-0"
       />
     </div>
 
     <div class="flex flex-col gap-y-3 px-3 pt-3 pb-3.5">
-      <div class="flex items-center gap-x-3">
+      <div class="flex gap-x-6">
         <div
-          class="size-23 shrink-0 overflow-hidden rounded-full border-2 bg-white/55"
+          class="size-40 shrink-0 overflow-hidden rounded-full border-2 bg-white/55"
           :class="roleStyle.frame"
         >
           <HeroPortrait
@@ -237,7 +259,7 @@ const achievementSlots = computed(() => resolveProfileAchievementSlots(props.pro
           </div>
         </div>
 
-        <div class="flex min-w-0 flex-1 flex-col gap-y-1">
+        <div class="flex min-w-0 flex-1 flex-col gap-y-1 pt-2">
           <span
             class="truncate text-lg leading-none font-extrabold"
             :style="{ color: profile.color }"
@@ -245,7 +267,7 @@ const achievementSlots = computed(() => resolveProfileAchievementSlots(props.pro
             {{ profile.displayName }}
           </span>
 
-          <span class="truncate text-[11px] leading-none font-semibold opacity-60">
+          <span class="truncate text-[12px] leading-none font-semibold opacity-60">
             {{ heroLine }}
           </span>
 
@@ -256,7 +278,7 @@ const achievementSlots = computed(() => resolveProfileAchievementSlots(props.pro
             <span
               v-for="flag in roleFlags"
               :key="flag.key"
-              class="rounded-md border-2 px-1.5 pt-0.5 pb-px text-[9px] leading-none font-bold tracking-[0.08em] uppercase"
+              class="rounded-md border-2 px-1.5 pt-0.5 pb-px text-[10px] leading-none font-bold tracking-[0.08em] uppercase"
               :class="flag.classes"
             >
               {{ flag.label }}
@@ -304,12 +326,21 @@ const achievementSlots = computed(() => resolveProfileAchievementSlots(props.pro
           v-for="stat in heroStats"
           :key="stat.key"
           :data-stat="stat.key"
-          class="flex flex-col items-center gap-y-0.5 rounded-lg border-2 border-white/70 bg-white/55 py-1"
+          class="flex items-center justify-between gap-x-1.5 rounded-lg border-2 border-white/70 bg-white/55 px-2.5 py-1.5"
         >
-          <span class="text-[9px] font-bold tracking-[0.17em] uppercase opacity-50">
-            {{ stat.label }}
-          </span>
-          <span class="text-sm leading-none font-bold tabular-nums">{{ stat.value }}</span>
+          <component
+            :is="stat.icon"
+            aria-hidden="true"
+            class="shrink-0"
+            :class="stat.iconClass"
+          />
+
+          <div class="flex flex-col gap-y-0.5">
+            <span class="text-[9px] leading-none font-bold tracking-[0.17em] uppercase opacity-50">
+              {{ stat.label }}
+            </span>
+            <span class="text-sm leading-none font-bold tabular-nums">{{ stat.value }}</span>
+          </div>
         </div>
       </div>
 

@@ -261,9 +261,17 @@ gradient, the dark strip, the role's own chip - instead of inventing a colour of
 resolved with `resolveChatRole`, so the card cannot claim a role the message list would not, and the
 strip stops being decoration: it is who the person is. The colour then appears exactly once on the card.
 **The Ink Rule.** On paper the numbers are graphite ink: full-strength `--text-inverse` for values,
-50-65% for labels, `tabular-nums` everywhere. The viewer's own Twitch colour is the only other colour
-on the card, and only on their name. Hero stats are printed at the level on the row (`getHeroStats`),
-never the catalogue's level-1 entries - a level 7 assassin reads 154 hp, not the shop's 100.
+50-65% for labels, `tabular-nums` everywhere. Exactly two things are allowed a colour, and nothing
+else: the viewer's own Twitch colour, on their name alone, and the four hero-stat signs - rose heart,
+orange sword, sky shield, emerald boot. The signs are the stat sheet's coloured pencil, never the
+neon event colours, which belong to events; all four sit on the `700` stop so none outshouts its
+neighbours, and none is thinned with opacity - a coloured glyph at 50% loses the contrast it was
+given the colour for. That stop is measured, not taste: the tile is `bg-white/55` over whichever of
+the seven role papers the card is wearing, and `700` holds at least 4.4:1 against every one of them
+(`600` falls to 3.06:1 for the orange on a viewer's blue). The sign carries the hue and the shape,
+the figure carries the weight; the number is never coloured, because that would put two hierarchies
+in one tile. Hero stats are printed at the level on the row (`getHeroStats`), never the catalogue's
+level-1 entries - a level 7 assassin reads 154 hp, not the shop's 100.
 **The Matte Rule.** No halo, no outer glow, no pulse. Depth is one soft offset shadow plus paper grain,
 so the widget reads as a physical sticker lying on the capture.
 **The Event-Paper Rule.** An event widget keeps its colour and gives up its glow: the colour becomes
