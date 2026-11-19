@@ -49,3 +49,6 @@ AGENTS.local.md
 .codex/
 .claude/settings.local.json
 .impeccable/
+
+# Music agent local config (holds the bearer token)
+tools/music-agent/music-agent.config.json
