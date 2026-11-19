@@ -99,12 +99,9 @@ export const BOT_MESSAGES = {
         `🛋️ Welcome to lurk life, @${username}! Hydrate and enjoy 💧`,
     ],
     PIVO: [
-      (username: string) =>
-        `🍺 @${username} cracks open a cold one. Cheers!`,
-      (username: string) =>
-        `🍻 @${username} raises a toast to the Sphere! 🦊`,
-      (username: string) =>
-        `🧊 Drinks on @${username}! Chat, say thanks!`,
+      (username: string) => `🍺 @${username} cracks open a cold one. Cheers!`,
+      (username: string) => `🍻 @${username} raises a toast to the Sphere! 🦊`,
+      (username: string) => `🧊 Drinks on @${username}! Chat, say thanks!`,
       (username: string) =>
         `🍺 @${username} shares a round with the whole chat. Salud!`,
       (username: string) =>
@@ -162,9 +159,20 @@ export const BOT_MESSAGES = {
       `@${username}, no such hero. Available: ${available}`,
     BUY_ALREADY_OWNED: (username: string, heroName: string) =>
       `@${username}, ${heroName} is already in your collection`,
-    BUY_NOT_ENOUGH: (username: string, heroName: string, price: number, coins: number, shortfall: number) =>
+    BUY_NOT_ENOUGH: (
+      username: string,
+      heroName: string,
+      price: number,
+      coins: number,
+      shortfall: number,
+    ) =>
       `@${username}, ${heroName} costs ${price}, you have ${coins} - ${shortfall} short`,
-    BUY_SUCCESS: (username: string, heroName: string, price: number, coinsAfter: number) =>
+    BUY_SUCCESS: (
+      username: string,
+      heroName: string,
+      price: number,
+      coinsAfter: number,
+    ) =>
       `🛒 @${username} bought ${heroName} for ${price} coins! Left: ${coinsAfter}`,
     BUY_FREE: (username: string, heroName: string) =>
       `🎁 @${username} received ${heroName} for free!`,
@@ -178,7 +186,11 @@ export const BOT_MESSAGES = {
   },
   // Награды за баллы канала (Channel Points)
   REWARDS: {
-    EXCHANGE_COMPLETED: (username: string, rewardTitle: string, coins: number) =>
+    EXCHANGE_COMPLETED: (
+      username: string,
+      rewardTitle: string,
+      coins: number,
+    ) =>
       `💰 @${username} claimed the ${rewardTitle} — ${coins} Coins in the wallet! 🪙`,
     LEADERBOARD: (_username: string, topList: string) =>
       `🏆 LEADERBOARD: ➔ ${topList}`,

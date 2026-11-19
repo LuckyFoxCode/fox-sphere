@@ -1,6 +1,7 @@
 export * from './types';
 export * from './useHeroSocket';
 export * from './useLotterySocket';
+export * from './useMusicSocket';
 export * from './useProfileSocket';
 export * from './useRouletteSocket';
 export * from './useShopSocket';

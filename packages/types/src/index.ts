@@ -7,6 +7,10 @@ import {
   LotteryServerToClientEvents,
 } from "./lottery";
 import {
+  MusicClientToServerEvents,
+  MusicServerToClientEvents,
+} from "./music";
+import {
   ProfileClientToServerEvents,
   ProfileServerToClientEvents,
 } from "./profile";
@@ -33,6 +37,7 @@ import {
 
 export * from "./hero/index";
 export * from "./lottery/index";
+export * from "./music/index";
 export * from "./pivo/index";
 export * from "./profile/index";
 export * from "./roulette/index";
@@ -51,6 +56,7 @@ type IntersectionFromTuple<T extends readonly unknown[]> = T extends readonly [
 type AllServerEvents = [
   HeroServerToClientEvents,
   LotteryServerToClientEvents,
+  MusicServerToClientEvents,
   ProfileServerToClientEvents,
   RouletteServerToClientEvents,
   ShopServerToClientEvents,
@@ -61,6 +67,7 @@ type AllServerEvents = [
 type AllClientEvents = [
   HeroClientToServerEvents,
   LotteryClientToServerEvents,
+  MusicClientToServerEvents,
   ProfileClientToServerEvents,
   RouletteClientToServerEvents,
   ShopClientToServerEvents,

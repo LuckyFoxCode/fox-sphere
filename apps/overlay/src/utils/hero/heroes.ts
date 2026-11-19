@@ -1,6 +1,12 @@
-import { DEFAULT_HERO_ID, getHeroById, HEROES, type HeroDefinition } from '@fox-sphere/types';
+import {
+  DEFAULT_HERO_ID,
+  getHeroById,
+  getHeroStats,
+  HEROES,
+  type HeroDefinition,
+} from '@fox-sphere/types';
 
-export { DEFAULT_HERO_ID, getHeroById, HEROES };
+export { DEFAULT_HERO_ID, getHeroById, getHeroStats, HEROES };
 export type { HeroDefinition };
 
 /**

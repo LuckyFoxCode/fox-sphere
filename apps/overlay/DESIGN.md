@@ -256,6 +256,22 @@ the neon world used for the same job.
 at 46px, bare, with no collar or bezel. It carries the tier on its own, so the rank *title* is never
 printed beside it; the icon is the label. `LevelBadge` still defaults to 64px for `ProfileCard`, which
 is a paper widget and sizes the ring to its own grid.
+**The Borrowed-Strip Rule.** A paper widget about a *person* takes the chat message's header - the role
+gradient, the dark strip, the role's own chip - instead of inventing a colour of its own. The role is
+resolved with `resolveChatRole`, so the card cannot claim a role the message list would not, and the
+strip stops being decoration: it is who the person is. The colour then appears exactly once on the card.
+**The Ink Rule.** On paper the numbers are graphite ink: full-strength `--text-inverse` for values,
+50-65% for labels, `tabular-nums` everywhere. Exactly two things are allowed a colour, and nothing
+else: the viewer's own Twitch colour, on their name alone, and the four hero-stat signs - rose heart,
+orange sword, sky shield, emerald boot. The signs are the stat sheet's coloured pencil, never the
+neon event colours, which belong to events; all four sit on the `700` stop so none outshouts its
+neighbours, and none is thinned with opacity - a coloured glyph at 50% loses the contrast it was
+given the colour for. That stop is measured, not taste: the tile is `bg-white/55` over whichever of
+the seven role papers the card is wearing, and `700` holds at least 4.4:1 against every one of them
+(`600` falls to 3.06:1 for the orange on a viewer's blue). The sign carries the hue and the shape,
+the figure carries the weight; the number is never coloured, because that would put two hierarchies
+in one tile. Hero stats are printed at the level on the row (`getHeroStats`), never the catalogue's
+level-1 entries - a level 7 assassin reads 154 hp, not the shop's 100.
 **The Matte Rule.** No halo, no outer glow, no pulse. Depth is one soft offset shadow plus paper grain,
 so the widget reads as a physical sticker lying on the capture.
 **The Event-Paper Rule.** An event widget keeps its colour and gives up its glow: the colour becomes
@@ -293,7 +309,15 @@ capitalised for the streamer: `!timer 5 red Brb — 5 min` prints what was typed
 | `EventSticker` (`components/ui/event-sticker/`) | graphite body + one event paper - the event family's shell |
 | `TwitchFollow`, `TwitchRaid`, `TwitchRewardRedeem`, `TwitchAddVip`, `TwitchWatchStreak`, `TwitchGoldenBeer` | graphite + event paper - done |
 | `ChatMessageItem` and the chat card | paper - stays, shares the keyline and grain |
-| `WidgetFrame` and the lottery / profile / shop / stream / hero-card widgets | neon marquee - **not migrated** |
+| `PaperFrame` (`components/ui/paper-frame/`) | the shared shell for paper widgets - the chat body's material, extracted |
+| `ProfileCard` | paper - done; the first widget that borrows the chat's role strip |
+| `WidgetFrame` and the lottery / shop / stream / hero-card widgets | neon marquee - **not migrated** |
+
+`PaperFrame` is the paper counterpart of `StickerFrame`: oat keyline, grain drawn from the ink
+rather than from the keyline, one offset shadow, no background of its own. The caller supplies
+the paper (`ProfileCard` uses the chat role's own `50 -> 200` body), so the shell never decides
+a colour. The grain is a scoped style whose radius is `14` - `16` minus the `2px` border - for
+the same reason as the sticker's.
 
 `TwitchTimer` is the pilot for the event family: `WIDGET_PAPER` in `src/constants/paperSurfaces.ts`
 maps each `WidgetVariant` to its paper, and every event widget reuses that map rather than inventing
