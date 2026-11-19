@@ -14,7 +14,7 @@ import { type ProfileEventType, type WidgetSocket } from './types';
  *   прототип, и подтверждение команды уже ушло);
  * - один и тот же `userId` не показывается дважды, пока его карточка на экране или в очереди.
  */
-const PROFILE_DISPLAY_MS = 6000;
+const PROFILE_DISPLAY_MS = 10000;
 // Даёт уехать предыдущей карточке: `<Transition mode="out-in">` ждёт уход, но пустой
 // промежуток между карточками всё равно нужен, иначе следующая не смонтируется.
 const PROFILE_GAP_MS = 400;
