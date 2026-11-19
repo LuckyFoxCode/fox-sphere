@@ -10,6 +10,7 @@ import cors from "cors";
 import express, { type Express } from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import { getNowPlaying, registerMusicRoutes } from "./modules/music";
 
 const app: Express = express();
 const httpServer = createServer(app);
@@ -21,6 +22,12 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
 });
 
 app.use(cors());
+
+// Музыкальный роут несёт свой json-парсер с лимитом под обложку, поэтому он
+// регистрируется ДО глобального `express.json()`: тот держит 100 КБ и отбил бы
+// картинку 413-й ещё до обработчика.
+registerMusicRoutes(app, io);
+
 app.use(express.json());
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
@@ -58,6 +65,20 @@ io.on("connection", (socket) => {
       // Тот же риск, что у `stream:get-system-state`: без этой ветки ack не
       // придёт и оверлей ждёт вечно, а unhandled rejection кладёт процесс.
       Logger.error("Socket", `twitch:get-timer failed for ${socket.id}`, error);
+    }
+  });
+  // Догон после перезагрузки сцены: живое событие `music:now-playing` уже
+  // улетело, а виджету нужно текущее состояние сразу. `sentAt` в payload
+  // возвращает полоску на место, поэтому состояние может быть и старым.
+  socket.on("music:get-current", (_data, socketCallback) => {
+    try {
+      socketCallback(getNowPlaying());
+    } catch (error) {
+      Logger.error(
+        "Socket",
+        `music:get-current failed for ${socket.id}`,
+        error,
+      );
     }
   });
   socket.on("disconnect", () => {
