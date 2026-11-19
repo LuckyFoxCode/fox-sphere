@@ -20,9 +20,20 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $configPath = Join-Path $scriptDir "music-agent.config.json"
 $logPath = Join-Path $scriptDir "music-agent.log"
 
-# Лог перезаписывается при каждом старте: задача запускается на вход в систему,
-# так что файл не растёт бесконечно.
-Set-Content -Path $logPath -Value "" -Encoding UTF8
+# Один экземпляр на сеанс. Сторожевой триггер задачи и `Start-ScheduledTask` после
+# переустановки умеют поднять второй процесс, а два агента пишут один лог и шлют
+# одно и то же состояние дважды. Мьютекс держится до конца процесса; второй
+# экземпляр просто выходит.
+$agentMutex = New-Object System.Threading.Mutex($false, "Local\FoxSphereMusicAgent")
+if (-not $agentMutex.WaitOne(0)) {
+    exit 0
+}
+
+# Лог дописывается, а не перезаписывается: агент перезапускается сторожем, и обрыв
+# нужно видеть вместе с тем, что было до него. Расти файлу не даём.
+if ((Test-Path $logPath) -and ((Get-Item $logPath).Length -gt 2MB)) {
+    Set-Content -Path $logPath -Value "" -Encoding UTF8
+}
 
 function Write-Log {
     param([string]$Message)
@@ -30,6 +41,8 @@ function Write-Log {
     $line = "{0} {1}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $Message
     Add-Content -Path $logPath -Value $line -Encoding UTF8
 }
+
+Write-Log "=== start (pid $PID) ==="
 
 if (-not (Test-Path $configPath)) {
     Write-Log "Config not found: $configPath"

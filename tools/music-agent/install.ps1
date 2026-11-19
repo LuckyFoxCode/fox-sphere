@@ -38,6 +38,17 @@ $action = New-ScheduledTaskAction `
 
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
 
+# Сторож: Task Scheduler умеет прекратить этот процесс так, что задача
+# возвращается в `Ready` с кодом 3221225786 (0xC000013A) - и `RestartOnFailure`
+# такой код ошибкой не считает, поэтому до сих пор агент просто исчезал до
+# следующего входа в систему. Повторяющийся триггер поднимает его обратно.
+# Живой экземпляр второй не запускает: `MultipleInstances` по умолчанию
+# `IgnoreNew`, так что тик раз в минуту ничего не делает, пока агент работает.
+$repeat = New-ScheduledTaskTrigger `
+    -Once `
+    -At (Get-Date) `
+    -RepetitionInterval (New-TimeSpan -Minutes 1)
+
 $settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries `
     -DontStopIfGoingOnBatteries `
@@ -54,14 +65,29 @@ $settings = New-ScheduledTaskSettingsSet `
 # просто обрывом. Задача должна жить, пока жив пользователь.
 $settings.IdleSettings.StopOnIdleEnd = $false
 
+# Сторожевой триггер тикает каждую минуту, и единственное, что не даёт тику
+# поднять второй агент, - эта настройка. Ставим её явно: полагаться на значение по
+# умолчанию здесь не на что, а два процесса пишут один лог. В самом скрипте лежит
+# ещё и мьютекс, но он второй рубеж, а не замена этому.
+$settings.MultipleInstances = "IgnoreNew"
+
 # Переустановка поверх работающей задачи: без остановки `Register -Force` не
 # подменит запущенный экземпляр, и старые настройки останутся жить до перезагрузки.
 Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
 
+# `Stop-ScheduledTask` возвращает задачу в `Ready`, но не всегда убивает её процесс:
+# агент продолжает жить, держать мьютекс и писать в лог, а запуск сразу после
+# регистрации тихо выходит на этом мьютексе. Гасим остатки руками.
+Get-CimInstance Win32_Process | Where-Object {
+    $_.CommandLine -and $_.CommandLine -like "*fox-sphere\music-agent\music-agent.ps1*"
+} | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+
+Start-Sleep -Seconds 2
+
 Register-ScheduledTask `
     -TaskName $taskName `
     -Action $action `
-    -Trigger $trigger `
+    -Trigger $trigger, $repeat `
     -Settings $settings `
     -Description "fox-sphere: sends the currently playing track to the overlay" `
     -Force | Out-Null
