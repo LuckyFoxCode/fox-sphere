@@ -46,6 +46,18 @@ $settings = New-ScheduledTaskSettingsSet `
     -RestartInterval (New-TimeSpan -Minutes 1) `
     -StartWhenAvailable
 
+# `New-ScheduledTaskSettingsSet` приходит с `IdleSettings.StopOnIdleEnd = $true`,
+# и это гасит агент ровно тогда, когда он нужен: Планировщик останавливает
+# задачу, как только компьютер перестаёт быть в режиме простоя, то есть через
+# несколько минут после первого движения мыши. Завершение приходит как
+# 3221225786 (0xC000013A), выглядит как «агент умер сам» и в логе остаётся
+# просто обрывом. Задача должна жить, пока жив пользователь.
+$settings.IdleSettings.StopOnIdleEnd = $false
+
+# Переустановка поверх работающей задачи: без остановки `Register -Force` не
+# подменит запущенный экземпляр, и старые настройки останутся жить до перезагрузки.
+Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+
 Register-ScheduledTask `
     -TaskName $taskName `
     -Action $action `
