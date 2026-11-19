@@ -39,7 +39,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="absolute top-[74px] right-3 z-10 w-80">
+  <div class="absolute top-18.5 right-3 z-10 w-80">
     <Transition name="music-fade">
       <div
         v-if="state"
@@ -52,9 +52,7 @@ onBeforeUnmount(() => {
           <div class="flex w-full flex-col gap-y-3">
             <div class="flex items-center justify-between">
               <div class="text-sticker-ink flex items-center gap-x-2 text-[15px] font-bold">
-                <span
-                  class="bg-sticker-edge flex size-5 items-center justify-center rounded-full"
-                >
+                <span class="bg-sticker-edge flex size-5 items-center justify-center rounded-full">
                   <svg
                     width="12"
                     height="12"
@@ -71,7 +69,7 @@ onBeforeUnmount(() => {
               </div>
 
               <span
-                class="bg-sticker-edge text-sticker-body rounded-lg px-2.5 py-1 text-[10px] font-bold tabular-nums"
+                class="bg-sticker-edge text-sticker-body rounded-lg px-2.5 py-1 text-xs font-bold tabular-nums"
               >
                 {{ clock }}
               </span>
@@ -124,7 +122,7 @@ onBeforeUnmount(() => {
                    иначе она дёргается раз в 3.6 секунды. -->
               <div class="bg-sticker-track relative h-2.5 w-full overflow-hidden rounded-full">
                 <div
-                  class="bg-sticker-rose absolute inset-y-0 left-0 rounded-full transition-[width] duration-[250ms] ease-linear"
+                  class="bg-sticker-rose absolute inset-y-0 left-0 rounded-full transition-[width] duration-250 ease-linear"
                   :style="{ width: `${percent}%` }"
                 >
                   <span class="bg-sticker-mint absolute inset-y-0 right-0 w-2" />
