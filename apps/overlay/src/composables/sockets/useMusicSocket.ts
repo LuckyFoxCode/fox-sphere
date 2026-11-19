@@ -65,6 +65,15 @@ const apply = (next: MusicNowPlaying | null) => {
     return;
   }
 
+  // Догон после перезагрузки сцены приносит то, что сервер держит в памяти, а
+  // таймеров у него нет: агент мог умереть полчаса назад, и пакет приедет с
+  // `sentAt` тех времён. Показать его как живой трек - хуже, чем не показать
+  // ничего: на экране появляется застывшая полоска и «пауза», которой нет.
+  if (Date.now() - next.sentAt > SILENCE_LIMIT_MS) {
+    clear();
+    return;
+  }
+
   state.value = next;
   durationMs.value = next.durationMs;
   isPlaying.value = next.isPlaying;
