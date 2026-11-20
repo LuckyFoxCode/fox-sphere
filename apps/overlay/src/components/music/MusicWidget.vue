@@ -16,6 +16,13 @@ const percent = computed(() => {
   return Math.min(Math.max(positionMs.value / durationMs.value, 0), 1) * 100;
 });
 
+// У радио-потока длительности нет вовсе: GSMTC отдаёт `EndTime = 0` и позицию
+// `0` на каждом опросе. Полоска из этого не выходит - она стоит пустой, а оба
+// тайминга читаются как `0:00`, то есть как «трек на самом начале», хотя он
+// играет уже час. Такому треку полоску не показываем совсем: она врёт, а
+// обложка, исполнитель и название остаются верными.
+const hasDuration = computed(() => durationMs.value > 0);
+
 const pad = (value: number) => value.toString().padStart(2, '0');
 
 const clock = ref('');
@@ -109,7 +116,7 @@ onBeforeUnmount(() => {
               </div>
             </div>
 
-            <div>
+            <div v-if="hasDuration">
               <div
                 class="text-sticker-muted mb-1 flex justify-between text-[10px] font-semibold tabular-nums"
               >

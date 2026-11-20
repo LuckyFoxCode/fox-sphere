@@ -297,8 +297,10 @@ while ($true) {
             } else {
                 # Сырая позиция сдвинулась сама - значит это настоящая перемотка
                 # (или браузер наконец прислал обновление). Дрожание на доли
-                # секунды перемоткой не считается.
-                if ($null -ne $lastRawPosMs -and [Math]::Abs($rawPosMs - $lastRawPosMs) -gt $seekThresholdMs) {
+                # секунды перемоткой не считается. У потока (радио) длительности
+                # нет вовсе, и `Position` приходит нулевым на каждом опросе -
+                # сравнивать нечего, это не перемотка, а отсутствие таймлайна.
+                if ($durationMs -gt 0 -and $null -ne $lastRawPosMs -and [Math]::Abs($rawPosMs - $lastRawPosMs) -gt $seekThresholdMs) {
                     $anchorPosMs = $rawPosMs
                     $anchorAt = $now
                     $anchorRunning = $isPlaying

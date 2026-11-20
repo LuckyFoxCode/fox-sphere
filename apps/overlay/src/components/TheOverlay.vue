@@ -4,6 +4,7 @@ import Phaser from 'phaser';
 import { onMounted, onUnmounted, ref } from 'vue';
 import { HeroLane } from './hero';
 import { MusicWidget } from './music';
+import { StreamXpBoost } from './stream';
 import TheHeader from './TheHeader.vue';
 import TheSidebar from './TheSidebar.vue';
 import { WidgetEventsHub } from './widgets-hub';
@@ -44,6 +45,7 @@ onUnmounted(() => {
 
     <TheHeader class="relative z-10" />
     <MusicWidget />
+    <StreamXpBoost />
     <main class="relative z-10 flex w-full flex-1 justify-start">
       <WidgetEventsHub />
       <TheSidebar />

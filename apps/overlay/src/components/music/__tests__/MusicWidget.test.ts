@@ -92,6 +92,17 @@ describe('MusicWidget', () => {
     expect(wrapper.findAll('.border-r-2')).toHaveLength(40);
   });
 
+  it('не рисует полоску и тайминги у потока без длительности', () => {
+    // Радио: `EndTime` и `Position` приходят нулевыми на каждом опросе. Пустая
+    // дорожка с `0:00` по краям читается как «трек в самом начале», хотя он
+    // играет уже час, поэтому блока нет вовсе - а текст трека остаётся.
+    const wrapper = show({ ...playing, durationMs: 0, positionMs: 0 });
+
+    expect(wrapper.findAll('.border-r-2')).toHaveLength(0);
+    expect(wrapper.text()).not.toContain('0:00');
+    expect(wrapper.text()).toContain('Black Friday - pretty like the sun');
+  });
+
   it('ставит заглушку с нотой, когда обложки нет', () => {
     const wrapper = show({ ...playing, artwork: null });
 
@@ -100,7 +111,11 @@ describe('MusicWidget', () => {
   });
 
   it('притухает на паузе', () => {
-    expect(show({ ...playing, isPlaying: false }).find('.opacity-70').exists()).toBe(true);
+    expect(
+      show({ ...playing, isPlaying: false })
+        .find('.opacity-70')
+        .exists(),
+    ).toBe(true);
     expect(show(playing).find('.opacity-70').exists()).toBe(false);
   });
 });
