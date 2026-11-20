@@ -40,6 +40,7 @@
   --sticker-track: #423b4c;
   --sticker-rose: #e08aa4;
   --sticker-mint: #8fc9b8;
+  --sticker-well: #201c25;
 
   /* --- event paper ----------------------------------------------------------
      An event widget keeps its own colour, but a colour that is paper rather
@@ -89,6 +90,7 @@
   --color-sticker-track: var(--sticker-track);
   --color-sticker-rose: var(--sticker-rose);
   --color-sticker-mint: var(--sticker-mint);
+  --color-sticker-well: var(--sticker-well);
 
   --color-paper-amber: var(--paper-amber);
   --color-paper-blue: var(--paper-blue);

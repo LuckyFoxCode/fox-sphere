@@ -82,20 +82,22 @@ onBeforeUnmount(() => {
               </span>
             </div>
 
-            <div class="flex items-center gap-x-3">
+            <div
+              class="border-sticker-edge/25 bg-sticker-well flex items-center overflow-hidden rounded-xl border"
+            >
               <img
                 v-if="state.artwork"
                 :src="state.artwork"
                 alt=""
-                class="size-16 shrink-0 rounded-[10px] object-cover"
+                class="size-18 shrink-0 object-cover"
               />
               <div
                 v-else
-                class="bg-sticker-track text-sticker-muted flex size-16 shrink-0 items-center justify-center rounded-[10px]"
+                class="bg-sticker-track text-sticker-muted flex size-18 shrink-0 items-center justify-center"
               >
                 <svg
-                  width="24"
-                  height="24"
+                  width="28"
+                  height="28"
                   viewBox="0 0 24 24"
                   fill="currentColor"
                 >
@@ -105,20 +107,20 @@ onBeforeUnmount(() => {
                 </svg>
               </div>
 
-              <div class="min-w-0 flex-1">
-                <div class="text-sticker-muted truncate text-[10.5px] font-semibold">
+              <div class="min-w-0 flex-1 py-2 pr-3 pl-3">
+                <div class="text-sticker-muted truncate text-sm leading-snug font-semibold">
                   {{ state.artist }}
                 </div>
                 <MarqueeText
                   :text="state.title"
-                  class="text-sticker-ink mt-0.5 text-[13px] font-bold"
+                  class="text-sticker-ink mt-1 text-lg leading-snug font-bold"
                 />
               </div>
             </div>
 
             <div v-if="hasDuration">
               <div
-                class="text-sticker-muted mb-1 flex justify-between text-[10px] font-semibold tabular-nums"
+                class="text-sticker-muted mb-1 flex justify-between text-xs font-semibold tabular-nums"
               >
                 <span>{{ formatTime(positionMs) }}</span>
                 <span>{{ formatTime(durationMs) }}</span>

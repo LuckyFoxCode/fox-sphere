@@ -25,6 +25,7 @@ colors:
   sticker-ink: "#f2ecf6"
   sticker-muted: "#a49ab0"
   sticker-track: "#423b4c"
+  sticker-well: "#201c25"
   sticker-rose: "#e08aa4"
   sticker-mint: "#8fc9b8"
   paper-amber: "#f2dfba"
@@ -229,6 +230,7 @@ share one material language: a warm keyline, paper grain, and Quicksand.
 | `--sticker-ink` | `#f2ecf6` | numbers |
 | `--sticker-muted` | `#a49ab0` | labels and secondary figures |
 | `--sticker-track` | `#423b4c` | empty progress cells |
+| `--sticker-well` | `#201c25` | the recess a widget sets its content into |
 | `--sticker-rose` | `#e08aa4` | filled progress cells, the roulette wheel |
 | `--sticker-mint` | `#8fc9b8` | the leading cell and the percentage - the only "live" signal |
 | `--paper-amber` | `#f2dfba` | the timer's `amber` |
@@ -305,6 +307,7 @@ capitalised for the streamer: `!timer 5 red Brb — 5 min` prints what was typed
 |---|---|
 | `RouletteTicker`, `XpWidget`, `XpProgressBar`, `LevelBadge` | graphite - done |
 | `TwitchTimer`, `FlipDigit` | graphite body + event paper - done; the pilot for the event family |
+| `MusicWidget` | graphite - done; the track sits in a `sticker-well` recess, not on a plate |
 | `StickerFrame` (`components/ui/sticker-frame/`) | the shared shell every future HUD widget uses |
 | `EventSticker` (`components/ui/event-sticker/`) | graphite body + one event paper - the event family's shell |
 | `TwitchFollow`, `TwitchRaid`, `TwitchRewardRedeem`, `TwitchAddVip`, `TwitchWatchStreak`, `TwitchGoldenBeer` | graphite + event paper - done |
